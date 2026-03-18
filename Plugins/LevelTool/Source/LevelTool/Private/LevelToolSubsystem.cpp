@@ -722,15 +722,23 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
     const float ZScale = ActualRangeM * 100.f / 512.f;
     const float ActorZ = 32768.f * ZScale / 128.f;
 
+    // Center the landscape at world origin so that building/road coordinates
+    // (which are relative to the query center = (0,0)) land in the middle of
+    // the landscape, not at its corner.
+    // Pixel (0,0) = NW corner = actor position.
+    // Landscape total width = (HMapWidth-1) * XYScaleCm, so half = offset below.
+    const float HalfSizeCm = (S->HeightmapSize - 1) * S->XYScaleCm / 2.0f;
+    const float ActorX     = -HalfSizeCm;
+    const float ActorY     = -HalfSizeCm;
+
     // Create landscape actor
     FScopedTransaction Transaction(NSLOCTEXT("LevelTool", "ImportLandscape", "LevelTool: Import Landscape"));
 
     FActorSpawnParameters SpawnParams;
     SpawnParams.bNoFail = true;
 
-    // Spawn at the correct final position so Import() works with proper DrawScale3D
     ALandscape* Landscape = World->SpawnActor<ALandscape>(
-        ALandscape::StaticClass(), FVector(0.f, 0.f, ActorZ), FRotator::ZeroRotator, SpawnParams);
+        ALandscape::StaticClass(), FVector(ActorX, ActorY, ActorZ), FRotator::ZeroRotator, SpawnParams);
     if (!Landscape)
     {
         Log(TEXT("✖ Failed to spawn Landscape actor"));
@@ -741,8 +749,8 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
     Landscape->SetActorLabel(LandscapeName);
     Landscape->Tags.AddUnique(TEXT("LevelToolGenerated"));
 
-    Log(FString::Printf(TEXT("  ElevationRangeM param: %.2fm  ActualRangeM: %.2fm  ZScale: %.4f  ActorZ: %.0fcm"),
-        ElevationRangeM, ActualRangeM, ZScale, ActorZ));
+    Log(FString::Printf(TEXT("  ElevationRangeM: %.2fm  ZScale: %.4f  ActorXY: (%.0f, %.0f)  ActorZ: %.0fcm"),
+        ActualRangeM, ZScale, ActorX, ActorY, ActorZ));
 
     // Keep a copy for direct HeightmapTexture write (see below).
     TArray<uint16> HeightDataCopy = HeightData;
@@ -840,6 +848,16 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
             Log(TEXT("  ✔ HeightmapTexture written directly — terrain should be visible"));
         }
     }
+
+    // Cache heightmap data for direct Z lookup during building/road placement.
+    // (Landscape physics collision is cooked asynchronously — line traces right
+    //  after spawn would miss the terrain.  Reading the array directly is instant.)
+    CachedHeightData  = HeightDataCopy;
+    CachedHMapWidth   = HMapWidth;
+    CachedZScale      = ZScale;
+    CachedXYScaleCm   = S->XYScaleCm;
+    CachedOriginX     = ActorX;
+    CachedOriginY     = ActorY;
 
     ULandscapeInfo* LandscapeInfo = Landscape->GetLandscapeInfo();
     if (LandscapeInfo)
@@ -945,21 +963,8 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
                  Y < LandscapeBounds.Min.Y || Y > LandscapeBounds.Max.Y))
                 continue;
 
-            float Z = LandscapeBounds.IsValid ? LandscapeBounds.Min.Z : 0.f;
-            // Trace only against Landscape — skip buildings
-            TArray<FHitResult> Hits;
-            if (World->LineTraceMultiByChannel(Hits,
-                    FVector(X, Y, 1000000.f), FVector(X, Y, -1000000.f), ECC_WorldStatic))
-            {
-                for (const FHitResult& Hit : Hits)
-                {
-                    if (Hit.GetActor() && Hit.GetActor()->IsA<ALandscapeProxy>())
-                    {
-                        Z = Hit.Location.Z + 3.f;
-                        break;
-                    }
-                }
-            }
+            // Read terrain height directly from cached heightmap — collision not ready yet.
+            const float Z = GetTerrainZAtWorldXY(X, Y) + 3.f;
             Pts.Add(FVector(X, Y, Z));
         }
         if (Pts.Num() < 2) { Skipped++; continue; }
@@ -1462,15 +1467,10 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
             }
         }
 
-        // 2. Z snap: line trace down to find actual Landscape surface height
-        float GroundZ = ZOffsetCm;
-        {
-            const FVector TraceStart(Building.CentroidUE5.X, Building.CentroidUE5.Y,  1000000.0f);
-            const FVector TraceEnd  (Building.CentroidUE5.X, Building.CentroidUE5.Y, -1000000.0f);
-            FHitResult HitResult;
-            if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic))
-                GroundZ = HitResult.Location.Z;
-        }
+        // 2. Z snap: read terrain height directly from cached heightmap data.
+        // (Landscape collision is cooked async after spawn, so line traces at this
+        //  point would miss the terrain and return Z=0.)
+        const float GroundZ = GetTerrainZAtWorldXY(Building.CentroidUE5.X, Building.CentroidUE5.Y) + ZOffsetCm;
 
         AStaticMeshActor* Actor = SpawnBuildingActor(Building, Pool, GroundZ);
         if (Actor)
@@ -1624,6 +1624,21 @@ bool ULevelToolSubsystem::ValidateSettings(TArray<FString>& OutErrors) const
         OutErrors.Add(TEXT("Output Directory is not set"));
 
     return OutErrors.IsEmpty();
+}
+
+float ULevelToolSubsystem::GetTerrainZAtWorldXY(float WorldX, float WorldY) const
+{
+    // Landscape pixel (0,0) maps to world (0,0). Actor placed at (0,0,ActorZ).
+    // WorldZ = ZScale * H / 128.0  (where ActorZ = 32768*ZScale/128 folds in)
+    if (CachedHeightData.IsEmpty() || CachedHMapWidth <= 0 || CachedXYScaleCm <= 0.f)
+        return 0.f;
+
+    // Landscape origin (actor position) = top-left corner of the heightmap.
+    // Subtract it to get pixel-local coordinates.
+    const int32 PixX = FMath::Clamp(FMath::RoundToInt32((WorldX - CachedOriginX) / CachedXYScaleCm), 0, CachedHMapWidth - 1);
+    const int32 PixY = FMath::Clamp(FMath::RoundToInt32((WorldY - CachedOriginY) / CachedXYScaleCm), 0, CachedHMapWidth - 1);
+    const uint16 H   = CachedHeightData[PixY * CachedHMapWidth + PixX];
+    return CachedZScale * static_cast<float>(H) / 128.0f;
 }
 
 void ULevelToolSubsystem::Log(const FString& Msg)

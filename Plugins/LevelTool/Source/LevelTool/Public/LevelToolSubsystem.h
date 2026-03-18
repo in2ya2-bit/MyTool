@@ -154,6 +154,17 @@ private:
     // Async task handle
     TFuture<void>       AsyncTask;
 
+    // ── Cached heightmap for Z lookup (avoids physics line trace timing issue) ─
+    TArray<uint16> CachedHeightData;
+    int32          CachedHMapWidth  = 0;
+    float          CachedZScale     = 0.f;
+    float          CachedXYScaleCm  = 0.f;
+    float          CachedOriginX    = 0.f;  // landscape actor world X (= -HalfSizeCm)
+    float          CachedOriginY    = 0.f;  // landscape actor world Y
+
+    // Returns world-space Z (cm) at given world XY by reading cached heightmap data
+    float GetTerrainZAtWorldXY(float WorldX, float WorldY) const;
+
     void Log(const FString& Msg);
     void SetProgress(const FString& Stage, float Pct);
     void FinishJob(bool bSuccess);
