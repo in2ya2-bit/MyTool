@@ -87,6 +87,7 @@ void ULevelToolSubsystem::RunFullPipeline(
     }
 
     bJobRunning = true;
+    const uint32 Gen = ++JobGeneration;
     LogLines.Empty();
     LastResult = FLevelToolJobResult();
 
@@ -96,7 +97,7 @@ void ULevelToolSubsystem::RunFullPipeline(
     TWeakObjectPtr<ULevelToolSubsystem> WeakThis(this);
     TWeakObjectPtr<ULevelToolBuildingPool> WeakPool(Pool);
 
-    AsyncTask = Async(EAsyncExecution::Thread, [WeakThis, Preset, Lat, Lon, RadiusKm, WeakPool, bSpawnRoads]()
+    AsyncTask = Async(EAsyncExecution::Thread, [WeakThis, Preset, Lat, Lon, RadiusKm, WeakPool, bSpawnRoads, Gen]()
     {
         ULevelToolSubsystem* Self = WeakThis.Get();
         if (!Self) return;
@@ -114,14 +115,13 @@ void ULevelToolSubsystem::RunFullPipeline(
         {
             Result.bSuccess     = false;
             Result.ErrorMessage = FString::Printf(TEXT("Python error:\n%s"), *Stderr);
-            Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, Result]()
+            Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, Result, Gen]()
             {
-                if (ULevelToolSubsystem* S = WeakThis.Get())
-                {
-                    S->LastResult = Result;
-                    S->Log(TEXT("✖ Python pipeline failed: ") + Result.ErrorMessage);
-                    S->FinishJob(false);
-                }
+                ULevelToolSubsystem* S = WeakThis.Get();
+                if (!S || S->JobGeneration != Gen) return;
+                S->LastResult = Result;
+                S->Log(TEXT("✖ Python pipeline failed: ") + Result.ErrorMessage);
+                S->FinishJob(false);
             });
             return;
         }
@@ -154,10 +154,10 @@ void ULevelToolSubsystem::RunFullPipeline(
         }
 
         // ── Step 2: Import Landscape (game thread) ───────────────────────
-        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, WeakPool, Result, bSpawnRoads]() mutable
+        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, WeakPool, Result, bSpawnRoads, Gen]() mutable
         {
             ULevelToolSubsystem* Self = WeakThis.Get();
-            if (!Self) return;
+            if (!Self || Self->JobGeneration != Gen) return;
 
             Self->SetProgress(TEXT("Importing landscape..."), 0.50f);
 
@@ -209,7 +209,7 @@ void ULevelToolSubsystem::RunFullPipeline(
                 Self->SpawnRoadActors(Result.RoadsJsonPath, LandscapeBounds);
             }
 
-Self->LastResult = Result;
+            Self->LastResult = Result;
             Self->SetProgress(TEXT("Done"), 1.0f);
             Self->FinishJob(true);
         });
@@ -233,12 +233,14 @@ void ULevelToolSubsystem::RunBuildingsOnly(
     }
 
     bJobRunning = true;
+    const uint32 Gen = ++JobGeneration;
     LogLines.Empty();
+    LastResult = FLevelToolJobResult();
 
     TWeakObjectPtr<ULevelToolSubsystem> WeakThis(this);
     TWeakObjectPtr<ULevelToolBuildingPool> WeakPool(Pool);
 
-    AsyncTask = Async(EAsyncExecution::Thread, [WeakThis, Preset, Lat, Lon, RadiusKm, WeakPool, bSpawnRoads]()
+    AsyncTask = Async(EAsyncExecution::Thread, [WeakThis, Preset, Lat, Lon, RadiusKm, WeakPool, bSpawnRoads, Gen]()
     {
         ULevelToolSubsystem* Self = WeakThis.Get();
         if (!Self) return;
@@ -254,13 +256,12 @@ void ULevelToolSubsystem::RunBuildingsOnly(
         {
             Result.bSuccess     = false;
             Result.ErrorMessage = Stderr;
-            Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, Result]() mutable
+            Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, Result, Gen]() mutable
             {
-                if (ULevelToolSubsystem* S = WeakThis.Get())
-                {
-                    S->LastResult = Result;
-                    S->FinishJob(false);
-                }
+                ULevelToolSubsystem* S = WeakThis.Get();
+                if (!S || S->JobGeneration != Gen) return;
+                S->LastResult = Result;
+                S->FinishJob(false);
             });
             return;
         }
@@ -285,10 +286,10 @@ void ULevelToolSubsystem::RunBuildingsOnly(
             }
         }
 
-        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, WeakPool, Result, bSpawnRoads]() mutable
+        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, WeakPool, Result, bSpawnRoads, Gen]() mutable
         {
             ULevelToolSubsystem* Self = WeakThis.Get();
-            if (!Self) return;
+            if (!Self || Self->JobGeneration != Gen) return;
 
             if (!Result.BuildingsJsonPath.IsEmpty() && WeakPool.IsValid())
             {
@@ -325,8 +326,9 @@ void ULevelToolSubsystem::CancelJob()
 {
     if (bJobRunning)
     {
-        Log(TEXT("⚠ Job cancelled"));
+        ++JobGeneration;
         bJobRunning = false;
+        Log(TEXT("⚠ Job cancelled — pending callbacks invalidated"));
         OnComplete.Broadcast(false);
     }
 }
@@ -460,7 +462,7 @@ FString ULevelToolSubsystem::BuildMainPyArgs(
 
     Args += FString::Printf(TEXT(" --lat %.6f --lon %.6f --radius %.4f"), Lat, Lon, EffectiveRadius);
     if (!Preset.IsEmpty())
-        Args += FString::Printf(TEXT(" --name %s"), *Preset);
+        Args += FString::Printf(TEXT(" --name \"%s\""), *Preset);
 
     // Elevation source
     if (Command != TEXT("buildings"))
@@ -913,12 +915,12 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
         TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 
     // Road properties per type
-    struct FRoadProps { float HalfWidthCm; FLinearColor Color; };
+    struct FRoadProps { float HalfWidthCm; FLinearColor Color; float ZPriorityCm; };
     auto GetProps = [](const FString& Type) -> FRoadProps
     {
-        if (Type == TEXT("major")) return { 600.f, FLinearColor(0.08f, 0.08f, 0.08f) }; // 12m, dark asphalt
-        if (Type == TEXT("path"))  return { 100.f, FLinearColor(0.55f, 0.50f, 0.38f) }; //  2m, dirt/sand
-        return                            { 300.f, FLinearColor(0.18f, 0.18f, 0.18f) }; //  6m, asphalt
+        if (Type == TEXT("major")) return { 600.f, FLinearColor(0.08f, 0.08f, 0.08f), 6.f };
+        if (Type == TEXT("path"))  return { 100.f, FLinearColor(0.55f, 0.50f, 0.38f), 0.f };
+        return                            { 300.f, FLinearColor(0.18f, 0.18f, 0.18f), 3.f };
     };
 
     // Geometry accumulator per road type — all roads merged into 3 ProceduralMesh actors
@@ -946,6 +948,7 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
         if (!Obj) continue;
 
         FString RoadType = Obj->GetStringField(TEXT("type"));
+        float RoadWidthM = (float)Obj->GetNumberField(TEXT("width_m"));
         const TArray<TSharedPtr<FJsonValue>>& PtsJson = Obj->GetArrayField(TEXT("points_ue5"));
         if (PtsJson.Num() < 2) { Skipped++; continue; }
 
@@ -963,35 +966,93 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
                  Y < LandscapeBounds.Min.Y || Y > LandscapeBounds.Max.Y))
                 continue;
 
-            // Read terrain height directly from cached heightmap — collision not ready yet.
             const float Z = GetTerrainZAtWorldXY(X, Y) + 3.f;
             Pts.Add(FVector(X, Y, Z));
         }
         if (Pts.Num() < 2) { Skipped++; continue; }
 
-        // Ensure type exists in map (fallback to minor)
+        // R-A: Subdivide long segments — insert vertex every 5m for terrain conformance
+        {
+            constexpr float MaxSegLenCm = 500.f;
+            TArray<FVector> Sub;
+            Sub.Reserve(Pts.Num() * 4);
+            Sub.Add(Pts[0]);
+            for (int32 j = 1; j < Pts.Num(); j++)
+            {
+                float Dist2D = FVector::Dist2D(Pts[j-1], Pts[j]);
+                int32 NumSubs = FMath::Max(1, FMath::CeilToInt32(Dist2D / MaxSegLenCm));
+                for (int32 s = 1; s <= NumSubs; s++)
+                {
+                    float A  = static_cast<float>(s) / static_cast<float>(NumSubs);
+                    float IX = FMath::Lerp(Pts[j-1].X, Pts[j].X, A);
+                    float IY = FMath::Lerp(Pts[j-1].Y, Pts[j].Y, A);
+                    float IZ = GetTerrainZAtWorldXY(IX, IY) + 3.f;
+                    Sub.Add(FVector(IX, IY, IZ));
+                }
+            }
+            Pts = MoveTemp(Sub);
+        }
+
+        // Light Z smoothing on the now-dense polyline (radius 1 = 3-point average)
+        {
+            TArray<float> SmoothedZ;
+            SmoothedZ.SetNumUninitialized(Pts.Num());
+            for (int32 j = 0; j < Pts.Num(); j++)
+            {
+                float Sum   = 0.f;
+                int32 Count = 0;
+                for (int32 k = FMath::Max(0, j - 1);
+                     k <= FMath::Min(Pts.Num() - 1, j + 1); k++)
+                {
+                    Sum += Pts[k].Z;
+                    Count++;
+                }
+                SmoothedZ[j] = Sum / Count;
+            }
+            for (int32 j = 0; j < Pts.Num(); j++)
+            {
+                Pts[j].Z = SmoothedZ[j];
+            }
+        }
+
         if (!Geoms.Contains(RoadType)) RoadType = TEXT("minor");
         FRoadGeom&  G     = Geoms[RoadType];
         FRoadProps  Props = GetProps(RoadType);
 
-        // Build flat quad geometry per segment
+        // Override half-width from OSM width_m if present
+        if (RoadWidthM > 0.f)
+        {
+            Props.HalfWidthCm = RoadWidthM * 50.f;
+        }
+
+        // R-B: Build terrain-conforming quad geometry per segment
+        const float ZOff = 3.f + Props.ZPriorityCm;
         for (int32 i = 0; i < Pts.Num() - 1; i++)
         {
             const FVector& P0  = Pts[i];
             const FVector& P1  = Pts[i + 1];
             FVector Dir   = (P1 - P0).GetSafeNormal2D();
-            FVector Right = FVector(-Dir.Y, Dir.X, 0.f);   // 2D perpendicular
+            FVector Right = FVector(-Dir.Y, Dir.X, 0.f);
 
             FVector V0 = P0 - Right * Props.HalfWidthCm;
             FVector V1 = P0 + Right * Props.HalfWidthCm;
             FVector V2 = P1 + Right * Props.HalfWidthCm;
             FVector V3 = P1 - Right * Props.HalfWidthCm;
 
-            float SegM = FVector::Dist(P0, P1) / 100.f;   // cm → m for UV tiling
+            // Snap each edge vertex Z to terrain independently (cross-slope conformance)
+            V0.Z = GetTerrainZAtWorldXY(V0.X, V0.Y) + ZOff;
+            V1.Z = GetTerrainZAtWorldXY(V1.X, V1.Y) + ZOff;
+            V2.Z = GetTerrainZAtWorldXY(V2.X, V2.Y) + ZOff;
+            V3.Z = GetTerrainZAtWorldXY(V3.X, V3.Y) + ZOff;
+
+            // Compute face normal from actual geometry instead of flat UpVector
+            FVector FaceN = FVector::CrossProduct(V2 - V0, V1 - V0).GetSafeNormal();
+            if (FaceN.Z < 0.f) FaceN = -FaceN;
+
+            float SegM = FVector::Dist(P0, P1) / 100.f;
             int32 Base = G.Vertices.Num();
             G.Vertices.Append({ V0, V1, V2, V3 });
-            G.Normals.Append({ FVector::UpVector, FVector::UpVector,
-                               FVector::UpVector, FVector::UpVector });
+            G.Normals.Append({ FaceN, FaceN, FaceN, FaceN });
             G.UVs.Append({
                 { G.UOffset,        0.f },
                 { G.UOffset,        1.f },
@@ -1002,6 +1063,141 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
             // Two triangles: (0,1,2) and (0,2,3)
             G.Triangles.Append({ Base, Base+1, Base+2, Base, Base+2, Base+3 });
             TotalSegs++;
+        }
+    }
+
+    // R-C: Flatten landscape heightmap under road footprints
+    if (!CachedHeightData.IsEmpty() && CachedZScale > 0.f)
+    {
+        TSet<int32> ModifiedPixels;
+
+        // Safety: never flatten below 80% of the median height to avoid terrain holes
+        const int32 HMapSize = CachedHeightData.Num();
+        uint16 MinAllowedH = 0;
+        if (HMapSize > 0)
+        {
+            TArray<uint16> SortedSample;
+            const int32 SampleStep = FMath::Max(1, HMapSize / 2000);
+            SortedSample.Reserve(HMapSize / SampleStep + 1);
+            for (int32 si = 0; si < HMapSize; si += SampleStep)
+                SortedSample.Add(CachedHeightData[si]);
+            SortedSample.Sort();
+            uint16 MedianH = SortedSample[SortedSample.Num() / 2];
+            MinAllowedH = static_cast<uint16>(MedianH * 0.8f);
+        }
+
+        for (auto& KV : Geoms)
+        {
+            FRoadGeom& G = KV.Value;
+            for (int32 i = 0; i + 3 < G.Vertices.Num(); i += 4)
+            {
+                const FVector& V0 = G.Vertices[i];
+                const FVector& V1 = G.Vertices[i+1];
+                const FVector& V2 = G.Vertices[i+2];
+                const FVector& V3 = G.Vertices[i+3];
+
+                float RoadZ = (V0.Z + V1.Z + V2.Z + V3.Z) * 0.25f - 1.f;
+                uint16 RawTargetH = static_cast<uint16>(FMath::Clamp(
+                    FMath::RoundToInt32(RoadZ * 128.f / CachedZScale), 0, 65535));
+                uint16 TargetH = FMath::Max(RawTargetH, MinAllowedH);
+
+                float MinWX = FMath::Min(FMath::Min(V0.X, V1.X), FMath::Min(V2.X, V3.X));
+                float MaxWX = FMath::Max(FMath::Max(V0.X, V1.X), FMath::Max(V2.X, V3.X));
+                float MinWY = FMath::Min(FMath::Min(V0.Y, V1.Y), FMath::Min(V2.Y, V3.Y));
+                float MaxWY = FMath::Max(FMath::Max(V0.Y, V1.Y), FMath::Max(V2.Y, V3.Y));
+
+                int32 PxMinX = FMath::Clamp(FMath::FloorToInt32((MinWX - CachedOriginX) / CachedXYScaleCm), 0, CachedHMapWidth-1);
+                int32 PxMaxX = FMath::Clamp(FMath::CeilToInt32 ((MaxWX - CachedOriginX) / CachedXYScaleCm), 0, CachedHMapWidth-1);
+                int32 PxMinY = FMath::Clamp(FMath::FloorToInt32((MinWY - CachedOriginY) / CachedXYScaleCm), 0, CachedHMapWidth-1);
+                int32 PxMaxY = FMath::Clamp(FMath::CeilToInt32 ((MaxWY - CachedOriginY) / CachedXYScaleCm), 0, CachedHMapWidth-1);
+
+                for (int32 py = PxMinY; py <= PxMaxY; py++)
+                {
+                    for (int32 px = PxMinX; px <= PxMaxX; px++)
+                    {
+                        int32 Idx = py * CachedHMapWidth + px;
+                        if (Idx < 0 || Idx >= HMapSize) continue;
+                        uint16& H = CachedHeightData[Idx];
+                        if (H > TargetH)
+                        {
+                            H = TargetH;
+                            ModifiedPixels.Add(Idx);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (ModifiedPixels.Num() > 0)
+        {
+            ALandscape* Landscape = nullptr;
+            for (TActorIterator<ALandscape> It(World); It; ++It)
+            {
+                Landscape = *It;
+                break;
+            }
+            if (Landscape)
+            {
+                TArray<ULandscapeComponent*> LandComps;
+                Landscape->GetComponents<ULandscapeComponent>(LandComps);
+                for (ULandscapeComponent* Comp : LandComps)
+                {
+                    FIntPoint Base = Comp->GetSectionBase();
+                    int32 CompVerts = Comp->ComponentSizeQuads + 1;
+                    UTexture2D* HTex = Comp->GetHeightmap();
+                    if (!HTex || !HTex->GetPlatformData() ||
+                        HTex->GetPlatformData()->Mips.Num() == 0) continue;
+
+                    FTexture2DMipMap& Mip = HTex->GetPlatformData()->Mips[0];
+                    int32 TexW = Mip.SizeX;
+                    int32 TexH = Mip.SizeY;
+
+                    const int32 OffX = FMath::RoundToInt32(
+                        static_cast<float>(Comp->HeightmapScaleBias.Z) * TexW);
+                    const int32 OffY = FMath::RoundToInt32(
+                        static_cast<float>(Comp->HeightmapScaleBias.W) * TexH);
+
+                    bool bCompTouched = false;
+                    for (int32 LY = 0; LY < CompVerts && !bCompTouched; LY++)
+                    {
+                        for (int32 LX = 0; LX < CompVerts && !bCompTouched; LX++)
+                        {
+                            int32 DataIdx = (Base.Y + LY) * CachedHMapWidth + (Base.X + LX);
+                            if (ModifiedPixels.Contains(DataIdx))
+                                bCompTouched = true;
+                        }
+                    }
+                    if (!bCompTouched) continue;
+
+                    FColor* Pixels = static_cast<FColor*>(Mip.BulkData.Lock(LOCK_READ_WRITE));
+                    if (!Pixels) { Mip.BulkData.Unlock(); continue; }
+
+                    for (int32 LY = 0; LY < CompVerts; LY++)
+                    {
+                        for (int32 LX = 0; LX < CompVerts; LX++)
+                        {
+                            int32 DataIdx = (Base.Y + LY) * CachedHMapWidth + (Base.X + LX);
+                            if (DataIdx < 0 || DataIdx >= HMapSize) continue;
+                            if (!ModifiedPixels.Contains(DataIdx)) continue;
+
+                            const int32 PixX = OffX + LX;
+                            const int32 PixY = OffY + LY;
+                            if (PixX < 0 || PixX >= TexW || PixY < 0 || PixY >= TexH) continue;
+
+                            uint16 HVal = CachedHeightData[DataIdx];
+                            FColor& P = Pixels[PixY * TexW + PixX];
+                            P.R = static_cast<uint8>(HVal >> 8);
+                            P.G = static_cast<uint8>(HVal & 0xFF);
+                        }
+                    }
+
+                    Mip.BulkData.Unlock();
+                    HTex->UpdateResource();
+                    Comp->MarkRenderStateDirty();
+                }
+                Log(FString::Printf(TEXT("  ✔ Landscape flattened: %d heightmap pixels modified"),
+                    ModifiedPixels.Num()));
+            }
         }
     }
 
@@ -1048,183 +1244,6 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
     Log(FString::Printf(TEXT("  ✔ Roads: %d segments → %d actors  (%d ways skipped)"),
         TotalSegs, SpawnedActors, Skipped));
 }
-
-// ─── WATER REMOVED ────────────────────────────────────────────────────────────
-// SpawnWaterActors removed. Water plugin dependency eliminated.
-// ─────────────────────────────────────────────────────────────────────────────
-
-#if 0
-void ULevelToolSubsystem::SpawnWaterActors_REMOVED(const FString& JsonPath, const FBox& LandscapeBounds,
-                                            float OceanWorldZCm)
-{
-    if (!FPaths::FileExists(JsonPath))
-    {
-        Log(FString::Printf(TEXT("  ⚠ Water JSON not found: %s"), *JsonPath));
-        return;
-    }
-
-    FString JsonStr;
-    if (!FFileHelper::LoadFileToString(JsonStr, *JsonPath)) return;
-
-    TSharedPtr<FJsonObject> Root;
-    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonStr);
-    if (!FJsonSerializer::Deserialize(Reader, Root) || !Root) return;
-
-    UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World) return;
-
-    FScopedTransaction Transaction(NSLOCTEXT("LevelTool", "SpawnWater", "LevelTool: Spawn Water"));
-
-    // ── WaterZoneActor check ──────────────────────────────────────────────────
-    // AWaterZoneActor (UE5.7) renders the water mesh but uses MinimalAPI, so it
-    // cannot be spawned from plugin code. Warn the user if none is in the level.
-    {
-        UClass* WaterZoneClass = FindObject<UClass>(nullptr, TEXT("/Script/Water.WaterZoneActor"));
-        bool bHasWaterZone = false;
-        if (WaterZoneClass)
-        {
-            for (TActorIterator<AActor> It(World, WaterZoneClass); It; ++It)
-            {
-                bHasWaterZone = true;
-                break;
-            }
-        }
-        if (!bHasWaterZone)
-        {
-            Log(TEXT("  ⚠ No WaterZoneActor found — add one manually to see water:"));
-            Log(TEXT("    Place Actors → Water → Water Zone, position at landscape center"));
-        }
-        else
-        {
-            Log(TEXT("  ✔ WaterZoneActor found"));
-        }
-    }
-
-    int32 LakeCount  = 0;
-    int32 RiverCount = 0;
-
-    // ── Ocean ────────────────────────────────────────────────────────────────
-    bool bHasOcean = Root->GetBoolField(TEXT("has_ocean"));
-    if (bHasOcean)
-    {
-        FVector OceanPos(
-            LandscapeBounds.IsValid ? LandscapeBounds.GetCenter().X : 0.f,
-            LandscapeBounds.IsValid ? LandscapeBounds.GetCenter().Y : 0.f,
-            OceanWorldZCm);
-
-        Log(FString::Printf(TEXT("  Ocean Z: %.0fcm  (sea surface above carved floor)"), OceanWorldZCm));
-
-        FActorSpawnParameters Params;
-        Params.bNoFail = true;
-        AWaterBodyOcean* Ocean = World->SpawnActor<AWaterBodyOcean>(
-            AWaterBodyOcean::StaticClass(), OceanPos, FRotator::ZeroRotator, Params);
-        if (Ocean)
-        {
-            Ocean->SetActorLabel(TEXT("WaterBody_Ocean"));
-            Ocean->Tags.AddUnique(TEXT("LevelToolGenerated"));
-            Ocean->SetFolderPath(TEXT("LevelTool/Water"));
-            Ocean->PostEditChange();
-            Log(FString::Printf(TEXT("  ✔ WaterBodyOcean spawned at Z=%.0fcm"), OceanWorldZCm));
-        }
-        else
-        {
-            Log(TEXT("  ⚠ WaterBodyOcean spawn failed — check Water Plugin is enabled"));
-        }
-    }
-
-    // ── Lakes ────────────────────────────────────────────────────────────────
-    const TArray<TSharedPtr<FJsonValue>>* LakesArr;
-    if (Root->TryGetArrayField(TEXT("lakes"), LakesArr))
-    {
-        for (const TSharedPtr<FJsonValue>& LakeVal : *LakesArr)
-        {
-            const TSharedPtr<FJsonObject>* LakeObj;
-            if (!LakeVal->TryGetObject(LakeObj)) continue;
-
-            const TArray<TSharedPtr<FJsonValue>>* PtsArr;
-            if (!(*LakeObj)->TryGetArrayField(TEXT("points_ue5"), PtsArr)) continue;
-            if (PtsArr->Num() < 3) continue;
-
-            FActorSpawnParameters Params;
-            Params.bNoFail = true;
-            AWaterBodyLake* LakeActor = World->SpawnActor<AWaterBodyLake>(
-                AWaterBodyLake::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Params);
-            if (!LakeActor) continue;
-
-            // Set spline points via USplineComponent (base of UWaterSplineComponent)
-            USplineComponent* Spline = LakeActor->FindComponentByClass<USplineComponent>();
-            if (Spline)
-            {
-                Spline->ClearSplinePoints(false);
-                for (const TSharedPtr<FJsonValue>& PtVal : *PtsArr)
-                {
-                    const TArray<TSharedPtr<FJsonValue>>* Coords;
-                    if (!PtVal->TryGetArray(Coords) || Coords->Num() < 2) continue;
-                    float X = (float)(*Coords)[0]->AsNumber();
-                    float Y = (float)(*Coords)[1]->AsNumber();
-                    Spline->AddSplinePoint(FVector(X, Y, 0.f),
-                        ESplineCoordinateSpace::World, false);
-                }
-                Spline->SetClosedLoop(true, false);
-                Spline->UpdateSpline();
-            }
-
-            LakeActor->SetActorLabel(FString::Printf(TEXT("WaterBody_Lake_%d"), LakeCount));
-            LakeActor->Tags.AddUnique(TEXT("LevelToolGenerated"));
-            LakeActor->SetFolderPath(TEXT("LevelTool/Water"));
-            LakeActor->PostEditChange();
-            LakeCount++;
-        }
-    }
-
-    // ── Rivers ───────────────────────────────────────────────────────────────
-    const TArray<TSharedPtr<FJsonValue>>* RiversArr;
-    if (Root->TryGetArrayField(TEXT("rivers"), RiversArr))
-    {
-        for (const TSharedPtr<FJsonValue>& RiverVal : *RiversArr)
-        {
-            const TSharedPtr<FJsonObject>* RiverObj;
-            if (!RiverVal->TryGetObject(RiverObj)) continue;
-
-            const TArray<TSharedPtr<FJsonValue>>* PtsArr;
-            if (!(*RiverObj)->TryGetArrayField(TEXT("points_ue5"), PtsArr)) continue;
-            if (PtsArr->Num() < 2) continue;
-
-            FActorSpawnParameters Params;
-            Params.bNoFail = true;
-            AWaterBodyRiver* RiverActor = World->SpawnActor<AWaterBodyRiver>(
-                AWaterBodyRiver::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Params);
-            if (!RiverActor) continue;
-
-            USplineComponent* Spline = RiverActor->FindComponentByClass<USplineComponent>();
-            if (Spline)
-            {
-                Spline->ClearSplinePoints(false);
-                for (const TSharedPtr<FJsonValue>& PtVal : *PtsArr)
-                {
-                    const TArray<TSharedPtr<FJsonValue>>* Coords;
-                    if (!PtVal->TryGetArray(Coords) || Coords->Num() < 2) continue;
-                    float X = (float)(*Coords)[0]->AsNumber();
-                    float Y = (float)(*Coords)[1]->AsNumber();
-                    Spline->AddSplinePoint(FVector(X, Y, 0.f),
-                        ESplineCoordinateSpace::World, false);
-                }
-                Spline->SetClosedLoop(false, false);
-                Spline->UpdateSpline();
-            }
-
-            RiverActor->SetActorLabel(FString::Printf(TEXT("WaterBody_River_%d"), RiverCount));
-            RiverActor->Tags.AddUnique(TEXT("LevelToolGenerated"));
-            RiverActor->SetFolderPath(TEXT("LevelTool/Water"));
-            RiverActor->PostEditChange();
-            RiverCount++;
-        }
-    }
-
-    Log(FString::Printf(TEXT("  ✔ Water: ocean=%s  lakes=%d  rivers=%d"),
-        bHasOcean ? TEXT("yes") : TEXT("no"), LakeCount, RiverCount));
-}
-#endif  // water removed
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Splat Map Import
@@ -1390,10 +1409,11 @@ bool ULevelToolSubsystem::LoadBuildingsJson(
         if (!Obj) continue;
 
         FBuildingEntry Entry;
-        Entry.OsmId    = (int64)Obj->GetNumberField(TEXT("id"));
-        Entry.TypeKey  = Obj->GetStringField(TEXT("type"));
-        Entry.HeightM  = (float)Obj->GetNumberField(TEXT("height_m"));
-        Entry.AreaM2   = (float)Obj->GetNumberField(TEXT("area_m2"));
+        Entry.OsmId       = (int64)Obj->GetNumberField(TEXT("id"));
+        Entry.TypeKey     = Obj->GetStringField(TEXT("type"));
+        Entry.HeightM     = (float)Obj->GetNumberField(TEXT("height_m"));
+        Entry.MinHeightM  = (float)Obj->GetNumberField(TEXT("min_height_m"));
+        Entry.AreaM2      = (float)Obj->GetNumberField(TEXT("area_m2"));
 
         const TArray<TSharedPtr<FJsonValue>>& Centroid =
             Obj->GetArrayField(TEXT("centroid_ue5"));
@@ -1401,6 +1421,20 @@ bool ULevelToolSubsystem::LoadBuildingsJson(
         {
             Entry.CentroidUE5.X = (float)Centroid[0]->AsNumber();
             Entry.CentroidUE5.Y = (float)Centroid[1]->AsNumber();
+        }
+
+        const TArray<TSharedPtr<FJsonValue>>* FootprintArr;
+        if (Obj->TryGetArrayField(TEXT("footprint_ue5"), FootprintArr))
+        {
+            for (const TSharedPtr<FJsonValue>& PtVal : *FootprintArr)
+            {
+                const TArray<TSharedPtr<FJsonValue>>& Pt = PtVal->AsArray();
+                if (Pt.Num() >= 2)
+                {
+                    Entry.FootprintUE5.Add(FVector2D(
+                        (float)Pt[0]->AsNumber(), (float)Pt[1]->AsNumber()));
+                }
+            }
         }
 
         OutBuildings.Add(Entry);
@@ -1443,18 +1477,20 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
     FScopedTransaction Transaction(
         NSLOCTEXT("LevelTool", "PlaceBuildings", "LevelTool: Place Buildings"));
 
-    // Group log: counts per type
     TMap<FString, int32> TypeCounts;
-    int32 Placed   = 0;
-    int32 Skipped  = 0;
+    int32 Placed      = 0;
+    int32 Skipped     = 0;
     int32 OutOfBounds = 0;
+    int32 Overlapped  = 0;
 
-    // Create a folder in the World Outliner
     const FString FolderPath = TEXT("LevelTool/Buildings");
+
+    // 2D AABB list for overlap prevention
+    TArray<FBox2D> PlacedBoxes;
+    PlacedBoxes.Reserve(Buildings.Num());
 
     for (const FBuildingEntry& Building : Buildings)
     {
-        // 1. Skip buildings outside Landscape XY bounds
         if (bHaveLandscape)
         {
             const float BX = Building.CentroidUE5.X;
@@ -1467,9 +1503,47 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
             }
         }
 
-        // 2. Z snap: read terrain height directly from cached heightmap data.
-        // (Landscape collision is cooked async after spawn, so line traces at this
-        //  point would miss the terrain and return Z=0.)
+        // Compute 2D AABB from footprint (or estimate from area)
+        FBox2D NewBox;
+        if (Building.FootprintUE5.Num() >= 3)
+        {
+            NewBox = FBox2D(Building.FootprintUE5[0], Building.FootprintUE5[0]);
+            for (const FVector2D& P : Building.FootprintUE5)
+            {
+                NewBox.Min.X = FMath::Min(NewBox.Min.X, P.X);
+                NewBox.Min.Y = FMath::Min(NewBox.Min.Y, P.Y);
+                NewBox.Max.X = FMath::Max(NewBox.Max.X, P.X);
+                NewBox.Max.Y = FMath::Max(NewBox.Max.Y, P.Y);
+            }
+        }
+        else
+        {
+            float HalfSide = FMath::Sqrt(FMath::Max(Building.AreaM2, 1.0f)) * 50.0f;
+            NewBox.Min = Building.CentroidUE5 - FVector2D(HalfSide, HalfSide);
+            NewBox.Max = Building.CentroidUE5 + FVector2D(HalfSide, HalfSide);
+        }
+
+        // Shrink test box slightly (90%) to allow touching but not overlapping
+        FVector2D Center = (NewBox.Min + NewBox.Max) * 0.5f;
+        FVector2D HalfExt = (NewBox.Max - NewBox.Min) * 0.45f;
+        FBox2D TestBox(Center - HalfExt, Center + HalfExt);
+
+        bool bOverlaps = false;
+        for (const FBox2D& Existing : PlacedBoxes)
+        {
+            if (TestBox.Min.X < Existing.Max.X && TestBox.Max.X > Existing.Min.X &&
+                TestBox.Min.Y < Existing.Max.Y && TestBox.Max.Y > Existing.Min.Y)
+            {
+                bOverlaps = true;
+                break;
+            }
+        }
+        if (bOverlaps)
+        {
+            Overlapped++;
+            continue;
+        }
+
         const float GroundZ = GetTerrainZAtWorldXY(Building.CentroidUE5.X, Building.CentroidUE5.Y) + ZOffsetCm;
 
         AStaticMeshActor* Actor = SpawnBuildingActor(Building, Pool, GroundZ);
@@ -1478,6 +1552,7 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
             Actor->SetFolderPath(*FolderPath);
             Placed++;
             TypeCounts.FindOrAdd(Building.TypeKey)++;
+            PlacedBoxes.Add(NewBox);
         }
         else
         {
@@ -1487,8 +1562,9 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
 
     if (OutOfBounds > 0)
         Log(FString::Printf(TEXT("  ⚠ Skipped %d buildings outside Landscape bounds"), OutOfBounds));
+    if (Overlapped > 0)
+        Log(FString::Printf(TEXT("  ⚠ Skipped %d overlapping buildings"), Overlapped));
 
-    // Summary log
     for (auto& Pair : TypeCounts)
     {
         Log(FString::Printf(TEXT("    %4d × %s"), Pair.Value, *Pair.Key));
@@ -1505,6 +1581,10 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     const FBuildingEntry& Building, ULevelToolBuildingPool* Pool, float GroundZ)
 {
     UStaticMesh* Mesh = Pool ? Pool->ResolveMesh(Building.TypeKey) : nullptr;
+    if (!Mesh)
+    {
+        Mesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+    }
     if (!Mesh) return nullptr;
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
@@ -1516,16 +1596,38 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     // Compute scale before spawning so we can offset Z correctly
     FVector Scale = ComputeBuildingScale(Building, Mesh);
 
+    // B1: Derive yaw rotation from longest footprint edge
+    float Yaw = 0.f;
+    if (Building.FootprintUE5.Num() >= 2)
+    {
+        float MaxLenSq = 0.f;
+        FVector2D BestDir(1.f, 0.f);
+        for (int32 i = 0; i < Building.FootprintUE5.Num() - 1; i++)
+        {
+            FVector2D Edge = Building.FootprintUE5[i + 1] - Building.FootprintUE5[i];
+            float LenSq = Edge.SizeSquared();
+            if (LenSq > MaxLenSq)
+            {
+                MaxLenSq = LenSq;
+                BestDir  = Edge;
+            }
+        }
+        if (MaxLenSq > 0.01f)
+        {
+            Yaw = FMath::RadiansToDegrees(FMath::Atan2(BestDir.Y, BestDir.X));
+        }
+    }
+    FRotator Rotation(0.f, Yaw, 0.f);
+
     // Place the actor so the mesh BOTTOM sits exactly on GroundZ.
-    // Formula: SpawnZ = GroundZ + (BoxExtent.Z - Origin.Z) * Scale.Z
-    //   - Pivot at center: Origin.Z≈0, BoxExtent.Z = HalfHeight  → offset = HalfHeight * Scale.Z  ✓
-    //   - Pivot at bottom: Origin.Z≈BoxExtent.Z                   → offset ≈ 0                     ✓
     FBoxSphereBounds Bounds = Mesh->GetBounds();
     float BottomOffsetCm    = (Bounds.BoxExtent.Z - Bounds.Origin.Z) * Scale.Z;
-    FVector Location(Building.CentroidUE5.X, Building.CentroidUE5.Y, GroundZ + BottomOffsetCm);
+    float MinHeightOffsetCm = Building.MinHeightM * 100.0f;
+    FVector Location(Building.CentroidUE5.X, Building.CentroidUE5.Y,
+                     GroundZ + BottomOffsetCm + MinHeightOffsetCm);
 
     AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(
-        AStaticMeshActor::StaticClass(), Location, FRotator::ZeroRotator, Params);
+        AStaticMeshActor::StaticClass(), Location, Rotation, Params);
 
     if (!Actor) return nullptr;
 
@@ -1543,26 +1645,40 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     Actor->Tags.Add(*FString::Printf(TEXT("h_%dm"), FMath::RoundToInt(Building.HeightM)));
     Actor->Tags.Add(*FString::Printf(TEXT("osm_%lld"), Building.OsmId));
 
-    // Apply materials: entry-specific → pool default → mesh default (in priority order)
+    // Apply materials: entry-specific → pool default → engine fallback
+    bool bMaterialApplied = false;
     if (Pool)
     {
         UMaterialInterface* WallMat = nullptr;
         UMaterialInterface* RoofMat = nullptr;
 
-        // 1. Entry-specific overrides
         if (const FBuildingMeshEntry* Entry = Pool->FindEntry(Building.TypeKey))
         {
             WallMat = Entry->WallMaterial.LoadSynchronous();
             RoofMat = Entry->RoofMaterial.LoadSynchronous();
         }
 
-        // 2. Fall back to pool-wide defaults
         if (!WallMat) WallMat = Pool->DefaultWallMaterial.LoadSynchronous();
         if (!RoofMat) RoofMat = Pool->DefaultRoofMaterial.LoadSynchronous();
 
-        // 3. Apply whatever we found
-        if (WallMat) Comp->SetMaterial(0, WallMat);
+        if (WallMat) { Comp->SetMaterial(0, WallMat); bMaterialApplied = true; }
         if (RoofMat) Comp->SetMaterial(1, RoofMat);
+    }
+
+    if (!bMaterialApplied)
+    {
+        UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(nullptr,
+            TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+        if (BasicMat)
+        {
+            UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BasicMat, Actor);
+            float H = static_cast<float>((Building.OsmId * 2654435761u) & 0xFFFF) / 65535.0f;
+            float R = 0.35f + H * 0.25f;
+            float G = 0.33f + H * 0.20f;
+            float B = 0.30f + H * 0.15f;
+            DynMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(R, G, B, 1.f));
+            Comp->SetMaterial(0, DynMat);
+        }
     }
 
     return Actor;
@@ -1588,16 +1704,59 @@ FVector ULevelToolSubsystem::ComputeBuildingScale(
         if (AY > 1.0f) MeshYCm      = AY;
     }
 
-    // Z: match OSM height with small random variation
-    float TargetHeightCm = Building.HeightM * 100.0f;
-    float ZScale         = (TargetHeightCm / MeshHeightCm) * FMath::RandRange(0.9f, 1.1f);
+    // Clamp extreme heights to prevent visual spikes
+    constexpr float AbsMaxHeightM = 200.0f;
+    float ClampedHeightM = FMath::Min(Building.HeightM, AbsMaxHeightM);
 
-    // XY: match footprint area — treat as a square whose side = sqrt(area)
-    float SideCm = FMath::Sqrt(FMath::Max(Building.AreaM2, 1.0f)) * 100.0f;
-    float XScale = SideCm / MeshXCm;
-    float YScale = SideCm / MeshYCm;
+    float TargetHeightCm = ClampedHeightM * 100.0f;
+    float HashFrac       = static_cast<float>((Building.OsmId * 2654435761u) & 0xFFFF) / 65535.0f;
+    float ZVariation     = 0.9f + HashFrac * 0.2f;   // range [0.9, 1.1]
+    float ZScale         = (TargetHeightCm / MeshHeightCm) * ZVariation;
 
-    return FVector(XScale, YScale, FMath::Max(ZScale, 0.1f));
+    // XY: OBB from footprint polygon for accurate per-axis scaling
+    float XScale, YScale;
+    if (Building.FootprintUE5.Num() >= 3)
+    {
+        float MaxLenSq = 0.f;
+        FVector2D MajorDir(1.f, 0.f);
+        for (int32 i = 0; i < Building.FootprintUE5.Num() - 1; i++)
+        {
+            FVector2D Edge = Building.FootprintUE5[i + 1] - Building.FootprintUE5[i];
+            float LenSq = Edge.SizeSquared();
+            if (LenSq > MaxLenSq)
+            {
+                MaxLenSq = LenSq;
+                MajorDir = Edge;
+            }
+        }
+        MajorDir.Normalize();
+        FVector2D MinorDir(-MajorDir.Y, MajorDir.X);
+
+        float MinMaj = TNumericLimits<float>::Max(), MaxMaj = TNumericLimits<float>::Lowest();
+        float MinMin = TNumericLimits<float>::Max(), MaxMin = TNumericLimits<float>::Lowest();
+        for (const FVector2D& P : Building.FootprintUE5)
+        {
+            float ProjMaj = FVector2D::DotProduct(P, MajorDir);
+            float ProjMin = FVector2D::DotProduct(P, MinorDir);
+            MinMaj = FMath::Min(MinMaj, ProjMaj);
+            MaxMaj = FMath::Max(MaxMaj, ProjMaj);
+            MinMin = FMath::Min(MinMin, ProjMin);
+            MaxMin = FMath::Max(MaxMin, ProjMin);
+        }
+
+        float ObbMajorCm = FMath::Max(MaxMaj - MinMaj, 1.f);
+        float ObbMinorCm = FMath::Max(MaxMin - MinMin, 1.f);
+        XScale = ObbMajorCm / MeshXCm;
+        YScale = ObbMinorCm / MeshYCm;
+    }
+    else
+    {
+        float SideCm = FMath::Sqrt(FMath::Max(Building.AreaM2, 1.0f)) * 100.0f;
+        XScale = SideCm / MeshXCm;
+        YScale = SideCm / MeshYCm;
+    }
+
+    return FVector(FMath::Max(XScale, 0.1f), FMath::Max(YScale, 0.1f), FMath::Max(ZScale, 0.1f));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1643,18 +1802,23 @@ float ULevelToolSubsystem::GetTerrainZAtWorldXY(float WorldX, float WorldY) cons
 
 void ULevelToolSubsystem::Log(const FString& Msg)
 {
-    LogLines.Add(Msg);
     UE_LOG(LogLevelTool, Log, TEXT("%s"), *Msg);
 
     if (IsInGameThread())
     {
+        LogLines.Add(Msg);
         OnLog.Broadcast(Msg);
     }
     else
     {
-        Async(EAsyncExecution::TaskGraphMainThread, [this, Msg]()
+        TWeakObjectPtr<ULevelToolSubsystem> WeakThis(this);
+        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, Msg]()
         {
-            OnLog.Broadcast(Msg);
+            if (ULevelToolSubsystem* Self = WeakThis.Get())
+            {
+                Self->LogLines.Add(Msg);
+                Self->OnLog.Broadcast(Msg);
+            }
         });
     }
 }
@@ -1669,9 +1833,11 @@ void ULevelToolSubsystem::SetProgress(const FString& Stage, float Pct)
     }
     else
     {
-        Async(EAsyncExecution::TaskGraphMainThread, [this, Stage, Pct]()
+        TWeakObjectPtr<ULevelToolSubsystem> WeakThis(this);
+        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, Stage, Pct]()
         {
-            OnProgress.Broadcast(Stage, Pct);
+            if (ULevelToolSubsystem* Self = WeakThis.Get())
+                Self->OnProgress.Broadcast(Stage, Pct);
         });
     }
 }
@@ -1686,9 +1852,11 @@ void ULevelToolSubsystem::FinishJob(bool bSuccess)
     }
     else
     {
-        Async(EAsyncExecution::TaskGraphMainThread, [this, bSuccess]()
+        TWeakObjectPtr<ULevelToolSubsystem> WeakThis(this);
+        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, bSuccess]()
         {
-            OnComplete.Broadcast(bSuccess);
+            if (ULevelToolSubsystem* Self = WeakThis.Get())
+                Self->OnComplete.Broadcast(bSuccess);
         });
     }
 }

@@ -78,9 +78,21 @@ def fetch_osm_buildings_raw(
 
 # ─── Parse OSM Elements ───────────────────────────────────────────────────────
 
+FLOOR_HEIGHT_BY_TYPE = {
+    "residential": 2.8, "apartments": 2.8, "house": 2.7, "detached": 2.7,
+    "semidetached_house": 2.7, "terrace": 2.7, "dormitory": 2.8,
+    "commercial": 3.5, "retail": 4.0, "office": 3.5, "hotel": 3.2,
+    "industrial": 5.0, "warehouse": 6.0, "hangar": 8.0,
+    "church": 4.5, "cathedral": 5.0, "chapel": 3.5, "mosque": 4.0,
+    "school": 3.3, "university": 3.5, "hospital": 3.5, "kindergarten": 3.0,
+    "garage": 3.0, "garages": 3.0, "parking": 3.0,
+    "farm": 3.5, "barn": 5.0, "shed": 3.0, "greenhouse": 4.0,
+}
+DEFAULT_FLOOR_HEIGHT_M = 3.0
+
+
 def parse_height(tags: dict, default_m: float = 10.0) -> float:
     """Extract height in meters from OSM tags."""
-    # Prefer explicit height tag
     if "height" in tags:
         val = tags["height"].replace(" m", "").replace("m", "").strip()
         try:
@@ -88,14 +100,36 @@ def parse_height(tags: dict, default_m: float = 10.0) -> float:
         except ValueError:
             pass
 
-    # Fallback: building:levels × 3m per floor
     if "building:levels" in tags:
         try:
-            return float(tags["building:levels"]) * 3.0
+            levels = float(tags["building:levels"])
+            btype = tags.get("building", "yes").lower()
+            floor_h = FLOOR_HEIGHT_BY_TYPE.get(btype, DEFAULT_FLOOR_HEIGHT_M)
+            return levels * floor_h
         except ValueError:
             pass
 
     return default_m
+
+
+def parse_min_height(tags: dict) -> float:
+    """Extract minimum height (base offset) from OSM tags for elevated structures."""
+    if "min_height" in tags:
+        val = tags["min_height"].replace(" m", "").replace("m", "").strip()
+        try:
+            return float(val)
+        except ValueError:
+            pass
+
+    if "building:min_level" in tags:
+        try:
+            btype = tags.get("building", "yes").lower()
+            floor_h = FLOOR_HEIGHT_BY_TYPE.get(btype, DEFAULT_FLOOR_HEIGHT_M)
+            return float(tags["building:min_level"]) * floor_h
+        except ValueError:
+            pass
+
+    return 0.0
 
 
 def classify_building(tags: dict) -> str:
@@ -197,53 +231,71 @@ def parse_buildings(
         if e["type"] == "node"
     }
 
+    # Build way_id → node_refs lookup for relation member resolution
+    way_map = {}
+    for e in elements:
+        if e["type"] == "way":
+            way_map[e["id"]] = e.get("nodes", [])
+
     buildings = []
 
-    for e in elements:
-        if e["type"] != "way":
-            continue
-        tags = e.get("tags", {})
-        if "building" not in tags:
-            continue
-
-        # Reconstruct polygon from node refs
-        node_refs = e.get("nodes", [])
-        footprint_latlon = []
-        for nid in node_refs:
-            if nid in node_map:
-                footprint_latlon.append(node_map[nid])
-
+    def _process_building(osm_id, tags, node_refs):
+        """Shared logic for way and relation building elements."""
+        footprint_latlon = [node_map[nid] for nid in node_refs if nid in node_map]
         if len(footprint_latlon) < 3:
-            continue
+            return None
 
         area = compute_footprint_area(footprint_latlon)
         if area < min_area_m2:
-            continue
+            return None
 
-        height_m     = parse_height(tags, default_height_m)
+        height_m      = parse_height(tags, default_height_m)
+        min_height_m  = parse_min_height(tags)
         building_type = classify_building(tags)
 
-        # Convert footprint to UE5 coords
         footprint_ue5 = [
             latlon_to_ue5_xy(lat, lon, origin_lat, origin_lon)
             for lat, lon in footprint_latlon
         ]
 
-        # Centroid
         cx = sum(p[0] for p in footprint_ue5) / len(footprint_ue5)
         cy = sum(p[1] for p in footprint_ue5) / len(footprint_ue5)
 
-        buildings.append({
-            "id":               e["id"],
+        return {
+            "id":               osm_id,
             "type":             building_type,
             "height_m":         round(height_m, 1),
-            "height_ue5":       round(height_m * 100.0, 1),  # cm
+            "min_height_m":     round(min_height_m, 1),
+            "height_ue5":       round(height_m * 100.0, 1),
             "area_m2":          round(area, 1),
             "footprint_latlon": footprint_latlon,
             "footprint_ue5":    footprint_ue5,
             "centroid_ue5":     (round(cx, 1), round(cy, 1)),
             "tags":             tags,
-        })
+        }
+
+    for e in elements:
+        if e["type"] == "way":
+            tags = e.get("tags", {})
+            if "building" not in tags:
+                continue
+            result = _process_building(e["id"], tags, e.get("nodes", []))
+            if result:
+                buildings.append(result)
+
+        elif e["type"] == "relation":
+            tags = e.get("tags", {})
+            if "building" not in tags:
+                continue
+            members = e.get("members", [])
+            outer_refs = [m["ref"] for m in members
+                          if m.get("role") == "outer" and m.get("type") == "way"]
+            if not outer_refs:
+                continue
+            node_refs = way_map.get(outer_refs[0], [])
+            result = _process_building(e["id"], tags, node_refs)
+            if result:
+                buildings.append(result)
 
     log.info(f"Parsed {len(buildings)} valid buildings (min area {min_area_m2}m²)")
     return buildings

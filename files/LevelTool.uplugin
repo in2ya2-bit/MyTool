@@ -1,0 +1,42 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "1.0",
+    "FriendlyName": "Level Tool",
+    "Description": "Extraction Shooter Map Generator — imports real-world terrain and buildings into UE5 via Google Maps / OSM data",
+    "Category": "Editor",
+    "CreatedBy": "LevelTool",
+    "CreatedByURL": "",
+    "DocsURL": "",
+    "MarketplaceURL": "",
+    "SupportURL": "",
+    "CanContainContent": true,
+    "IsBetaVersion": false,
+    "IsExperimentalVersion": false,
+    "Installed": false,
+    "Modules": [
+        {
+            "Name": "LevelTool",
+            "Type": "Editor",
+            "LoadingPhase": "PostEngineInit"
+        }
+    ],
+    "Plugins": [
+        {
+            "Name": "PythonScriptPlugin",
+            "Enabled": true
+        },
+        {
+            "Name": "EditorScriptingUtilities",
+            "Enabled": true
+        },
+        {
+            "Name": "Landscape",
+            "Enabled": true
+        },
+        {
+            "Name": "PCG",
+            "Enabled": true
+        }
+    ]
+}

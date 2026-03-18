@@ -112,8 +112,10 @@ def build_water_mask(
     lat_min = center_lat - half_lat;  lat_max = center_lat + half_lat
     lon_min = center_lon - half_lon;  lon_max = center_lon + half_lon
 
-    img  = Image.new("L", (grid_w, grid_h), 0)
-    draw = ImageDraw.Draw(img)
+    deep_img   = Image.new("L", (grid_w, grid_h), 0)
+    river_img  = Image.new("L", (grid_w, grid_h), 0)
+    deep_draw  = ImageDraw.Draw(deep_img)
+    river_draw = ImageDraw.Draw(river_img)
 
     has_ocean = False
     lakes:  List[dict] = []
@@ -147,12 +149,11 @@ def build_water_mask(
         landuse  = tags.get("landuse", "")
 
         if nat == "coastline":
-            # Draw coastline as thick barrier for flood-fill sea detection
             has_ocean = True
-            draw.line(pixels, fill=255, width=4)
+            deep_draw.line(pixels, fill=255, width=4)
 
         elif (nat == "water" or landuse == "reservoir") and is_closed and len(pixels) >= 3:
-            draw.polygon(pixels, fill=255)
+            deep_draw.polygon(pixels, fill=255)
             lakes.append({
                 "id":         e["id"],
                 "points_ue5": ue5pts,
@@ -168,7 +169,7 @@ def build_water_mask(
 
             m_per_px = (radius_km * 2000.0) / grid_w
             px_w     = max(2, int(width_m / max(m_per_px, 0.001)))
-            draw.line(pixels, fill=255, width=min(px_w, 20))
+            river_draw.line(pixels, fill=255, width=min(px_w, 20))
             rivers.append({
                 "id":         e["id"],
                 "waterway":   waterway,
@@ -176,25 +177,23 @@ def build_water_mask(
                 "points_ue5": ue5pts,
             })
 
-    mask = np.array(img) > 0
+    deep_mask  = np.array(deep_img)  > 0
+    river_mask = np.array(river_img) > 0
 
     # ── Flood-fill from corners to capture all connected sea pixels ───────────
-    # The coastline drawn above acts as a barrier.  Any pixel reachable from
-    # the 4 image corners without crossing the barrier = open sea.
     if has_ocean:
         from scipy.ndimage import label as _label
-        barrier = mask.copy()  # coastline pixels = True (barrier)
+        barrier = deep_mask.copy()
 
-        # Pad image so the 4 corners are all connected to a single "outside" region
         padded   = np.pad(barrier.astype(np.uint8), 1, mode="constant", constant_values=0)
-        open_sea = ~padded.astype(bool)                   # non-barrier pixels
+        open_sea = ~padded.astype(bool)
         labeled, _ = _label(open_sea)
-        outer_label = labeled[0, 0]                        # corner is always outer sea
+        outer_label = labeled[0, 0]
 
         if outer_label > 0:
-            sea_region = (labeled == outer_label)[1:-1, 1:-1]  # trim padding
+            sea_region = (labeled == outer_label)[1:-1, 1:-1]
             sea_px = int(sea_region.sum())
-            mask = mask | sea_region
+            deep_mask = deep_mask | sea_region
             log.info(f"  Coastline flood-fill: {sea_px} additional sea pixels "
                      f"({100 * sea_region.mean():.1f}% of grid)")
 
@@ -204,9 +203,11 @@ def build_water_mask(
         "rivers":    rivers,
     }
 
+    combined = deep_mask | river_mask
     log.info(
         f"Water mask: ocean={has_ocean}  lakes={len(lakes)}  rivers={len(rivers)}"
-        f"  coverage={100 * mask.mean():.1f}%"
+        f"  deep={100 * deep_mask.mean():.1f}%  river={100 * river_mask.mean():.1f}%"
+        f"  total={100 * combined.mean():.1f}%"
     )
 
     if output_json_path:
@@ -214,4 +215,4 @@ def build_water_mask(
             json.dump(water_json, f, indent=2, ensure_ascii=False)
         log.info(f"Water JSON saved: {output_json_path}")
 
-    return mask, water_json
+    return deep_mask, river_mask, water_json

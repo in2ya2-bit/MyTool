@@ -184,7 +184,7 @@ def fetch_opentopography_srtm(
     from scipy.ndimage import zoom
     scale_r = grid_size / raw.shape[0]
     scale_c = grid_size / raw.shape[1]
-    resized = zoom(raw, (scale_r, scale_c), order=1)
+    resized = zoom(raw, (scale_r, scale_c), order=3)
 
     return resized.astype(np.float32)
 

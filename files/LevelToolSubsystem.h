@@ -5,10 +5,7 @@
 #include "LevelToolSettings.h"
 #include "LevelToolBuildingPool.h"
 #include "Delegates/Delegate.h"
-#include <atomic>
 #include "LevelToolSubsystem.generated.h"
-
-class ALandscape;
 
 // ---------------------------------------------------------------------------
 //  Progress event for Slate panel updates
@@ -29,7 +26,6 @@ struct FLevelToolJobResult
     FString HeightmapPngPath;
     FString HeightmapR16Path;
     FString BuildingsJsonPath;
-    FString RoadsJsonPath;
     FString PcgCsvPath;
     int32  BuildingCount     = 0;
     float  ElevationMinM     = 0.f;
@@ -74,20 +70,16 @@ public:
         float                   Lat,
         float                   Lon,
         float                   RadiusKm,
-        ULevelToolBuildingPool* Pool,
-        bool                    bSpawnRoads = true);
+        ULevelToolBuildingPool* Pool);
 
     void RunLandscapeOnly(const FString& Preset, float Lat, float Lon, float RadiusKm);
     void RunBuildingsOnly (const FString& Preset, float Lat, float Lon, float RadiusKm,
-                           ULevelToolBuildingPool* Pool, bool bSpawnRoads = true);
+                           ULevelToolBuildingPool* Pool);
 
     void CancelJob();
-    void ClearGeneratedActors();
 
     // ── Landscape Import ─────────────────────────────────────────────────
-    // ElevationRangeM: actual terrain height range from Python output (0 = use settings default)
-    bool ImportHeightmapAsLandscape(const FString& HeightmapPngPath, const FString& LandscapeName,
-                                    float ElevationRangeM = 0.f);
+    bool ImportHeightmapAsLandscape(const FString& HeightmapPngPath, const FString& LandscapeName);
 
     // ── Building Placement ───────────────────────────────────────────────
     int32 PlaceBuildingsFromJson(const FString& JsonPath, ULevelToolBuildingPool* Pool,
@@ -117,28 +109,18 @@ private:
                                       int32& OutComponentCountX,
                                       int32& OutComponentCountY) const;
 
-    // ── Compass markers ──────────────────────────────────────────────────
-    void SpawnCompassMarkers(UWorld* World, const FBox& LandscapeBounds);
-
-    // ── Road splines ─────────────────────────────────────────────────────
-    void SpawnRoadActors(const FString& JsonPath, const FBox& LandscapeBounds);
-
-    // ── Splat map import ─────────────────────────────────────────────────
-    void ImportSplatMapsAsTextures(const FString& HeightmapPngPath, ALandscape* Landscape);
-
     // ── Building internals ───────────────────────────────────────────────
     struct FBuildingEntry
     {
         int64    OsmId;
         FString  TypeKey;
         float    HeightM;
-        float    MinHeightM = 0.f;
         float    AreaM2;
         FVector2D CentroidUE5;    // cm XY
         TArray<FVector2D> FootprintUE5;
     };
 
-    bool LoadBuildingsJson(const FString& JsonPath, TArray<FBuildingEntry>& OutBuildings);
+    bool LoadBuildingsJson(const FString& JsonPath, TArray<FBuildingEntry>& OutBuildings) const;
 
     AStaticMeshActor* SpawnBuildingActor(const FBuildingEntry& Building,
                                           ULevelToolBuildingPool* Pool,
@@ -149,24 +131,12 @@ private:
                                   UStaticMesh* Mesh) const;
 
     // ── State ────────────────────────────────────────────────────────────
-    std::atomic<bool>   bJobRunning{false};
-    std::atomic<uint32> JobGeneration{0};
+    bool                bJobRunning = false;
     FLevelToolJobResult LastResult;
     TArray<FString>     LogLines;
 
     // Async task handle
     TFuture<void>       AsyncTask;
-
-    // ── Cached heightmap for Z lookup (avoids physics line trace timing issue) ─
-    TArray<uint16> CachedHeightData;
-    int32          CachedHMapWidth  = 0;
-    float          CachedZScale     = 0.f;
-    float          CachedXYScaleCm  = 0.f;
-    float          CachedOriginX    = 0.f;  // landscape actor world X (= -HalfSizeCm)
-    float          CachedOriginY    = 0.f;  // landscape actor world Y
-
-    // Returns world-space Z (cm) at given world XY by reading cached heightmap data
-    float GetTerrainZAtWorldXY(float WorldX, float WorldY) const;
 
     void Log(const FString& Msg);
     void SetProgress(const FString& Stage, float Pct);

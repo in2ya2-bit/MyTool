@@ -104,13 +104,14 @@ def cmd_landscape(args):
     print(f"Elevation stats : min={elevation.min():.2f}m  max={elevation.max():.2f}m  "
           f"mean={elevation.mean():.2f}m  range={elevation.max() - elevation.min():.2f}m")
 
-    # Fetch water mask and apply (sea pixels → 0m)
+    # Fetch water mask (separate deep/river masks)
     water_path = os.path.join(WATER_DIR, f"{name}_water.json")
-    water_mask_arr = None
+    deep_mask_arr  = None
+    river_mask_arr = None
     if not getattr(args, "no_water", False):
         try:
             from landscape.water_mask import build_water_mask
-            water_mask_arr, _ = build_water_mask(
+            deep_mask_arr, river_mask_arr, _ = build_water_mask(
                 center_lat       = lat,
                 center_lon       = lon,
                 radius_km        = radius,
@@ -118,15 +119,23 @@ def cmd_landscape(args):
                 grid_w           = HEIGHTMAP_SIZE,
                 output_json_path = water_path
             )
-            if water_mask_arr.any():
-                elevation = apply_water_mask(elevation, water_mask_arr)
-                print(f"Water mask      : applied  ({100 * water_mask_arr.mean():.1f}% sea pixels zeroed)")
+            combined = (deep_mask_arr | river_mask_arr) if river_mask_arr is not None else deep_mask_arr
+            if combined.any():
+                print(f"Water mask      : deep={100*deep_mask_arr.mean():.1f}%  "
+                      f"river={100*river_mask_arr.mean():.1f}%")
             else:
                 print(f"Water mask      : no water features found in area")
                 water_path = ""
         except Exception as e:
             logging.getLogger(__name__).warning(f"Water mask skipped: {e}")
             water_path = ""
+
+    # Detect terrain type from elevation profile
+    terrain_type = getattr(args, "terrain_type", "auto")
+    if terrain_type == "auto":
+        elev_range = float(elevation.max() - elevation.min())
+        terrain_type = "urban" if elev_range < 100.0 else "natural"
+        print(f"Terrain type    : {terrain_type} (auto, range={elev_range:.0f}m)")
 
     # Process and export
     paths = process_and_export(
@@ -136,7 +145,10 @@ def cmd_landscape(args):
         z_range_m      = LANDSCAPE_Z_RANGE_METERS,
         smooth_sigma   = args.smooth_sigma,
         apply_erosion  = not args.no_erosion,
-        erosion_iters  = args.erosion_iters
+        erosion_iters  = args.erosion_iters,
+        water_mask     = deep_mask_arr,
+        river_mask     = river_mask_arr,
+        terrain_type   = terrain_type
     )
 
     print(f"\nOutputs:")
@@ -379,6 +391,9 @@ def build_parser():
     lp.add_argument("--no-erosion",   action="store_true",     help="Skip erosion simulation")
     lp.add_argument("--erosion-iters",type=int, default=3,     help="Erosion iterations (default: 3)")
     lp.add_argument("--no-water",     action="store_true",     help="Skip water mask fetch")
+    lp.add_argument("--terrain-type", default="auto",
+                    choices=["auto", "urban", "natural"],
+                    help="Terrain type: auto-detect, urban (gentle), natural (full) (default: auto)")
     lp.set_defaults(func=cmd_landscape)
 
     # buildings
@@ -398,6 +413,8 @@ def build_parser():
     ap.add_argument("--erosion-iters",type=int, default=3)
     ap.add_argument("--no-roads",     action="store_true", help="Skip road data fetch")
     ap.add_argument("--no-water",     action="store_true", help="Skip water mask fetch")
+    ap.add_argument("--terrain-type", default="auto",
+                    choices=["auto", "urban", "natural"])
     ap.add_argument("--ai-enhance",   action="store_true",
                     help="Run Phase 4 AI enhancement (SD textures) after buildings")
     add_ai_args(ap)

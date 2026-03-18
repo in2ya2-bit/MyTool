@@ -14,7 +14,7 @@ import struct
 import logging
 import numpy as np
 from PIL import Image
-from scipy.ndimage import gaussian_filter, generic_filter
+from scipy.ndimage import gaussian_filter, uniform_filter
 
 log = logging.getLogger(__name__)
 
@@ -28,26 +28,37 @@ def normalize_to_ue5(
     """
     Map real elevation (meters) → 0–65535 (uint16) for UE5.
 
-    Stretches the full uint16 range to the actual min/max of the data,
-    so even flat coastal terrain shows its subtle elevation variations.
-    The actual elevation range is returned so UE5 Z scale can be set correctly.
+    Uses percentile-based clamping when extreme outliers would otherwise
+    compress the usable uint16 range, preserving fine detail in the
+    terrain body.
 
     Returns:
-        (encoded uint16 array, actual_min_m, actual_max_m)
+        (encoded uint16 array, effective_min_m, effective_max_m)
     """
-    e_min  = float(elevation.min())
-    e_max  = float(elevation.max())
-    e_range = e_max - e_min
+    e_abs_min   = float(elevation.min())
+    e_abs_max   = float(elevation.max())
+    e_abs_range = e_abs_max - e_abs_min
 
-    if e_range < 0.01:
-        # Flat or failed fetch — flat terrain sitting at mid-level (actor Z = 0)
-        log.warning(f"Elevation range ~0 ({e_range:.4f}m) — using flat mid-level heightmap")
+    if e_abs_range < 0.01:
+        log.warning(f"Elevation range ~0 ({e_abs_range:.4f}m) — using flat mid-level heightmap")
         encoded = np.full(elevation.shape, 32768, dtype=np.uint16)
-        return encoded, e_min, e_max
+        return encoded, e_abs_min, e_abs_max
 
-    normalized = (elevation - e_min) / e_range      # 0..1
+    e_low   = float(np.percentile(elevation, 0.5))
+    e_high  = float(np.percentile(elevation, 99.5))
+    p_range = e_high - e_low
+
+    if p_range >= 0.01 and (e_abs_range / p_range) > 1.5:
+        log.info(f"Percentile clamp: [{e_low:.1f}, {e_high:.1f}]m "
+                 f"(full [{e_abs_min:.1f}, {e_abs_max:.1f}]m)")
+        clipped    = np.clip(elevation, e_low, e_high)
+        normalized = (clipped - e_low) / p_range
+        encoded    = (normalized * 65535.0).astype(np.uint16)
+        return encoded, e_low, e_high
+
+    normalized = (elevation - e_abs_min) / e_abs_range
     encoded    = (normalized * 65535.0).astype(np.uint16)
-    return encoded, e_min, e_max
+    return encoded, e_abs_min, e_abs_max
 
 
 # ─── Hydraulic Erosion Simulation ────────────────────────────────────────────
@@ -75,7 +86,7 @@ def apply_hydraulic_erosion(
                             [1, 0, 1],
                             [0, 1, 0]], dtype=np.float32) / 4.0
 
-        local_avg = generic_filter(elev, np.mean, size=3)
+        local_avg = uniform_filter(elev, size=3)
         diff      = elev - local_avg
 
         # Erode high spots, deposit in low spots
@@ -105,16 +116,29 @@ def smooth_heightmap(elevation: np.ndarray, sigma: float = 3.0) -> np.ndarray:
 def apply_water_mask(
     elevation: np.ndarray,
     water_mask: np.ndarray,
-    sea_elevation_m: float = -5.0
+    sea_elevation_m: float = -5.0,
+    sea_threshold_m: float = 2.0,
+    river_mask: np.ndarray = None,
+    river_depth_m: float = 1.5
 ) -> np.ndarray:
     """
-    Carve water pixels down to sea_elevation_m (default -5 m).
-    Negative value ensures ocean body at Z=0 sits visibly above the sea floor.
-    Combines the OSM flood-fill mask with a low-elevation threshold pass.
+    Carve water into terrain with separate depths for ocean/lakes and rivers.
+
+    - Ocean/lakes (deep_mask): flatten to sea_elevation_m
+    - Rivers (river_mask): carve river_depth_m below surrounding terrain
     """
-    result     = elevation.copy().astype(np.float32)
-    sea_pixels = water_mask | (elevation <= 2.0)
+    result = elevation.copy().astype(np.float32)
+
+    sea_pixels = water_mask | (elevation <= sea_threshold_m)
     result[sea_pixels] = sea_elevation_m
+
+    if river_mask is not None:
+        river_only = river_mask & ~sea_pixels
+        if river_only.any():
+            surrounding = uniform_filter(elevation, size=7)
+            result[river_only] = surrounding[river_only] - river_depth_m
+            log.info(f"  River carve: {int(river_only.sum())} pixels at -{river_depth_m}m relative")
+
     return result
 
 
@@ -174,11 +198,12 @@ def generate_splat_maps(
     elev_norm  = (elevation - elevation.min()) / max(float((elevation.max() - elevation.min())), 1.0)
     slope_norm = np.clip(slope_deg / 60.0, 0.0, 1.0)
 
-    snow_line  = 0.75   # top 25% elevation
-    sand_elev  = 0.10   # bottom 10% elevation
+    snow_line = max(float(np.percentile(elev_norm, 80)), 0.50)
+    sand_elev = min(float(np.percentile(elev_norm, 15)), snow_line * 0.3)
+    sand_elev = max(sand_elev, 0.02)
 
-    snow  = np.clip((elev_norm - snow_line) / (1.0 - snow_line), 0, 1)
-    sand  = np.clip((sand_elev - elev_norm) / sand_elev, 0, 1) * (1 - slope_norm)
+    snow  = np.clip((elev_norm - snow_line) / max(1.0 - snow_line, 0.01), 0, 1)
+    sand  = np.clip((sand_elev - elev_norm) / max(sand_elev, 0.01), 0, 1) * (1 - slope_norm)
     rock  = slope_norm * (1 - snow)
     grass = np.clip(1.0 - rock - snow - sand, 0.0, 1.0)
 
@@ -207,9 +232,7 @@ def export_r16(encoded: np.ndarray, path: str):
     UE5 Import: Landscape → From File → Raw (16-bit)
     """
     with open(path, "wb") as f:
-        for row in encoded:
-            for val in row:
-                f.write(struct.pack("<H", int(val)))
+        f.write(encoded.astype(np.uint16).tobytes())
     log.info(f"R16 raw heightmap saved: {path}")
 
 
@@ -243,35 +266,52 @@ def export_preview(elevation: np.ndarray, path: str):
 # ─── Master Export Pipeline ───────────────────────────────────────────────────
 
 def process_and_export(
-    elevation_raw:  np.ndarray,
-    output_dir:     str,
-    name:           str,
-    z_range_m:      float = 400.0,
-    smooth_sigma:   float = 3.0,
-    apply_erosion:  bool  = False,
-    erosion_iters:  int   = 3,
-    water_mask:     np.ndarray = None
+    elevation_raw:   np.ndarray,
+    output_dir:      str,
+    name:            str,
+    z_range_m:       float = 400.0,
+    smooth_sigma:    float = 3.0,
+    apply_erosion:   bool  = False,
+    erosion_iters:   int   = 3,
+    water_mask:      np.ndarray = None,
+    sea_threshold_m: float = 2.0,
+    river_mask:      np.ndarray = None,
+    river_depth_m:   float = 1.5,
+    terrain_type:    str   = "natural"
 ) -> dict:
     """
     Full processing pipeline: raw elevation → all UE5-ready assets.
+
+    terrain_type: "natural" (full erosion/smoothing) or "urban" (gentle processing).
     Returns dict of output file paths.
     """
     import math  # noqa — needed for hillshade inside subprocess context
     import builtins
     builtins.math = __import__("math")
 
-    log.info(f"Processing heightmap '{name}'  shape={elevation_raw.shape}")
+    log.info(f"Processing heightmap '{name}'  shape={elevation_raw.shape}  terrain={terrain_type}")
 
-    # 1. Apply water mask before smoothing (flatten sea pixels to 0)
+    # 1. Apply water mask (ocean/lake deep carve + river shallow carve)
     if water_mask is not None:
-        elevation_raw = apply_water_mask(elevation_raw, water_mask)
+        elevation_raw = apply_water_mask(elevation_raw, water_mask,
+                                         sea_threshold_m=sea_threshold_m,
+                                         river_mask=river_mask,
+                                         river_depth_m=river_depth_m)
 
-    # 2. Smooth SRTM noise
-    elevation = smooth_heightmap(elevation_raw, sigma=smooth_sigma)
+    # 2. Smooth SRTM noise — reduce sigma for urban areas to preserve detail
+    effective_sigma = smooth_sigma
+    if terrain_type == "urban":
+        effective_sigma = min(smooth_sigma, 1.0)
+    elevation = smooth_heightmap(elevation_raw, sigma=effective_sigma)
+    log.info(f"  Smoothing: sigma={effective_sigma:.1f} (requested {smooth_sigma:.1f})")
 
-    # 3. Optional erosion simulation
+    # 3. Optional erosion — much lighter for urban terrain
     if apply_erosion:
-        elevation = apply_hydraulic_erosion(elevation, iterations=erosion_iters)
+        if terrain_type == "urban":
+            elevation = apply_hydraulic_erosion(
+                elevation, iterations=1, rain_amount=0.002, sediment_capacity=0.002)
+        else:
+            elevation = apply_hydraulic_erosion(elevation, iterations=erosion_iters)
 
     # 4. Compute slope for splat maps
     slope = compute_slope(elevation)

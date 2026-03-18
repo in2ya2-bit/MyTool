@@ -40,17 +40,50 @@ MIN_BUILDING_AREA_M2      = 20.0    # ignore tiny structures
 
 # Building type → UE5 mesh pool key
 BUILDING_TYPE_MAP = {
-    "residential":  "BP_Building_Residential",
-    "apartments":   "BP_Building_Apartment",
-    "commercial":   "BP_Building_Commercial",
-    "industrial":   "BP_Building_Industrial",
-    "office":       "BP_Building_Office",
-    "retail":       "BP_Building_Retail",
-    "warehouse":    "BP_Building_Warehouse",
-    "church":       "BP_Building_Church",
-    "school":       "BP_Building_School",
-    "hospital":     "BP_Building_Hospital",
-    "yes":          "BP_Building_Generic",     # untagged
+    # Residential
+    "residential":        "BP_Building_Residential",
+    "apartments":         "BP_Building_Apartment",
+    "house":              "BP_Building_Residential",
+    "detached":           "BP_Building_Residential",
+    "semidetached_house": "BP_Building_Residential",
+    "terrace":            "BP_Building_Residential",
+    "dormitory":          "BP_Building_Apartment",
+    "farm":               "BP_Building_Residential",
+    # Commercial / Office
+    "commercial":         "BP_Building_Commercial",
+    "office":             "BP_Building_Office",
+    "retail":             "BP_Building_Retail",
+    "supermarket":        "BP_Building_Retail",
+    "kiosk":              "BP_Building_Retail",
+    "hotel":              "BP_Building_Commercial",
+    # Industrial
+    "industrial":         "BP_Building_Industrial",
+    "warehouse":          "BP_Building_Warehouse",
+    "hangar":             "BP_Building_Warehouse",
+    "manufacture":        "BP_Building_Industrial",
+    # Public / Civic
+    "church":             "BP_Building_Church",
+    "cathedral":          "BP_Building_Church",
+    "chapel":             "BP_Building_Church",
+    "mosque":             "BP_Building_Church",
+    "temple":             "BP_Building_Church",
+    "synagogue":          "BP_Building_Church",
+    "school":             "BP_Building_School",
+    "university":         "BP_Building_School",
+    "kindergarten":       "BP_Building_School",
+    "college":            "BP_Building_School",
+    "hospital":           "BP_Building_Hospital",
+    "clinic":             "BP_Building_Hospital",
+    # Utility / Other
+    "garage":             "BP_Building_Generic",
+    "garages":            "BP_Building_Generic",
+    "parking":            "BP_Building_Generic",
+    "shed":               "BP_Building_Generic",
+    "greenhouse":         "BP_Building_Generic",
+    "roof":               "BP_Building_Generic",
+    "ruins":              "BP_Building_Generic",
+    "construction":       "BP_Building_Generic",
+    "yes":                "BP_Building_Generic",
 }
 
 # ─── Output Paths ────────────────────────────────────────────────────────────
