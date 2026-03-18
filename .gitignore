@@ -1,0 +1,40 @@
+# Unreal Engine
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+.vs/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Large binary archives
+*.zip
+*.pak
+
+# UE5 generated
+*.generated.h
+*.gen.cpp
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+output/
+
+# Keep these:
+# Source/
+# Plugins/LevelTool/Source/
+# files/        (Python scripts)
+# Config/
+# Content/      (blueprints, materials — track selectively)
+# S1.uproject
