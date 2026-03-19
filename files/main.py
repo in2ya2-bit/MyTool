@@ -80,6 +80,11 @@ def resolve_coords(args):
 
 # ─── Command: Landscape ───────────────────────────────────────────────────────
 
+def _progress(stage: str, percent: float):
+    """Emit structured progress marker for C++ real-time parsing."""
+    print(f'__LEVELTOOL_PROGRESS__:{json.dumps({"stage": stage, "percent": percent})}')
+
+
 def cmd_landscape(args):
     from landscape.elevation_fetcher import fetch_elevation
     from landscape.heightmap_exporter import process_and_export, apply_water_mask
@@ -96,6 +101,8 @@ def cmd_landscape(args):
     print(f"  Source   : {args.elevation_source}")
     print(f"{'='*55}\n")
 
+    _progress("Fetching elevation data...", 0.08)
+
     # Fetch elevation
     elevation = fetch_elevation(
         center_lat  = lat,
@@ -106,8 +113,12 @@ def cmd_landscape(args):
         api_key     = api_key
     )
 
+    _progress("Elevation data received", 0.15)
+
     print(f"Elevation stats : min={elevation.min():.2f}m  max={elevation.max():.2f}m  "
           f"mean={elevation.mean():.2f}m  range={elevation.max() - elevation.min():.2f}m")
+
+    _progress("Fetching water mask...", 0.18)
 
     # Fetch water mask (separate deep/river masks)
     water_path = os.path.join(WATER_DIR, f"{name}_water.json")
@@ -149,6 +160,8 @@ def cmd_landscape(args):
             terrain_type = "natural"
         print(f"Terrain type    : {terrain_type} (auto, range={elev_range:.0f}m, water={deep_pct:.1f}%)")
 
+    _progress("Processing heightmap...", 0.22)
+
     # Process and export
     paths = process_and_export(
         elevation_raw  = elevation,
@@ -163,6 +176,8 @@ def cmd_landscape(args):
         terrain_type   = terrain_type,
         radius_km      = radius
     )
+
+    _progress("Heightmap export complete", 0.35)
 
     print(f"\nOutputs:")
     for key, path in paths.items():
@@ -189,7 +204,9 @@ def cmd_landscape(args):
         "heightmap_r16": paths.get('heightmap_r16', ''),
         "elevation_min_m": float(paths.get('elevation_min_m', 0.0)),
         "elevation_max_m": float(paths.get('elevation_max_m', 0.0)),
+        "water_json": water_path if water_path and os.path.exists(water_path) else "",
     }
+    _progress("Landscape pipeline complete", 0.40)
     print(f"__LEVELTOOL_RESULT__:{json.dumps(result)}")
 
 
@@ -206,6 +223,8 @@ def cmd_buildings(args):
     print(f"  Radius   : {radius} km")
     print(f"{'='*55}\n")
 
+    _progress("Fetching OSM building data...", 0.42)
+
     json_path  = os.path.join(BUILDING_DIR, f"{name}_buildings.json")
     roads_path = os.path.join(BUILDING_DIR, f"{name}_roads.json")
 
@@ -218,10 +237,14 @@ def cmd_buildings(args):
         default_height_m = 10.0
     )
 
+    _progress("Building data received, fetching roads...", 0.44)
+
     # Road network (non-fatal: skip on failure)
     if not getattr(args, "no_roads", False):
         from roads.osm_roads import fetch_and_parse_roads
         fetch_and_parse_roads(lat, lon, radius, roads_path)
+
+    _progress("All Python data fetched", 0.48)
 
     # Stats
     type_counts = {}
@@ -358,10 +381,13 @@ def cmd_all(args):
     print(f"  )")
     print()
 
+    water_path = os.path.join(WATER_DIR, f"{name}_water.json")
+
     combined_result = {
         "heightmap_png": hm_path,
         "buildings_json": bldg_path,
         "roads_json": roads_path,
+        "water_json": water_path if os.path.exists(water_path) else "",
         "elevation_min_m": 0.0,
         "elevation_max_m": 0.0,
     }
