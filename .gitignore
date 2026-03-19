@@ -31,6 +31,9 @@ __pycache__/
 *.pyo
 output/
 
+# LevelTool secrets (API keys)
+Config/DefaultLevelTool.ini
+
 # Keep these:
 # Source/
 # Plugins/LevelTool/Source/

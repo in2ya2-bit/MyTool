@@ -20,6 +20,10 @@
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 
+// Text render for compass markers
+#include "Engine/TextRenderActor.h"
+#include "Components/TextRenderComponent.h"
+
 // UE5 Level utilities
 #include "Engine/World.h"
 #include "Components/SplineComponent.h"
@@ -233,6 +237,17 @@ void ULevelToolSubsystem::RunFullPipeline(
 
             Self->LastResult = Result;
             Self->SetProgress(TEXT("Done"), 1.0f);
+
+            // Focus viewport on generated landscape
+            if (PostWorld)
+            {
+                for (TActorIterator<ALandscape> FocusIt(PostWorld); FocusIt; ++FocusIt)
+                {
+                    GEditor->MoveViewportCamerasToActor(**FocusIt, true);
+                    break;
+                }
+            }
+
             Self->FinishJob(true);
         });
     });
@@ -350,7 +365,17 @@ void ULevelToolSubsystem::CancelJob()
     {
         ++JobGeneration;
         bJobRunning = false;
-        Log(TEXT("⚠ Job cancelled — pending callbacks invalidated"));
+
+        {
+            FScopeLock Lock(&PythonProcessLock);
+            if (ActivePythonProcess.IsValid())
+            {
+                FPlatformProcess::TerminateProc(ActivePythonProcess, true);
+                ActivePythonProcess.Reset();
+            }
+        }
+
+        Log(TEXT("⚠ Job cancelled — process killed, callbacks invalidated"));
         OnComplete.Broadcast(false);
     }
 }
@@ -404,62 +429,120 @@ bool ULevelToolSubsystem::RunPythonScript(
         return false;
     }
 
-    // Find python executable — prefer UE5 bundled Python, fall back to system python
     FString PythonExe;
 #if PLATFORM_WINDOWS
     {
-        // UE5 bundled Python (always available, no PATH dependency)
         FString EnginePython = FPaths::ConvertRelativePathToFull(
             FPaths::EngineDir() / TEXT("Binaries/ThirdParty/Python3/Win64/python.exe"));
-        if (FPaths::FileExists(EnginePython))
-        {
-            PythonExe = EnginePython;
-        }
-        else
-        {
-            PythonExe = TEXT("python");
-        }
+        PythonExe = FPaths::FileExists(EnginePython) ? EnginePython : TEXT("python");
     }
 #else
     PythonExe = TEXT("python3");
 #endif
 
-    // Pass the script directory so local packages (landscape/, buildings/ etc.) are importable
     FString ScriptDir = FPaths::GetPath(ScriptPath);
-    // -X utf8 forces UTF-8 I/O on Windows (prevents cp949 UnicodeEncodeError)
     FString CommandLine = FString::Printf(TEXT("-X utf8 -u \"%s\" %s"), *ScriptPath, *Args);
 
     Log(FString::Printf(TEXT("$ %s %s"), *PythonExe, *CommandLine));
 
-    int32  ReturnCode = 0;
-    FString Stdout, Stderr;
+    // Create pipe for stdout capture (stderr merged in Python via sys.stderr = sys.stdout)
+    void* ReadPipe  = nullptr;
+    void* WritePipe = nullptr;
+    FPlatformProcess::CreatePipe(ReadPipe, WritePipe);
 
-    bool bOk = FPlatformProcess::ExecProcess(
-        *PythonExe,
-        *CommandLine,
-        &ReturnCode,
-        &Stdout,
-        &Stderr,
-        *ScriptDir   // working directory = files/ folder
-    );
+    FProcHandle Proc = FPlatformProcess::CreateProc(
+        *PythonExe, *CommandLine, false, true, true,
+        nullptr, 0, *ScriptDir, WritePipe);
 
-    // Log each output line
-    TArray<FString> Lines;
-    Stdout.ParseIntoArrayLines(Lines);
-    for (const FString& Line : Lines)
+    if (!Proc.IsValid())
     {
-        if (!Line.IsEmpty())
-            Log(Line);
+        FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+        OutStderr = TEXT("Failed to launch Python process");
+        Log(TEXT("✖ ") + OutStderr);
+        return false;
+    }
+
+    {
+        FScopeLock Lock(&PythonProcessLock);
+        ActivePythonProcess = Proc;
+    }
+
+    const double StartTime   = FPlatformTime::Seconds();
+    const uint32 ExpectedGen = JobGeneration.load();
+    FString Stdout;
+
+    while (FPlatformProcess::IsProcRunning(Proc))
+    {
+        FString Chunk = FPlatformProcess::ReadPipe(ReadPipe);
+        if (!Chunk.IsEmpty())
+        {
+            Stdout += Chunk;
+            TArray<FString> ChunkLines;
+            Chunk.ParseIntoArrayLines(ChunkLines);
+            for (const FString& Line : ChunkLines)
+            {
+                if (!Line.IsEmpty())
+                    Log(Line);
+            }
+        }
+
+        if (FPlatformTime::Seconds() - StartTime > PythonTimeoutSeconds)
+        {
+            FPlatformProcess::TerminateProc(Proc, true);
+            FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+            {
+                FScopeLock Lock(&PythonProcessLock);
+                ActivePythonProcess.Reset();
+            }
+            OutStderr = FString::Printf(TEXT("Python process timed out after %.0fs"), PythonTimeoutSeconds);
+            Log(TEXT("✖ ") + OutStderr);
+            return false;
+        }
+
+        if (JobGeneration.load() != ExpectedGen)
+        {
+            FPlatformProcess::TerminateProc(Proc, true);
+            FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+            {
+                FScopeLock Lock(&PythonProcessLock);
+                ActivePythonProcess.Reset();
+            }
+            OutStderr = TEXT("Job cancelled");
+            return false;
+        }
+
+        FPlatformProcess::Sleep(0.1f);
+    }
+
+    // Read remaining output after process exit
+    FString Remaining = FPlatformProcess::ReadPipe(ReadPipe);
+    if (!Remaining.IsEmpty())
+    {
+        Stdout += Remaining;
+        TArray<FString> RemLines;
+        Remaining.ParseIntoArrayLines(RemLines);
+        for (const FString& Line : RemLines)
+        {
+            if (!Line.IsEmpty())
+                Log(Line);
+        }
+    }
+
+    int32 ReturnCode = 0;
+    FPlatformProcess::GetProcReturnCode(Proc, &ReturnCode);
+    FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
+
+    {
+        FScopeLock Lock(&PythonProcessLock);
+        ActivePythonProcess.Reset();
     }
 
     OutStdout = Stdout;
-    OutStderr = Stderr;
+    OutStderr = FString();
 
-    if (!bOk || ReturnCode != 0)
+    if (ReturnCode != 0)
     {
         Log(FString::Printf(TEXT("✖ Python exited with code %d"), ReturnCode));
-        if (!Stderr.IsEmpty())
-            Log(TEXT("stderr: ") + Stderr);
         return false;
     }
 
@@ -550,12 +633,54 @@ FString ULevelToolSubsystem::BuildMainPyArgs(
     return Args;
 }
 
+bool ULevelToolSubsystem::ParseJsonResultBlock(
+    const FString& Output, FLevelToolJobResult& OutResult) const
+{
+    static const FString Marker = TEXT("__LEVELTOOL_RESULT__:");
+
+    // Find the LAST occurrence (cmd_all outputs multiple markers)
+    int32 Idx = Output.Find(Marker, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+    if (Idx == INDEX_NONE) return false;
+
+    FString JsonStr = Output.Mid(Idx + Marker.Len()).TrimStartAndEnd();
+    int32 NewlineIdx;
+    if (JsonStr.FindChar(TEXT('\n'), NewlineIdx))
+        JsonStr = JsonStr.Left(NewlineIdx).TrimEnd();
+
+    TSharedPtr<FJsonObject> JsonObj;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonStr);
+    if (!FJsonSerializer::Deserialize(Reader, JsonObj) || !JsonObj.IsValid())
+        return false;
+
+    JsonObj->TryGetStringField(TEXT("heightmap_png"), OutResult.HeightmapPngPath);
+    JsonObj->TryGetStringField(TEXT("buildings_json"), OutResult.BuildingsJsonPath);
+    JsonObj->TryGetStringField(TEXT("roads_json"), OutResult.RoadsJsonPath);
+
+    double TempMin = 0.0, TempMax = 0.0;
+    if (JsonObj->TryGetNumberField(TEXT("elevation_min_m"), TempMin))
+        OutResult.ElevationMinM = static_cast<float>(TempMin);
+    if (JsonObj->TryGetNumberField(TEXT("elevation_max_m"), TempMax))
+        OutResult.ElevationMaxM = static_cast<float>(TempMax);
+
+    OutResult.bSuccess = !OutResult.HeightmapPngPath.IsEmpty() ||
+                         !OutResult.BuildingsJsonPath.IsEmpty();
+
+    if (OutResult.bSuccess)
+        UE_LOG(LogLevelTool, Log, TEXT("ParseJsonResult: parsed successfully from structured JSON block"));
+
+    return OutResult.bSuccess;
+}
+
 void ULevelToolSubsystem::ParsePythonOutput(
     const FString& Stdout, FLevelToolJobResult& OutResult) const
 {
+    // Prefer structured JSON result block
+    if (ParseJsonResultBlock(Stdout, OutResult))
+        return;
+
+    // Fall back to legacy text pattern matching
     const ULevelToolSettings* S = ULevelToolSettings::Get();
 
-    // Search stdout for file paths written by Python
     TArray<FString> Lines;
     Stdout.ParseIntoArrayLines(Lines);
 
@@ -1146,141 +1271,6 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
         }
     }
 
-    // R-C: Disabled — terrain flattening was distorting heightmap
-    if (false && !CachedHeightData.IsEmpty() && CachedZScale > 0.f)
-    {
-        TSet<int32> ModifiedPixels;
-
-        // Safety: never flatten below 80% of the median height to avoid terrain holes
-        const int32 HMapSize = CachedHeightData.Num();
-        uint16 MinAllowedH = 0;
-        if (HMapSize > 0)
-        {
-            TArray<uint16> SortedSample;
-            const int32 SampleStep = FMath::Max(1, HMapSize / 2000);
-            SortedSample.Reserve(HMapSize / SampleStep + 1);
-            for (int32 si = 0; si < HMapSize; si += SampleStep)
-                SortedSample.Add(CachedHeightData[si]);
-            SortedSample.Sort();
-            uint16 MedianH = SortedSample[SortedSample.Num() / 2];
-            MinAllowedH = static_cast<uint16>(MedianH * 0.8f);
-        }
-
-        for (auto& KV : Geoms)
-        {
-            FRoadGeom& G = KV.Value;
-            for (int32 i = 0; i + 3 < G.Vertices.Num(); i += 4)
-            {
-                const FVector& V0 = G.Vertices[i];
-                const FVector& V1 = G.Vertices[i+1];
-                const FVector& V2 = G.Vertices[i+2];
-                const FVector& V3 = G.Vertices[i+3];
-
-                float RoadZ = (V0.Z + V1.Z + V2.Z + V3.Z) * 0.25f - 1.f;
-                uint16 RawTargetH = static_cast<uint16>(FMath::Clamp(
-                    FMath::RoundToInt32(RoadZ * 128.f / CachedZScale), 0, 65535));
-                uint16 TargetH = FMath::Max(RawTargetH, MinAllowedH);
-
-                float MinWX = FMath::Min(FMath::Min(V0.X, V1.X), FMath::Min(V2.X, V3.X));
-                float MaxWX = FMath::Max(FMath::Max(V0.X, V1.X), FMath::Max(V2.X, V3.X));
-                float MinWY = FMath::Min(FMath::Min(V0.Y, V1.Y), FMath::Min(V2.Y, V3.Y));
-                float MaxWY = FMath::Max(FMath::Max(V0.Y, V1.Y), FMath::Max(V2.Y, V3.Y));
-
-                int32 PxMinX = FMath::Clamp(FMath::FloorToInt32((MinWX - CachedOriginX) / CachedXYScaleCm), 0, CachedHMapWidth-1);
-                int32 PxMaxX = FMath::Clamp(FMath::CeilToInt32 ((MaxWX - CachedOriginX) / CachedXYScaleCm), 0, CachedHMapWidth-1);
-                int32 PxMinY = FMath::Clamp(FMath::FloorToInt32((MinWY - CachedOriginY) / CachedXYScaleCm), 0, CachedHMapWidth-1);
-                int32 PxMaxY = FMath::Clamp(FMath::CeilToInt32 ((MaxWY - CachedOriginY) / CachedXYScaleCm), 0, CachedHMapWidth-1);
-
-                for (int32 py = PxMinY; py <= PxMaxY; py++)
-                {
-                    for (int32 px = PxMinX; px <= PxMaxX; px++)
-                    {
-                        int32 Idx = py * CachedHMapWidth + px;
-                        if (Idx < 0 || Idx >= HMapSize) continue;
-                        uint16& H = CachedHeightData[Idx];
-                        if (H > TargetH)
-                        {
-                            H = TargetH;
-                            ModifiedPixels.Add(Idx);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (ModifiedPixels.Num() > 0)
-        {
-            ALandscape* Landscape = nullptr;
-            for (TActorIterator<ALandscape> It(World); It; ++It)
-            {
-                Landscape = *It;
-                break;
-            }
-            if (Landscape)
-            {
-                TArray<ULandscapeComponent*> LandComps;
-                Landscape->GetComponents<ULandscapeComponent>(LandComps);
-                for (ULandscapeComponent* Comp : LandComps)
-                {
-                    FIntPoint Base = Comp->GetSectionBase();
-                    int32 CompVerts = Comp->ComponentSizeQuads + 1;
-                    UTexture2D* HTex = Comp->GetHeightmap();
-                    if (!HTex || !HTex->GetPlatformData() ||
-                        HTex->GetPlatformData()->Mips.Num() == 0) continue;
-
-                    FTexture2DMipMap& Mip = HTex->GetPlatformData()->Mips[0];
-                    int32 TexW = Mip.SizeX;
-                    int32 TexH = Mip.SizeY;
-
-                    const int32 OffX = FMath::RoundToInt32(
-                        static_cast<float>(Comp->HeightmapScaleBias.Z) * TexW);
-                    const int32 OffY = FMath::RoundToInt32(
-                        static_cast<float>(Comp->HeightmapScaleBias.W) * TexH);
-
-                    bool bCompTouched = false;
-                    for (int32 LY = 0; LY < CompVerts && !bCompTouched; LY++)
-                    {
-                        for (int32 LX = 0; LX < CompVerts && !bCompTouched; LX++)
-                        {
-                            int32 DataIdx = (Base.Y + LY) * CachedHMapWidth + (Base.X + LX);
-                            if (ModifiedPixels.Contains(DataIdx))
-                                bCompTouched = true;
-                        }
-                    }
-                    if (!bCompTouched) continue;
-
-                    FColor* Pixels = static_cast<FColor*>(Mip.BulkData.Lock(LOCK_READ_WRITE));
-                    if (!Pixels) { Mip.BulkData.Unlock(); continue; }
-
-                    for (int32 LY = 0; LY < CompVerts; LY++)
-                    {
-                        for (int32 LX = 0; LX < CompVerts; LX++)
-                        {
-                            int32 DataIdx = (Base.Y + LY) * CachedHMapWidth + (Base.X + LX);
-                            if (DataIdx < 0 || DataIdx >= HMapSize) continue;
-                            if (!ModifiedPixels.Contains(DataIdx)) continue;
-
-                            const int32 PixX = OffX + LX;
-                            const int32 PixY = OffY + LY;
-                            if (PixX < 0 || PixX >= TexW || PixY < 0 || PixY >= TexH) continue;
-
-                            uint16 HVal = CachedHeightData[DataIdx];
-                            FColor& P = Pixels[PixY * TexW + PixX];
-                            P.R = static_cast<uint8>(HVal >> 8);
-                            P.G = static_cast<uint8>(HVal & 0xFF);
-                        }
-                    }
-
-                    Mip.BulkData.Unlock();
-                    HTex->UpdateResource();
-                    Comp->MarkRenderStateDirty();
-                }
-                Log(FString::Printf(TEXT("  ✔ Landscape flattened: %d heightmap pixels modified"),
-                    ModifiedPixels.Num()));
-            }
-        }
-    }
-
     // Spawn one actor per road type
     int32 SpawnedActors = 0;
     for (auto& KV : Geoms)
@@ -1478,21 +1468,19 @@ void ULevelToolSubsystem::SpawnCompassMarkers(UWorld* World, const FBox& Landsca
 
     const FString Folder = TEXT("LevelTool/Compass");
 
-    // Pillar height = 20% of the landscape diagonal, min 5000 cm
     float DiagCm     = (LandscapeBounds.Max - LandscapeBounds.Min).Size2D();
-    float PillarH    = FMath::Max(DiagCm * 0.20f, 5000.0f);
-    float PillarW    = FMath::Max(DiagCm * 0.008f, 200.0f);  // width ~ 0.8% of diagonal
-    float BaseZ      = LandscapeBounds.Max.Z;                 // sit on top of terrain
+    float PillarH    = FMath::Max(DiagCm * 0.08f, 3000.0f);
+    float PillarW    = FMath::Max(DiagCm * 0.003f, 80.0f);
+    float BaseZ      = LandscapeBounds.Max.Z;
+    float TextSize   = FMath::Max(PillarH * 0.15f, 500.0f);
 
     FVector Center2D = FVector(
         (LandscapeBounds.Min.X + LandscapeBounds.Max.X) * 0.5f,
         (LandscapeBounds.Min.Y + LandscapeBounds.Max.Y) * 0.5f,
         0.f);
 
-    // Helper: spawn one colored cube pillar
-    auto SpawnPillar = [&](FVector XY_Pos, FLinearColor Color, const FString& Label)
+    auto SpawnMarker = [&](FVector XY_Pos, FLinearColor Color, const FString& Label, const FString& DirText)
     {
-        // CubeMesh is 100cm cube at scale 1 — pivot at center
         FVector SpawnLoc(XY_Pos.X, XY_Pos.Y, BaseZ + PillarH * 0.5f);
 
         FActorSpawnParameters P;
@@ -1509,32 +1497,40 @@ void ULevelToolSubsystem::SpawnCompassMarkers(UWorld* World, const FBox& Landsca
         Mat->SetVectorParameterValue(TEXT("Color"), FVector4(Color.R, Color.G, Color.B, 1.0f));
         Comp->SetMaterial(0, Mat);
 
-        // Scale: XY = pillar width, Z = pillar height (cube is 100cm → divide by 100)
         Actor->SetActorScale3D(FVector(PillarW / 100.f, PillarW / 100.f, PillarH / 100.f));
         Actor->SetActorLabel(Label);
         Actor->SetFolderPath(*Folder);
+
+        // Text label floating above the pillar
+        FVector TextLoc(XY_Pos.X, XY_Pos.Y, BaseZ + PillarH + TextSize);
+        FActorSpawnParameters TextParams;
+        TextParams.bNoFail = true;
+        ATextRenderActor* TextActor = World->SpawnActor<ATextRenderActor>(
+            ATextRenderActor::StaticClass(), TextLoc, FRotator::ZeroRotator, TextParams);
+        if (TextActor)
+        {
+            UTextRenderComponent* TC = TextActor->GetTextRender();
+            TC->SetText(FText::FromString(DirText));
+            TC->SetTextRenderColor(Color.ToFColor(true));
+            TC->SetWorldSize(TextSize);
+            TC->SetHorizontalAlignment(EHTA_Center);
+            TC->SetVerticalAlignment(EVRTA_TextCenter);
+            TextActor->SetActorLabel(Label + TEXT("_Label"));
+            TextActor->SetFolderPath(*Folder);
+        }
     };
 
     float EdgeOffset = FMath::Min(
         (LandscapeBounds.Max.X - LandscapeBounds.Min.X) * 0.45f,
         (LandscapeBounds.Max.Y - LandscapeBounds.Min.Y) * 0.45f);
 
-    // Center — RED (입력 중심 좌표)
-    SpawnPillar(Center2D, FLinearColor(1.f, 0.f, 0.f), TEXT("Compass_CENTER"));
+    SpawnMarker(Center2D, FLinearColor(1.f, 0.f, 0.f), TEXT("Compass_CENTER"), TEXT("CENTER"));
+    SpawnMarker(Center2D + FVector(0, -EdgeOffset, 0), FLinearColor(0.f, 0.4f, 1.f), TEXT("Compass_N"), TEXT("N"));
+    SpawnMarker(Center2D + FVector(0, +EdgeOffset, 0), FLinearColor(1.f, 0.9f, 0.f), TEXT("Compass_S"), TEXT("S"));
+    SpawnMarker(Center2D + FVector(+EdgeOffset, 0, 0), FLinearColor(0.f, 0.9f, 0.f), TEXT("Compass_E"), TEXT("E"));
+    SpawnMarker(Center2D + FVector(-EdgeOffset, 0, 0), FLinearColor(1.f, 0.5f, 0.f), TEXT("Compass_W"), TEXT("W"));
 
-    // North (Y-) — BLUE
-    SpawnPillar(Center2D + FVector(0, -EdgeOffset, 0), FLinearColor(0.f, 0.4f, 1.f), TEXT("Compass_N"));
-
-    // South (Y+) — YELLOW
-    SpawnPillar(Center2D + FVector(0, +EdgeOffset, 0), FLinearColor(1.f, 0.9f, 0.f), TEXT("Compass_S"));
-
-    // East (X+) — GREEN
-    SpawnPillar(Center2D + FVector(+EdgeOffset, 0, 0), FLinearColor(0.f, 0.9f, 0.f), TEXT("Compass_E"));
-
-    // West (X-) — ORANGE
-    SpawnPillar(Center2D + FVector(-EdgeOffset, 0, 0), FLinearColor(1.f, 0.5f, 0.f), TEXT("Compass_W"));
-
-    Log(TEXT("  ✔ Compass markers spawned (LevelTool/Compass)"));
+    Log(TEXT("  ✔ Compass markers spawned with labels (LevelTool/Compass)"));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1606,6 +1602,57 @@ bool ULevelToolSubsystem::LoadBuildingsJson(
     return true;
 }
 
+// Grid-based 2D spatial hash for O(1) overlap detection
+namespace
+{
+    struct FSpatialHash2D
+    {
+        float CellSize;
+        TMap<int64, TArray<FBox2D>> Cells;
+
+        FSpatialHash2D(float InCellSize = 3000.f) : CellSize(InCellSize) {}
+
+        int64 CellKey(int32 CX, int32 CY) const
+        {
+            return (static_cast<int64>(CX) << 32) | static_cast<int64>(static_cast<uint32>(CY));
+        }
+
+        void Insert(const FBox2D& Box)
+        {
+            int32 MinCX = FMath::FloorToInt32(Box.Min.X / CellSize);
+            int32 MinCY = FMath::FloorToInt32(Box.Min.Y / CellSize);
+            int32 MaxCX = FMath::FloorToInt32(Box.Max.X / CellSize);
+            int32 MaxCY = FMath::FloorToInt32(Box.Max.Y / CellSize);
+            for (int32 cx = MinCX; cx <= MaxCX; cx++)
+                for (int32 cy = MinCY; cy <= MaxCY; cy++)
+                    Cells.FindOrAdd(CellKey(cx, cy)).Add(Box);
+        }
+
+        bool Overlaps(const FBox2D& TestBox) const
+        {
+            int32 MinCX = FMath::FloorToInt32(TestBox.Min.X / CellSize);
+            int32 MinCY = FMath::FloorToInt32(TestBox.Min.Y / CellSize);
+            int32 MaxCX = FMath::FloorToInt32(TestBox.Max.X / CellSize);
+            int32 MaxCY = FMath::FloorToInt32(TestBox.Max.Y / CellSize);
+            for (int32 cx = MinCX; cx <= MaxCX; cx++)
+            {
+                for (int32 cy = MinCY; cy <= MaxCY; cy++)
+                {
+                    const TArray<FBox2D>* Arr = Cells.Find(CellKey(cx, cy));
+                    if (!Arr) continue;
+                    for (const FBox2D& Existing : *Arr)
+                    {
+                        if (TestBox.Min.X < Existing.Max.X && TestBox.Max.X > Existing.Min.X &&
+                            TestBox.Min.Y < Existing.Max.Y && TestBox.Max.Y > Existing.Min.Y)
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+    };
+}
+
 int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
     const FString& JsonPath, ULevelToolBuildingPool* Pool, float ZOffsetCm)
 {
@@ -1620,7 +1667,21 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
         return 0;
     }
 
-    // Find Landscape actor for XY bounds filtering
+    // Preload all meshes from the pool to avoid per-building LoadSynchronous
+    TMap<FString, UStaticMesh*> MeshCache;
+    if (Pool)
+    {
+        for (const FBuildingMeshEntry& Entry : Pool->Entries)
+        {
+            if (UStaticMesh* M = Entry.Mesh.LoadSynchronous())
+                MeshCache.Add(Entry.TypeKey, M);
+            for (const TSoftObjectPtr<UStaticMesh>& Var : Entry.MeshVariants)
+                Var.LoadSynchronous();
+        }
+        Pool->FallbackMesh.LoadSynchronous();
+        Log(FString::Printf(TEXT("  Preloaded %d mesh types from pool"), MeshCache.Num()));
+    }
+
     ALandscape* LandscapeActor = nullptr;
     FBox LandscapeBounds(ForceInit);
     for (TActorIterator<ALandscape> It(World); It; ++It)
@@ -1648,9 +1709,7 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
 
     const FString FolderPath = TEXT("LevelTool/Buildings");
 
-    // 2D AABB list for overlap prevention
-    TArray<FBox2D> PlacedBoxes;
-    PlacedBoxes.Reserve(Buildings.Num());
+    FSpatialHash2D SpatialHash(3000.f);
 
     for (const FBuildingEntry& Building : Buildings)
     {
@@ -1666,7 +1725,6 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
             }
         }
 
-        // Compute 2D AABB from footprint (or estimate from area)
         FBox2D NewBox;
         if (Building.FootprintUE5.Num() >= 3)
         {
@@ -1691,17 +1749,7 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
         FVector2D HalfExt = (NewBox.Max - NewBox.Min) * 0.45f;
         FBox2D TestBox(Center - HalfExt, Center + HalfExt);
 
-        bool bOverlaps = false;
-        for (const FBox2D& Existing : PlacedBoxes)
-        {
-            if (TestBox.Min.X < Existing.Max.X && TestBox.Max.X > Existing.Min.X &&
-                TestBox.Min.Y < Existing.Max.Y && TestBox.Max.Y > Existing.Min.Y)
-            {
-                bOverlaps = true;
-                break;
-            }
-        }
-        if (bOverlaps)
+        if (SpatialHash.Overlaps(TestBox))
         {
             Overlapped++;
             continue;
@@ -1715,7 +1763,7 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
             Actor->SetFolderPath(*FolderPath);
             Placed++;
             TypeCounts.FindOrAdd(Building.TypeKey)++;
-            PlacedBoxes.Add(NewBox);
+            SpatialHash.Insert(NewBox);
         }
         else
         {
@@ -1896,6 +1944,20 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     UStaticMeshComponent* Comp = Actor->GetStaticMeshComponent();
     Comp->SetStaticMesh(Mesh);
     Comp->SetCollisionProfileName(TEXT("BlockAll"));
+
+    // Apply Nanite if requested by pool entry and supported by mesh
+    if (Pool)
+    {
+        if (const FBuildingMeshEntry* Entry = Pool->FindEntry(Building.TypeKey))
+        {
+            if (Entry->bEnableNanite && Mesh->NaniteSettings.bEnabled == false)
+            {
+                Mesh->NaniteSettings.bEnabled = true;
+                Mesh->PostEditChange();
+                UE_LOG(LogLevelTool, Log, TEXT("  Nanite enabled on mesh: %s"), *Mesh->GetName());
+            }
+        }
+    }
 
     Actor->SetActorRelativeScale3D(Scale);
 

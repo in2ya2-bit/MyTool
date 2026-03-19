@@ -15,6 +15,7 @@
 #include "Widgets/Notifications/SProgressBar.h"
 
 #include "PropertyCustomizationHelpers.h"   // SObjectPropertyEntryBox
+#include "Misc/MessageDialog.h"
 #include "EditorStyleSet.h"
 #include "Styling/AppStyle.h"
 #include "Editor.h"
@@ -479,8 +480,8 @@ TSharedRef<SWidget> SLevelToolPanel::BuildPreviewSection()
 
     + SVerticalBox::Slot().AutoHeight().Padding(12.f, 0.f, 12.f, 8.f)
     [
-        SNew(SHorizontalBox)
-        + SHorizontalBox::Slot().AutoWidth()
+        SNew(SBox)
+        .MaxDesiredWidth(400.f)
         [
             SAssignNew(PreviewImage, SImage)
             .Image_Lambda([this]() -> const FSlateBrush* {
@@ -508,8 +509,7 @@ void SLevelToolPanel::LoadPreviewTexture(const FString& PngPath)
     const int32 SrcW = Wrapper->GetWidth();
     const int32 SrcH = Wrapper->GetHeight();
 
-    // Scale down to preview size (max 220 px on longest side)
-    const int32 MaxPx = 220;
+    const int32 MaxPx = 400;
     float Scale = FMath::Min(1.f, (float)MaxPx / FMath::Max(SrcW, SrcH));
     const int32 PrvW = FMath::Max(1, FMath::RoundToInt(SrcW * Scale));
     const int32 PrvH = FMath::Max(1, FMath::RoundToInt(SrcH * Scale));
@@ -740,7 +740,10 @@ FReply SLevelToolPanel::OnGenerateClicked()
     if (!Sub->ValidateSettings(Errors))
     {
         FString Joined = FString::Join(Errors, TEXT("\n• "));
-        // TODO: show modal dialog with errors
+        FMessageDialog::Open(EAppMsgType::Ok,
+            FText::Format(
+                LOCTEXT("ValidationFailed", "Settings validation failed:\n\n• {0}"),
+                FText::FromString(Joined)));
         OnLogLine(TEXT("⚠ Settings validation failed:"));
         for (const FString& E : Errors)
             OnLogLine(TEXT("  • ") + E);

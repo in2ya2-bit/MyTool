@@ -25,6 +25,7 @@ Usage examples:
 
 import sys
 import os
+import json
 import argparse
 import logging
 
@@ -33,6 +34,9 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 if sys.stderr.encoding and sys.stderr.encoding.lower() != 'utf-8':
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+# Merge stderr into stdout so UE5 pipe capture gets everything
+sys.stderr = sys.stdout
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -180,6 +184,14 @@ def cmd_landscape(args):
     print(f"  4. Scale XY: {LANDSCAPE_XY_SCALE}  |  Scale Z: {z_scale:.4f}")
     print()
 
+    result = {
+        "heightmap_png": paths['heightmap_png'],
+        "heightmap_r16": paths.get('heightmap_r16', ''),
+        "elevation_min_m": float(paths.get('elevation_min_m', 0.0)),
+        "elevation_max_m": float(paths.get('elevation_max_m', 0.0)),
+    }
+    print(f"__LEVELTOOL_RESULT__:{json.dumps(result)}")
+
 
 # ─── Command: Buildings ──────────────────────────────────────────────────────
 
@@ -235,6 +247,13 @@ def cmd_buildings(args):
     print(f"  Buildings JSON : {json_path}")
     print(f"  Roads JSON     : {roads_path}")
     print(f"  PCG CSV        : {pcg_csv}")
+
+    result = {
+        "buildings_json": json_path,
+        "roads_json": roads_path,
+    }
+    print(f"__LEVELTOOL_RESULT__:{json.dumps(result)}")
+
     print(f"\nNext steps:")
     print(f"  Blender FBX export:")
     print(f"    blender --background --python buildings/blender_extrude.py -- {json_path}")
@@ -321,6 +340,8 @@ def cmd_all(args):
     hm_path   = os.path.join(HEIGHTMAP_DIR, f"{name}_heightmap.png")
     bldg_path = os.path.join(BUILDING_DIR,  f"{name}_buildings.json")
 
+    roads_path = os.path.join(BUILDING_DIR, f"{name}_roads.json")
+
     print(f"\n{'='*55}")
     print(f"  UE5 Full Pipeline Command")
     print(f"{'='*55}")
@@ -336,6 +357,15 @@ def cmd_all(args):
     print(f"      z_range_cm     = {int(LANDSCAPE_Z_RANGE_METERS * 100)},")
     print(f"  )")
     print()
+
+    combined_result = {
+        "heightmap_png": hm_path,
+        "buildings_json": bldg_path,
+        "roads_json": roads_path,
+        "elevation_min_m": 0.0,
+        "elevation_max_m": 0.0,
+    }
+    print(f"__LEVELTOOL_RESULT__:{json.dumps(combined_result)}")
 
     # Phase 4 AI enhancement (optional)
     if getattr(args, "ai_enhance", False):

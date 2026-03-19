@@ -165,6 +165,14 @@ private:
     // Async task handle
     TFuture<void>       AsyncTask;
 
+    // ── Python process management (timeout + cancellation) ────────
+    static constexpr double PythonTimeoutSeconds = 300.0;
+    FProcHandle         ActivePythonProcess;
+    FCriticalSection    PythonProcessLock;
+
+    // Parse structured JSON result block from Python stdout
+    bool ParseJsonResultBlock(const FString& Output, FLevelToolJobResult& OutResult) const;
+
     // ── Cached heightmap for Z lookup (avoids physics line trace timing issue) ─
     TArray<uint16> CachedHeightData;
     int32          CachedHMapWidth  = 0;
