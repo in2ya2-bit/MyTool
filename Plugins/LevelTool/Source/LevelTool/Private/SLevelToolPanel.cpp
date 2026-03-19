@@ -634,7 +634,11 @@ void SLevelToolPanel::RefreshPresetList()
     }
 
     if (!PresetItems.IsEmpty())
+    {
         SelectedPreset = PresetItems[0];
+        // Sync coordinates from the initial preset so CurrentRadius etc. are correct
+        OnPresetSelected(SelectedPreset, ESelectInfo::Direct);
+    }
 
     if (PresetCombo.IsValid())
         PresetCombo->RefreshOptions();

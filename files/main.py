@@ -149,7 +149,8 @@ def cmd_landscape(args):
         erosion_iters  = args.erosion_iters,
         water_mask     = deep_mask_arr,
         river_mask     = river_mask_arr,
-        terrain_type   = terrain_type
+        terrain_type   = terrain_type,
+        radius_km      = radius
     )
 
     print(f"\nOutputs:")

@@ -277,7 +277,8 @@ def process_and_export(
     sea_threshold_m: float = 2.0,
     river_mask:      np.ndarray = None,
     river_depth_m:   float = 1.5,
-    terrain_type:    str   = "natural"
+    terrain_type:    str   = "natural",
+    radius_km:       float = 1.0
 ) -> dict:
     """
     Full processing pipeline: raw elevation → all UE5-ready assets.
@@ -298,46 +299,95 @@ def process_and_export(
                                          river_mask=river_mask,
                                          river_depth_m=river_depth_m)
 
-    # 2. Smooth SRTM noise — urban areas need aggressive DSM→DTM conversion
-    #    OpenTopography/SRTM data is a DSM that includes building rooftops as terrain.
-    #    In dense cities (e.g., Seoul), tall buildings create 20-60m spikes.
-    effective_sigma = smooth_sigma
+    # 2. DSM → DTM: remove building rooftop spikes from SRTM/OpenTopo data.
+    #    SRTM is a DSM that includes building heights as "terrain".
+    #    We detect spikes by comparing each pixel to a local minimum baseline;
+    #    natural mountains have gradual slopes so spike height stays low,
+    #    whereas buildings create sharp vertical jumps of 10-50+ m.
+    from scipy.ndimage import minimum_filter, median_filter
+
+    elev_f = elevation_raw.astype(np.float32)
+    h, w = elev_f.shape
+    raw_range = float(elev_f.max() - elev_f.min())
+    log.info(f"  DSM→DTM: raw elevation range={raw_range:.1f}m  terrain_type={terrain_type}")
+
     if terrain_type == "urban":
-        from scipy.ndimage import grey_opening, median_filter
+        # Aggressive: whole area is urban, replace elevation with ground baseline
+        min_win = max(h // 14, 101)
+        base = minimum_filter(elev_f, size=min_win)
+        blur_sigma = max(h // 20, 50)
+        base = gaussian_filter(base.astype(np.float32), sigma=blur_sigma)
+        base_range = float(base.max() - base.min())
+        log.info(f"  Urban DSM→DTM: min_filter({min_win}) + gauss({blur_sigma})  "
+                 f"range={base_range:.1f}m")
 
-        elev_f = elevation_raw.astype(np.float32)
+        max_urban_range_m = 30.0
+        if base_range > max_urban_range_m:
+            base_floor = float(np.percentile(base, 5))
+            above = base - base_floor
+            unity_m = max_urban_range_m * 0.5
+            elevation = np.where(
+                above > 0,
+                base_floor + unity_m * np.log1p(above / unity_m),
+                base)
+            log.info(f"  Urban DSM→DTM: log-compress {base_range:.1f}m → "
+                     f"{float(elevation.max()-elevation.min()):.1f}m")
+        else:
+            elevation = base
 
-        # Step A: Morphological opening — removes upward spikes (buildings/structures).
-        #   Two passes (41 + 21): first removes large building complexes, second
-        #   catches remaining smaller artifacts.
-        elevation_opened = grey_opening(grey_opening(elev_f, size=41), size=21)
-        log.info(f"  Urban DSM→DTM: morphological opening (41+21) removed building spikes")
-
-        # Step B: Large median filter for remaining mid-scale artifacts
-        elevation_opened = median_filter(elevation_opened, size=11)
-        log.info(f"  Urban DSM→DTM: median filter (11×11) applied")
-
-        # Step C: Logarithmic height compression.
-        #   Preserves small terrain variations proportionally but compresses large
-        #   hill/mountain heights to keep max slopes gentle.
-        #   Unity gain at 15m: heights below 15m above city floor are ~linear,
-        #   heights above are compressed (60m hill → ~24m, 100m → ~31m).
-        city_floor = float(np.percentile(elevation_opened, 10))
-        above = elevation_opened - city_floor
-        unity_m = 15.0
-        elevation_compressed = np.where(
-            above > 0,
-            city_floor + unity_m * np.log1p(above / unity_m),
-            elevation_opened)
-        log.info(f"  Urban height compression: floor={city_floor:.1f}m  "
-                 f"pre-range={float(elevation_opened.max() - elevation_opened.min()):.1f}m  "
-                 f"post-range={float(elevation_compressed.max() - elevation_compressed.min()):.1f}m")
-
-        # Step D: Strong Gaussian smoothing for final terrain softness
-        effective_sigma = max(smooth_sigma, 10.0)
-        elevation = smooth_heightmap(elevation_compressed, sigma=effective_sigma)
+        effective_sigma = max(smooth_sigma, 8.0)
+        elevation = smooth_heightmap(elevation, sigma=effective_sigma)
     else:
-        elevation = smooth_heightmap(elevation_raw, sigma=effective_sigma)
+        # Natural/mixed terrain: morphological opening removes features smaller
+        # than the structuring element (buildings ~20-60m) while preserving
+        # larger features (mountains, hills, ridges).
+        from scipy.ndimage import maximum_filter
+
+        diameter_m = radius_km * 2.0 * 1000.0
+        pixel_m = diameter_m / max(w, 1)
+        # Remove structures up to ~80m footprint (covers most buildings)
+        target_m = 80.0
+        opening_win = max(int(target_m / max(pixel_m, 0.5)), 15)
+        if opening_win % 2 == 0:
+            opening_win += 1
+        opening_win = min(opening_win, 81)
+
+        log.info(f"  Morphological opening: window={opening_win}px "
+                 f"(≈{opening_win * pixel_m:.0f}m)")
+
+        # Opening = erosion (min) + dilation (max)
+        opened = maximum_filter(minimum_filter(elev_f, size=opening_win),
+                                size=opening_win)
+
+        # Spike = positive residual above the opened surface
+        spike_height = elev_f - opened
+        spike_thresh = 10.0
+        spike_mask = spike_height > spike_thresh
+
+        n_spike = int(spike_mask.sum())
+        pct_spike = n_spike / (h * w) * 100
+        log.info(f"  DSM spike detect: threshold={spike_thresh}m, "
+                 f"spikes={n_spike} ({pct_spike:.1f}%)")
+
+        if n_spike > 0 and pct_spike < 30.0:
+            # Blend spike areas toward the opened surface
+            blend_mask = gaussian_filter(spike_mask.astype(np.float32), sigma=5)
+            blend_mask = np.clip(blend_mask, 0, 1)
+            corrected = opened + np.clip(spike_height, 0, spike_thresh)
+            elevation = elev_f * (1 - blend_mask) + corrected * blend_mask
+            log.info(f"  DSM spike removal: {n_spike} pixels corrected, "
+                     f"range {float(elevation.max()-elevation.min()):.1f}m")
+        else:
+            elevation = elev_f
+            if pct_spike >= 30.0:
+                log.info(f"  DSM spike skip: {pct_spike:.1f}% above threshold — "
+                         f"likely steep terrain, not buildings")
+            else:
+                log.info(f"  DSM spike detect: no spikes found")
+
+        effective_sigma = smooth_sigma
+        elevation = smooth_heightmap(elevation, sigma=effective_sigma)
+
     log.info(f"  Smoothing: sigma={effective_sigma:.1f} (requested {smooth_sigma:.1f})")
 
     # 3. Optional erosion — skip entirely for urban terrain
@@ -346,6 +396,24 @@ def process_and_export(
             pass  # no erosion in cities
         else:
             elevation = apply_hydraulic_erosion(elevation, iterations=erosion_iters)
+
+    # 3b. Non-linear mountain exaggeration:
+    #     Flat/urban areas stay unchanged; only elevations above the
+    #     "mountain threshold" get their excess height scaled up.
+    mtn_exag = 1.8
+    elev_f32 = elevation.astype(np.float32)
+    elev_range_pre = float(elev_f32.max() - elev_f32.min())
+
+    if elev_range_pre > 50.0 and mtn_exag > 1.0:
+        mtn_start = float(np.percentile(elev_f32, 70))
+        excess = np.maximum(elev_f32 - mtn_start, 0.0)
+        max_excess = float(excess.max())
+
+        if max_excess > 10.0:
+            elevation = elev_f32 + excess * (mtn_exag - 1.0)
+            new_range = float(elevation.max() - elevation.min())
+            log.info(f"  Mountain exaggeration: threshold={mtn_start:.1f}m, "
+                     f"factor={mtn_exag}x, range {elev_range_pre:.1f}m → {new_range:.1f}m")
 
     # 4. Compute slope for splat maps
     slope = compute_slope(elevation)
@@ -372,6 +440,26 @@ def process_and_export(
     export_preview(elevation, paths["preview"])
     for layer, wmap in splat.items():
         export_splat_map(wmap, paths[f"splat_{layer}"])
+
+    # 6b. Generate composite colormap from splat weights for landscape material
+    grass_color = np.array([0.35, 0.50, 0.25])   # muted green
+    rock_color  = np.array([0.45, 0.42, 0.38])   # warm gray
+    sand_color  = np.array([0.72, 0.65, 0.50])   # sandy tan
+    snow_color  = np.array([0.90, 0.90, 0.92])   # near-white
+
+    h, w = elevation.shape
+    colormap = np.zeros((h, w, 3), dtype=np.float32)
+    total = (splat["grass"].astype(np.float32) + splat["rock"].astype(np.float32)
+             + splat["sand"].astype(np.float32) + splat["snow"].astype(np.float32) + 1e-6)
+    for color, layer_name in [(grass_color, "grass"), (rock_color, "rock"),
+                               (sand_color, "sand"), (snow_color, "snow")]:
+        weight = splat[layer_name].astype(np.float32) / total
+        colormap += weight[:, :, np.newaxis] * color[np.newaxis, np.newaxis, :]
+
+    colormap_path = os.path.join(output_dir, f"{name}_colormap.png")
+    Image.fromarray((np.clip(colormap, 0, 1) * 255).astype(np.uint8)).save(colormap_path)
+    paths["colormap"] = colormap_path
+    log.info(f"Colormap saved: {colormap_path}")
 
     paths["elevation_min_m"] = elev_min_m
     paths["elevation_max_m"] = elev_max_m

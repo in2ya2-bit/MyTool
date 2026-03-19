@@ -121,6 +121,18 @@ void ULevelToolSubsystem::RunFullPipeline(
         FString MainPy   = Self->GetPythonScriptPath(TEXT("main.py"));
         FString Stdout, Stderr;
 
+        // Compute effective XY scale the same way BuildMainPyArgs does
+        {
+            const ULevelToolSettings* S2 = ULevelToolSettings::Get();
+            float DiamCm = RadiusKm * 2.0f * 100000.0f;
+            int32 Req = FMath::CeilToInt(DiamCm / S2->XYScaleCm);
+            bool bFit = false;
+            static const int32 VS[] = { 505, 1009, 2017, 4033 };
+            for (int32 V : VS) { if ((V-1) >= Req) { bFit = true; break; } }
+            Result.EffectiveXYScaleCm = bFit ? S2->XYScaleCm
+                : FMath::CeilToFloat(DiamCm / 4032.f);
+        }
+
         if (!Self->RunPythonScript(MainPy, Args, Stdout, Stderr))
         {
             Result.bSuccess     = false;
@@ -177,7 +189,7 @@ void ULevelToolSubsystem::RunFullPipeline(
                                           .Replace(TEXT("_heightmap"), TEXT(""));
                 float ElevRange = (Result.ElevationMaxM > Result.ElevationMinM)
                     ? (Result.ElevationMaxM - Result.ElevationMinM) : 0.f;
-                if (!Self->ImportHeightmapAsLandscape(Result.HeightmapPngPath, LandscapeName, ElevRange))
+                if (!Self->ImportHeightmapAsLandscape(Result.HeightmapPngPath, LandscapeName, ElevRange, Result.EffectiveXYScaleCm))
                 {
                     Self->Log(TEXT("⚠ Landscape import failed — check heightmap path"));
                 }
@@ -462,34 +474,44 @@ FString ULevelToolSubsystem::BuildMainPyArgs(
     const ULevelToolSettings* S = ULevelToolSettings::Get();
     FString Args = Command;
 
-    // Compute the grid size needed to cover the requested radius at the configured XY scale.
-    // Diameter in cm = 2 * radius_km * 1000 * 100;  quads = diameter / XYScaleCm;  verts = quads + 1
-    const float DiameterCm    = RadiusKm * 2.0f * 100000.0f;
-    const int32 RequiredQuads = FMath::CeilToInt(DiameterCm / S->XYScaleCm);
+    // Compute the grid size and XY scale needed to cover the requested radius.
+    // Strategy: try configured XYScaleCm first, then auto-increase scale if the
+    // radius doesn't fit in the largest valid grid (4033).
+    const float DiameterCm = RadiusKm * 2.0f * 100000.0f;
+    float EffectiveXYScale = S->XYScaleCm;
 
-    // Pick the smallest valid UE5 landscape size that can hold the required quads.
-    // Valid sizes: (2^n * k + 1) where quads per component = 63.
     static const int32 ValidSizes[] = { 505, 1009, 2017, 4033 };
     int32 EffectiveGridSize = S->HeightmapSize;
+
+    // First pass: find smallest grid that fits at configured XY scale
+    int32 RequiredQuads = FMath::CeilToInt(DiameterCm / EffectiveXYScale);
+    bool bFits = false;
     for (int32 VS : ValidSizes)
     {
         if ((VS - 1) >= RequiredQuads)
         {
             EffectiveGridSize = VS;
+            bFits = true;
             break;
         }
     }
-    if ((EffectiveGridSize - 1) < RequiredQuads)
+
+    if (!bFits)
     {
+        // Radius too large for max grid at current XY scale.
+        // Auto-increase XY scale so 4033 grid covers the full radius.
         EffectiveGridSize = 4033;
-        UE_LOG(LogLevelTool, Warning, TEXT("Radius %.2fkm requires grid > 4033 — clamped to 4033 (%.1fkm radius)"),
-            RadiusKm, (4033 - 1) * S->XYScaleCm / 2.0f / 100000.0f);
+        EffectiveXYScale = DiameterCm / (4033.f - 1.f);
+        EffectiveXYScale = FMath::CeilToFloat(EffectiveXYScale);  // round up to integer cm
+        UE_LOG(LogLevelTool, Log,
+            TEXT("XY scale auto-adjusted: %.0f -> %.0f cm/quad  (to cover %.1fkm radius in 4033 grid)"),
+            S->XYScaleCm, EffectiveXYScale, RadiusKm);
     }
 
     if (EffectiveGridSize != S->HeightmapSize)
     {
         UE_LOG(LogLevelTool, Log, TEXT("Grid auto-adjusted: %d -> %d  (to cover %.2fkm radius at %.0f cm/quad)"),
-            S->HeightmapSize, EffectiveGridSize, RadiusKm, S->XYScaleCm);
+            S->HeightmapSize, EffectiveGridSize, RadiusKm, EffectiveXYScale);
     }
 
     Args += FString::Printf(TEXT(" --lat %.6f --lon %.6f --radius %.4f"), Lat, Lon, RadiusKm);
@@ -646,7 +668,8 @@ FString ULevelToolSubsystem::GetPythonScriptPath(const FString& ScriptName) cons
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
-    const FString& HeightmapPngPath, const FString& LandscapeName, float ElevationRangeM)
+    const FString& HeightmapPngPath, const FString& LandscapeName,
+    float ElevationRangeM, float OverrideXYScaleCm)
 {
     if (!FPaths::FileExists(HeightmapPngPath))
     {
@@ -655,6 +678,7 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
     }
 
     const ULevelToolSettings* S = ULevelToolSettings::Get();
+    const float XYScale = (OverrideXYScaleCm > 0.f) ? OverrideXYScaleCm : S->XYScaleCm;
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
     if (!World)
@@ -784,8 +808,8 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
     // (which are relative to the query center = (0,0)) land in the middle of
     // the landscape, not at its corner.
     // Pixel (0,0) = NW corner = actor position.
-    // Landscape total width = (HMapWidth-1) * XYScaleCm, so half = offset below.
-    const float HalfSizeCm = (DetectedSize - 1) * S->XYScaleCm / 2.0f;
+    // Landscape total width = (HMapWidth-1) * XYScale, so half = offset below.
+    const float HalfSizeCm = (DetectedSize - 1) * XYScale / 2.0f;
     const float ActorX     = -HalfSizeCm;
     const float ActorY     = -HalfSizeCm;
 
@@ -803,7 +827,7 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
         return false;
     }
 
-    Landscape->SetActorRelativeScale3D(FVector(S->XYScaleCm, S->XYScaleCm, ZScale));
+    Landscape->SetActorRelativeScale3D(FVector(XYScale, XYScale, ZScale));
     Landscape->SetActorLabel(LandscapeName);
     Landscape->Tags.AddUnique(TEXT("LevelToolGenerated"));
 
@@ -913,7 +937,7 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
     CachedHeightData  = HeightDataCopy;
     CachedHMapWidth   = HMapWidth;
     CachedZScale      = ZScale;
-    CachedXYScaleCm   = S->XYScaleCm;
+    CachedXYScaleCm   = XYScale;
     CachedOriginX     = ActorX;
     CachedOriginY     = ActorY;
 
@@ -932,7 +956,7 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
 
     Log(FString::Printf(TEXT("✔ Landscape created: %s  scale=%.0f×%.0f×%.4f  components=%d×%d"),
         *LandscapeName,
-        S->XYScaleCm, S->XYScaleCm, ZScale,
+        XYScale, XYScale, ZScale,
         ComponentCountX, ComponentCountY));
 
     // Import splat maps (grass/rock/sand/snow) as texture assets
@@ -1308,14 +1332,20 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
 void ULevelToolSubsystem::ImportSplatMapsAsTextures(const FString& HeightmapPngPath,
                                                      ALandscape* Landscape)
 {
-    // Splat PNGs are in the same folder as the heightmap, named {prefix}_splat_{layer}.png
     const FString Dir    = FPaths::GetPath(HeightmapPngPath);
     FString       Prefix = FPaths::GetBaseFilename(HeightmapPngPath)
                                .Replace(TEXT("_heightmap"), TEXT(""));
 
-    const TArray<FString> Layers = { TEXT("grass"), TEXT("rock"), TEXT("sand"), TEXT("snow") };
+    // Look for composite colormap first (preferred), then individual splat PNGs
+    FString ColormapPath = FPaths::Combine(Dir,
+        FString::Printf(TEXT("%s_colormap.png"), *Prefix));
 
+    const TArray<FString> Layers = { TEXT("grass"), TEXT("rock"), TEXT("sand"), TEXT("snow") };
     TArray<FString> FilesToImport;
+
+    if (FPaths::FileExists(ColormapPath))
+        FilesToImport.Add(ColormapPath);
+
     for (const FString& Layer : Layers)
     {
         FString SplatPath = FPaths::Combine(Dir,
@@ -1332,31 +1362,101 @@ void ULevelToolSubsystem::ImportSplatMapsAsTextures(const FString& HeightmapPngP
 
     Log(FString::Printf(TEXT("  ℹ Splat maps found (%d) — importing on next frame..."), FilesToImport.Num()));
 
-    // ImportAssetsAutomated uses the Interchange pipeline which dispatches its own
-    // TaskGraph tasks. Calling it directly from inside a TaskGraphMainThread callback
-    // hits the RecursionGuard assertion. Defer to the next engine tick instead.
     TWeakObjectPtr<ULevelToolSubsystem> WeakThis(this);
+    TWeakObjectPtr<ALandscape> WeakLandscape(Landscape);
+
     FTSTicker::GetCoreTicker().AddTicker(
-        FTickerDelegate::CreateLambda([WeakThis, FilesToImport](float) -> bool
+        FTickerDelegate::CreateLambda([WeakThis, WeakLandscape, FilesToImport, Prefix](float) -> bool
         {
-            if (ULevelToolSubsystem* Self = WeakThis.Get())
+            ULevelToolSubsystem* Self = WeakThis.Get();
+            ALandscape* Land = WeakLandscape.Get();
+            if (!Self) return false;
+
+            IAssetTools& AssetTools =
+                FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+
+            UAutomatedAssetImportData* ImportData = NewObject<UAutomatedAssetImportData>();
+            ImportData->DestinationPath  = TEXT("/Game/LevelTool/SplatMaps");
+            ImportData->Filenames        = FilesToImport;
+            ImportData->bReplaceExisting = true;
+
+            TArray<UObject*> Imported = AssetTools.ImportAssetsAutomated(ImportData);
+
+            Self->Log(FString::Printf(
+                TEXT("  ✔ Splat maps imported: %d textures → /Game/LevelTool/SplatMaps/"),
+                Imported.Num()));
+
+            // Auto-apply colormap as landscape material
+            if (Land)
             {
-                IAssetTools& AssetTools =
-                    FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+                FString ColormapAsset = FString::Printf(
+                    TEXT("/Game/LevelTool/SplatMaps/%s_colormap.%s_colormap"), *Prefix, *Prefix);
+                UTexture2D* ColormapTex = LoadObject<UTexture2D>(nullptr, *ColormapAsset);
 
-                UAutomatedAssetImportData* ImportData = NewObject<UAutomatedAssetImportData>();
-                ImportData->DestinationPath  = TEXT("/Game/LevelTool/SplatMaps");
-                ImportData->Filenames        = FilesToImport;
-                ImportData->bReplaceExisting = true;
+                if (ColormapTex)
+                {
+                    // Create a simple material that projects the colormap onto the landscape
+                    static const TCHAR* MatPath = TEXT("/Game/LevelTool/M_LandscapeAuto.M_LandscapeAuto");
+                    UMaterial* LandMat = LoadObject<UMaterial>(nullptr, MatPath);
 
-                TArray<UObject*> Imported = AssetTools.ImportAssetsAutomated(ImportData);
+                    if (!LandMat)
+                    {
+                        FString PkgPath = TEXT("/Game/LevelTool/M_LandscapeAuto");
+                        UPackage* Pkg = CreatePackage(*PkgPath);
+                        Pkg->FullyLoad();
 
-                Self->Log(FString::Printf(
-                    TEXT("  ✔ Splat maps imported: %d textures → /Game/LevelTool/SplatMaps/"),
-                    Imported.Num()));
-                Self->Log(TEXT("    → Assign to Landscape Material layer blend nodes (grass/rock/sand/snow)"));
+                        LandMat = NewObject<UMaterial>(Pkg, TEXT("M_LandscapeAuto"), RF_Public | RF_Standalone);
+
+                        // Texture coordinate: scale UVs to cover the entire landscape (0..1)
+                        auto* TexCoord = NewObject<UMaterialExpressionTextureCoordinate>(LandMat);
+                        TexCoord->CoordinateIndex = 0;
+
+                        auto* TexSample = NewObject<UMaterialExpressionTextureSampleParameter2D>(LandMat);
+                        TexSample->ParameterName = TEXT("Colormap");
+                        TexSample->Texture = ColormapTex;
+                        TexSample->SamplerType = SAMPLERTYPE_Color;
+                        TexSample->Coordinates.Connect(0, TexCoord);
+
+                        auto* RoughParam = NewObject<UMaterialExpressionScalarParameter>(LandMat);
+                        RoughParam->ParameterName = TEXT("Roughness");
+                        RoughParam->DefaultValue  = 0.85f;
+
+                        auto& Exprs = LandMat->GetExpressionCollection().Expressions;
+                        Exprs.Add(TexCoord);
+                        Exprs.Add(TexSample);
+                        Exprs.Add(RoughParam);
+
+                        auto* Ed = LandMat->GetEditorOnlyData();
+                        Ed->BaseColor.Connect(0, TexSample);
+                        Ed->Roughness.Connect(0, RoughParam);
+
+                        LandMat->PreEditChange(nullptr);
+                        LandMat->PostEditChange();
+
+                        FAssetRegistryModule::AssetCreated(LandMat);
+                        Pkg->MarkPackageDirty();
+                        FString FilePath = FPackageName::LongPackageNameToFilename(
+                            PkgPath, FPackageName::GetAssetPackageExtension());
+                        FSavePackageArgs SaveArgs;
+                        SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+                        UPackage::SavePackage(Pkg, LandMat, *FilePath, SaveArgs);
+
+                        Self->Log(TEXT("  ✔ Landscape material M_LandscapeAuto created"));
+                    }
+
+                    // Apply material to landscape
+                    Land->LandscapeMaterial = LandMat;
+                    Land->MarkPackageDirty();
+                    Land->PostEditChange();
+                    Self->Log(TEXT("  ✔ Landscape material applied (colormap-based)"));
+                }
+                else
+                {
+                    Self->Log(TEXT("  ⚠ Colormap texture not found after import — assign splat maps manually"));
+                }
             }
-            return false; // run once
+
+            return false;
         })
     );
 }
@@ -1492,6 +1592,13 @@ bool ULevelToolSubsystem::LoadBuildingsJson(
                 }
             }
         }
+
+        // OSM metadata
+        Obj->TryGetStringField(TEXT("name"), Entry.Name);
+        Obj->TryGetStringField(TEXT("roof_shape"), Entry.RoofShape);
+        Obj->TryGetStringField(TEXT("building_colour"), Entry.BuildingColour);
+        Obj->TryGetStringField(TEXT("building_material"), Entry.BuildingMaterial);
+        Entry.Levels = (int32)Obj->GetNumberField(TEXT("levels"));
 
         OutBuildings.Add(Entry);
     }
@@ -1645,44 +1752,90 @@ namespace
         float Metallic;
     };
 
-    FBuildingPalette GetBuildingPalette(const FString& TypeKey, uint32 Hash)
+    FLinearColor ParseOsmColour(const FString& ColourStr)
+    {
+        if (ColourStr.IsEmpty()) return FLinearColor(-1,-1,-1,-1); // sentinel: not set
+        FString C = ColourStr.ToLower().TrimStartAndEnd();
+
+        // Named colours commonly used in OSM
+        if (C == TEXT("white"))  return FLinearColor(0.85f, 0.85f, 0.85f, 1.f);
+        if (C == TEXT("grey") || C == TEXT("gray")) return FLinearColor(0.55f, 0.55f, 0.55f, 1.f);
+        if (C == TEXT("brown"))  return FLinearColor(0.45f, 0.30f, 0.18f, 1.f);
+        if (C == TEXT("red"))    return FLinearColor(0.65f, 0.22f, 0.15f, 1.f);
+        if (C == TEXT("yellow")) return FLinearColor(0.82f, 0.75f, 0.35f, 1.f);
+        if (C == TEXT("beige"))  return FLinearColor(0.76f, 0.70f, 0.55f, 1.f);
+        if (C == TEXT("blue"))   return FLinearColor(0.30f, 0.45f, 0.65f, 1.f);
+        if (C == TEXT("green"))  return FLinearColor(0.30f, 0.55f, 0.30f, 1.f);
+        if (C == TEXT("black"))  return FLinearColor(0.15f, 0.15f, 0.15f, 1.f);
+        if (C == TEXT("orange")) return FLinearColor(0.78f, 0.50f, 0.20f, 1.f);
+        if (C == TEXT("pink"))   return FLinearColor(0.80f, 0.55f, 0.58f, 1.f);
+
+        // Try hex (#RRGGBB or #RGB)
+        if (C.StartsWith(TEXT("#")) && (C.Len() == 7 || C.Len() == 4))
+        {
+            FColor Parsed = FColor::FromHex(C);
+            return FLinearColor(Parsed);
+        }
+        return FLinearColor(-1,-1,-1,-1);
+    }
+
+    void ApplyMaterialOverrides(FBuildingPalette& Pal, const FString& MaterialStr)
+    {
+        if (MaterialStr.IsEmpty()) return;
+        FString M = MaterialStr.ToLower();
+        if (M == TEXT("glass"))         { Pal.Roughness = 0.10f; Pal.Metallic = 0.60f; }
+        else if (M == TEXT("metal"))    { Pal.Roughness = 0.25f; Pal.Metallic = 0.80f; }
+        else if (M == TEXT("brick"))    { Pal.Roughness = 0.90f; Pal.Metallic = 0.00f; }
+        else if (M == TEXT("concrete")) { Pal.Roughness = 0.85f; Pal.Metallic = 0.02f; }
+        else if (M == TEXT("wood"))     { Pal.Roughness = 0.92f; Pal.Metallic = 0.00f; }
+        else if (M == TEXT("stone"))    { Pal.Roughness = 0.88f; Pal.Metallic = 0.01f; }
+    }
+
+    FBuildingPalette GetBuildingPalette(const FString& TypeKey, uint32 Hash,
+        const FString& OsmColour = TEXT(""), const FString& OsmMaterial = TEXT(""))
     {
         float V = static_cast<float>(Hash & 0xFFFF) / 65535.f * 0.08f - 0.04f;
 
-        if (TypeKey == TEXT("commercial") || TypeKey == TEXT("retail") ||
-            TypeKey == TEXT("office")     || TypeKey == TEXT("hotel"))
-        {
-            return { FLinearColor(0.50f+V, 0.55f+V, 0.65f+V, 1.f), 0.30f, 0.40f };
-        }
-        if (TypeKey == TEXT("residential") || TypeKey == TEXT("apartments") ||
-            TypeKey == TEXT("house")       || TypeKey == TEXT("detached") ||
-            TypeKey == TEXT("terrace")     || TypeKey == TEXT("dormitory"))
-        {
-            return { FLinearColor(0.72f+V, 0.65f+V, 0.55f+V, 1.f), 0.85f, 0.0f };
-        }
-        if (TypeKey == TEXT("industrial") || TypeKey == TEXT("warehouse") ||
-            TypeKey == TEXT("factory")    || TypeKey == TEXT("manufacture"))
-        {
-            return { FLinearColor(0.48f+V, 0.48f+V, 0.46f+V, 1.f), 0.90f, 0.05f };
-        }
-        if (TypeKey == TEXT("church") || TypeKey == TEXT("temple") ||
-            TypeKey == TEXT("shrine") || TypeKey == TEXT("religious") ||
-            TypeKey == TEXT("cathedral"))
-        {
-            return { FLinearColor(0.76f+V, 0.70f+V, 0.60f+V, 1.f), 0.90f, 0.0f };
-        }
-        if (TypeKey == TEXT("hospital") || TypeKey == TEXT("school") ||
-            TypeKey == TEXT("university") || TypeKey == TEXT("public") ||
-            TypeKey == TEXT("civic")      || TypeKey == TEXT("government"))
-        {
-            return { FLinearColor(0.82f+V, 0.82f+V, 0.80f+V, 1.f), 0.60f, 0.05f };
-        }
-        if (TypeKey == TEXT("garage") || TypeKey == TEXT("parking") ||
-            TypeKey == TEXT("carport"))
-        {
-            return { FLinearColor(0.55f+V, 0.54f+V, 0.52f+V, 1.f), 0.92f, 0.0f };
-        }
-        return { FLinearColor(0.62f+V, 0.60f+V, 0.55f+V, 1.f), 0.80f, 0.0f };
+        // TypeKey comes as "BP_Building_Commercial" from Python — strip prefix and lowercase
+        FString Key = TypeKey;
+        Key.RemoveFromStart(TEXT("BP_Building_"));
+        Key = Key.ToLower();
+
+        FBuildingPalette Pal;
+
+        if (Key == TEXT("commercial") || Key == TEXT("retail") ||
+            Key == TEXT("office")     || Key == TEXT("hotel"))
+            Pal = { FLinearColor(0.50f+V, 0.55f+V, 0.65f+V, 1.f), 0.30f, 0.40f };
+        else if (Key == TEXT("residential") || Key == TEXT("apartment") ||
+            Key == TEXT("house")       || Key == TEXT("detached") ||
+            Key == TEXT("terrace")     || Key == TEXT("dormitory"))
+            Pal = { FLinearColor(0.72f+V, 0.65f+V, 0.55f+V, 1.f), 0.85f, 0.0f };
+        else if (Key == TEXT("industrial") || Key == TEXT("warehouse") ||
+            Key == TEXT("factory")    || Key == TEXT("manufacture"))
+            Pal = { FLinearColor(0.48f+V, 0.48f+V, 0.46f+V, 1.f), 0.90f, 0.05f };
+        else if (Key == TEXT("church") || Key == TEXT("temple") ||
+            Key == TEXT("shrine") || Key == TEXT("religious") ||
+            Key == TEXT("cathedral"))
+            Pal = { FLinearColor(0.76f+V, 0.70f+V, 0.60f+V, 1.f), 0.90f, 0.0f };
+        else if (Key == TEXT("hospital") || Key == TEXT("school") ||
+            Key == TEXT("university") || Key == TEXT("public") ||
+            Key == TEXT("civic")      || Key == TEXT("government"))
+            Pal = { FLinearColor(0.82f+V, 0.82f+V, 0.80f+V, 1.f), 0.60f, 0.05f };
+        else if (Key == TEXT("generic") || Key == TEXT("garage") ||
+            Key == TEXT("parking")  || Key == TEXT("carport"))
+            Pal = { FLinearColor(0.55f+V, 0.54f+V, 0.52f+V, 1.f), 0.92f, 0.0f };
+        else
+            Pal = { FLinearColor(0.62f+V, 0.60f+V, 0.55f+V, 1.f), 0.80f, 0.0f };
+
+        // Override with OSM building:colour if available
+        FLinearColor OsmTint = ParseOsmColour(OsmColour);
+        if (OsmTint.A > 0.f)
+            Pal.Tint = OsmTint;
+
+        // Override roughness/metallic from building:material
+        ApplyMaterialOverrides(Pal, OsmMaterial);
+
+        return Pal;
     }
 }
 
@@ -1772,16 +1925,39 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     if (!bMaterialApplied)
     {
         uint32 OsmHash = static_cast<uint32>(Building.OsmId * 2654435761u);
-        FBuildingPalette Pal = GetBuildingPalette(Building.TypeKey, OsmHash);
+        FBuildingPalette Pal = GetBuildingPalette(Building.TypeKey, OsmHash,
+            Building.BuildingColour, Building.BuildingMaterial);
 
-        // Always guaranteed to work: BasicShapeMaterial + type-based color
-        UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(nullptr,
-            TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-        if (BasicMat)
+        // Try procedural window material first (creates once, reused for all buildings)
+        if (!CachedBuildingMaterial) EnsureBuildingMaterial();
+
+        if (CachedBuildingMaterial)
         {
-            UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BasicMat, Actor);
-            DynMat->SetVectorParameterValue(TEXT("Color"), Pal.Tint);
+            UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(CachedBuildingMaterial, Actor);
+            DynMat->SetVectorParameterValue(TEXT("Tint"), Pal.Tint);
+            DynMat->SetScalarParameterValue(TEXT("Roughness"), Pal.Roughness);
+            DynMat->SetScalarParameterValue(TEXT("Metallic"), Pal.Metallic);
+
+            // Tiling: more window rows for taller buildings
+            float Floors = FMath::Max(1.f, Building.HeightM / 3.0f);
+            DynMat->SetScalarParameterValue(TEXT("UTilingX"), 2.f);
+            DynMat->SetScalarParameterValue(TEXT("UTilingY"), Floors);
+
+            if (CachedWindowTexture)
+                DynMat->SetTextureParameterValue(TEXT("WindowTex"), CachedWindowTexture);
+
             Comp->SetMaterial(0, DynMat);
+        }
+        else
+        {
+            UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(nullptr,
+                TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+            if (BasicMat)
+            {
+                UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BasicMat, Actor);
+                DynMat->SetVectorParameterValue(TEXT("Color"), Pal.Tint);
+                Comp->SetMaterial(0, DynMat);
+            }
         }
     }
 

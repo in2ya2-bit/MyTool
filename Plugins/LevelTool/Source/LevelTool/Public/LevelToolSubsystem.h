@@ -34,6 +34,7 @@ struct FLevelToolJobResult
     int32  BuildingCount     = 0;
     float  ElevationMinM     = 0.f;
     float  ElevationMaxM     = 0.f;
+    float  EffectiveXYScaleCm = 0.f;  // auto-computed from radius & grid
     FString ErrorMessage;
 };
 
@@ -87,7 +88,7 @@ public:
     // ── Landscape Import ─────────────────────────────────────────────────
     // ElevationRangeM: actual terrain height range from Python output (0 = use settings default)
     bool ImportHeightmapAsLandscape(const FString& HeightmapPngPath, const FString& LandscapeName,
-                                    float ElevationRangeM = 0.f);
+                                    float ElevationRangeM = 0.f, float OverrideXYScaleCm = 0.f);
 
     // ── Building Placement ───────────────────────────────────────────────
     int32 PlaceBuildingsFromJson(const FString& JsonPath, ULevelToolBuildingPool* Pool,
@@ -136,6 +137,13 @@ private:
         float    AreaM2;
         FVector2D CentroidUE5;    // cm XY
         TArray<FVector2D> FootprintUE5;
+
+        // OSM metadata (optional, from tags)
+        FString  Name;
+        FString  RoofShape;       // flat, gabled, hipped, dome, pyramidal, etc.
+        FString  BuildingColour;  // OSM building:colour (hex or named)
+        FString  BuildingMaterial;// concrete, brick, glass, wood, metal, etc.
+        int32    Levels = 0;      // building:levels (0 = unknown)
     };
 
     bool LoadBuildingsJson(const FString& JsonPath, TArray<FBuildingEntry>& OutBuildings);

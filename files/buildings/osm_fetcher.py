@@ -166,6 +166,17 @@ def parse_min_height(tags: dict) -> float:
     return 0.0
 
 
+def _safe_int(val) -> int:
+    """Parse int from possibly malformed OSM values like '17;16' or '3.5'."""
+    if not val:
+        return 0
+    s = str(val).split(";")[0].split(",")[0].strip()
+    try:
+        return int(float(s))
+    except (ValueError, TypeError):
+        return 0
+
+
 def classify_building(tags: dict) -> str:
     """Map OSM building tag to UE5 mesh category."""
     from config import BUILDING_TYPE_MAP
@@ -305,6 +316,11 @@ def parse_buildings(
             "footprint_latlon": footprint_latlon,
             "footprint_ue5":    footprint_ue5,
             "centroid_ue5":     (round(cx, 1), round(cy, 1)),
+            "name":             tags.get("name", ""),
+            "roof_shape":       tags.get("roof:shape", tags.get("building:roof:shape", "")),
+            "building_colour":  tags.get("building:colour", ""),
+            "building_material":tags.get("building:material", ""),
+            "levels":           _safe_int(tags.get("building:levels", "")),
             "tags":             tags,
         }
 
