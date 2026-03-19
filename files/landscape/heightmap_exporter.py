@@ -129,7 +129,11 @@ def apply_water_mask(
     """
     result = elevation.copy().astype(np.float32)
 
-    sea_pixels = water_mask | (elevation <= sea_threshold_m)
+    # Only flatten pixels that are BOTH in the water mask AND have low elevation.
+    # High-elevation pixels (>10m) marked as water by flood-fill are land
+    # (coastline flood-fill artifacts on mountains/cliffs).
+    land_elev_guard = 10.0
+    sea_pixels = (water_mask & (elevation <= land_elev_guard)) | (elevation <= sea_threshold_m)
     result[sea_pixels] = sea_elevation_m
 
     if river_mask is not None:
@@ -311,7 +315,17 @@ def process_and_export(
     raw_range = float(elev_f.max() - elev_f.min())
     log.info(f"  DSM→DTM: raw elevation range={raw_range:.1f}m  terrain_type={terrain_type}")
 
-    if terrain_type == "urban":
+    if terrain_type == "island":
+        # Island mode: most of the area is ocean (-5m). DSM→DTM would destroy
+        # the island's tiny land mass. Only apply gentle smoothing to land pixels.
+        land_mask = elev_f > (sea_threshold_m + 0.5)
+        n_land = int(land_mask.sum())
+        log.info(f"  Island mode: land={n_land} pixels ({n_land/(h*w)*100:.1f}%), "
+                 f"skip DSM→DTM")
+
+        effective_sigma = min(smooth_sigma, 2.0)
+        elevation = smooth_heightmap(elev_f, sigma=effective_sigma)
+    elif terrain_type == "urban":
         # Aggressive: whole area is urban, replace elevation with ground baseline
         min_win = max(h // 14, 101)
         base = minimum_filter(elev_f, size=min_win)

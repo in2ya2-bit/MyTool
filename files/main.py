@@ -131,12 +131,19 @@ def cmd_landscape(args):
             logging.getLogger(__name__).warning(f"Water mask skipped: {e}")
             water_path = ""
 
-    # Detect terrain type from elevation profile
+    # Detect terrain type from elevation profile + water coverage
     terrain_type = getattr(args, "terrain_type", "auto")
     if terrain_type == "auto":
         elev_range = float(elevation.max() - elevation.min())
-        terrain_type = "urban" if elev_range < 100.0 else "natural"
-        print(f"Terrain type    : {terrain_type} (auto, range={elev_range:.0f}m)")
+        deep_pct = float(deep_mask_arr.mean()) * 100 if deep_mask_arr is not None else 0.0
+
+        if deep_pct > 50.0:
+            terrain_type = "island"
+        elif elev_range < 100.0:
+            terrain_type = "urban"
+        else:
+            terrain_type = "natural"
+        print(f"Terrain type    : {terrain_type} (auto, range={elev_range:.0f}m, water={deep_pct:.1f}%)")
 
     # Process and export
     paths = process_and_export(
