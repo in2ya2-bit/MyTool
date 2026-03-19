@@ -30,6 +30,7 @@ struct FLevelToolJobResult
     FString HeightmapR16Path;
     FString BuildingsJsonPath;
     FString RoadsJsonPath;
+    FString WaterJsonPath;
     FString PcgCsvPath;
     int32  BuildingCount     = 0;
     float  ElevationMinM     = 0.f;
@@ -111,18 +112,14 @@ private:
     // Parse job result from Python stdout
     void ParsePythonOutput(const FString& Stdout, FLevelToolJobResult& OutResult) const;
 
-    // ── Landscape internals ──────────────────────────────────────────────
-    // Import settings → landscape scale/size
-    void ComputeLandscapeImportParams(int32& OutQuadsPerSection,
-                                      int32& OutSectionsPerComponent,
-                                      int32& OutComponentCountX,
-                                      int32& OutComponentCountY) const;
-
     // ── Compass markers ──────────────────────────────────────────────────
     void SpawnCompassMarkers(UWorld* World, const FBox& LandscapeBounds);
 
     // ── Road splines ─────────────────────────────────────────────────────
     void SpawnRoadActors(const FString& JsonPath, const FBox& LandscapeBounds);
+
+    // ── Water bodies ─────────────────────────────────────────────────────
+    void SpawnWaterBodies(const FString& JsonPath, const FBox& LandscapeBounds);
 
     // ── Splat map import ─────────────────────────────────────────────────
     void ImportSplatMapsAsTextures(const FString& HeightmapPngPath, ALandscape* Landscape);
@@ -172,6 +169,9 @@ private:
 
     // Parse structured JSON result block from Python stdout
     bool ParseJsonResultBlock(const FString& Output, FLevelToolJobResult& OutResult) const;
+
+    // Parse __LEVELTOOL_PROGRESS__ JSON line from Python stdout and broadcast
+    void ParseAndBroadcastProgress(const FString& JsonStr);
 
     // ── Cached heightmap for Z lookup (avoids physics line trace timing issue) ─
     TArray<uint16> CachedHeightData;
