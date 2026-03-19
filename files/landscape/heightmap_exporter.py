@@ -298,18 +298,52 @@ def process_and_export(
                                          river_mask=river_mask,
                                          river_depth_m=river_depth_m)
 
-    # 2. Smooth SRTM noise — reduce sigma for urban areas to preserve detail
+    # 2. Smooth SRTM noise — urban areas need aggressive DSM→DTM conversion
+    #    OpenTopography/SRTM data is a DSM that includes building rooftops as terrain.
+    #    In dense cities (e.g., Seoul), tall buildings create 20-60m spikes.
     effective_sigma = smooth_sigma
     if terrain_type == "urban":
-        effective_sigma = min(smooth_sigma, 1.0)
-    elevation = smooth_heightmap(elevation_raw, sigma=effective_sigma)
+        from scipy.ndimage import grey_opening, median_filter
+
+        elev_f = elevation_raw.astype(np.float32)
+
+        # Step A: Morphological opening — removes upward spikes (buildings/structures).
+        #   Two passes (41 + 21): first removes large building complexes, second
+        #   catches remaining smaller artifacts.
+        elevation_opened = grey_opening(grey_opening(elev_f, size=41), size=21)
+        log.info(f"  Urban DSM→DTM: morphological opening (41+21) removed building spikes")
+
+        # Step B: Large median filter for remaining mid-scale artifacts
+        elevation_opened = median_filter(elevation_opened, size=11)
+        log.info(f"  Urban DSM→DTM: median filter (11×11) applied")
+
+        # Step C: Logarithmic height compression.
+        #   Preserves small terrain variations proportionally but compresses large
+        #   hill/mountain heights to keep max slopes gentle.
+        #   Unity gain at 15m: heights below 15m above city floor are ~linear,
+        #   heights above are compressed (60m hill → ~24m, 100m → ~31m).
+        city_floor = float(np.percentile(elevation_opened, 10))
+        above = elevation_opened - city_floor
+        unity_m = 15.0
+        elevation_compressed = np.where(
+            above > 0,
+            city_floor + unity_m * np.log1p(above / unity_m),
+            elevation_opened)
+        log.info(f"  Urban height compression: floor={city_floor:.1f}m  "
+                 f"pre-range={float(elevation_opened.max() - elevation_opened.min()):.1f}m  "
+                 f"post-range={float(elevation_compressed.max() - elevation_compressed.min()):.1f}m")
+
+        # Step D: Strong Gaussian smoothing for final terrain softness
+        effective_sigma = max(smooth_sigma, 10.0)
+        elevation = smooth_heightmap(elevation_compressed, sigma=effective_sigma)
+    else:
+        elevation = smooth_heightmap(elevation_raw, sigma=effective_sigma)
     log.info(f"  Smoothing: sigma={effective_sigma:.1f} (requested {smooth_sigma:.1f})")
 
-    # 3. Optional erosion — much lighter for urban terrain
+    # 3. Optional erosion — skip entirely for urban terrain
     if apply_erosion:
         if terrain_type == "urban":
-            elevation = apply_hydraulic_erosion(
-                elevation, iterations=1, rain_amount=0.002, sediment_capacity=0.002)
+            pass  # no erosion in cities
         else:
             elevation = apply_hydraulic_erosion(elevation, iterations=erosion_iters)
 

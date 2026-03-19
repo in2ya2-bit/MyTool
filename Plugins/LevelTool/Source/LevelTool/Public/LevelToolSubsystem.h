@@ -168,6 +168,15 @@ private:
     // Returns world-space Z (cm) at given world XY by reading cached heightmap data
     float GetTerrainZAtWorldXY(float WorldX, float WorldY) const;
 
+    // ── Procedural building material (window grid + type-based tint) ─────
+    UPROPERTY()
+    TObjectPtr<UMaterial>  CachedBuildingMaterial;
+    UPROPERTY()
+    TObjectPtr<UTexture2D> CachedWindowTexture;
+
+    void EnsureBuildingMaterial();
+    void CreateWindowGridTexture();
+
     void Log(const FString& Msg);
     void SetProgress(const FString& Stage, float Pct);
     void FinishJob(bool bSuccess);

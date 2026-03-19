@@ -11,13 +11,19 @@ Highway type classification:
 import math
 import time
 import json
+import hashlib
 import logging
+import os
 import requests
 from typing import List, Dict, Optional
 
 log = logging.getLogger(__name__)
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 
 HIGHWAY_MAJOR = {"motorway", "trunk", "primary", "secondary",
                  "motorway_link", "trunk_link", "primary_link", "secondary_link"}
@@ -77,22 +83,48 @@ def latlon_to_ue5_xy(lat, lon, origin_lat, origin_lon, ue_unit_per_meter=100.0):
     return dx_m * ue_unit_per_meter, dy_m * ue_unit_per_meter
 
 
+def _get_road_cache_dir() -> str:
+    d = os.path.join(os.path.dirname(__file__), "output", "road_cache")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def fetch_osm_roads_raw(center_lat, center_lon, radius_km) -> dict:
+    cache_dir = _get_road_cache_dir()
+    cache_key = hashlib.md5(f"{center_lat:.6f}_{center_lon:.6f}_{radius_km:.4f}_roads".encode()).hexdigest()
+    cache_file = os.path.join(cache_dir, cache_key + ".json")
+
+    if os.path.exists(cache_file):
+        log.info(f"Road cache hit — loading from {cache_file}")
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
     query = build_overpass_query(center_lat, center_lon, radius_km)
     log.info(f"Overpass road query: center=({center_lat:.4f},{center_lon:.4f}), radius={radius_km}km")
-    for attempt in range(3):
+
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        url = OVERPASS_ENDPOINTS[attempt % len(OVERPASS_ENDPOINTS)]
         try:
-            resp = requests.post(OVERPASS_URL, data={"data": query}, timeout=90)
+            log.info(f"  Attempt {attempt+1}/{max_attempts} via {url.split('//')[1].split('/')[0]}")
+            resp = requests.post(url, data={"data": query}, timeout=120)
             resp.raise_for_status()
             data = resp.json()
             log.info(f"  Received {len(data.get('elements', []))} elements")
+
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+            log.info(f"  Cached to {cache_file}")
+
             return data
         except Exception as e:
-            if attempt == 2:
-                log.warning(f"Road fetch failed after 3 attempts: {e}")
-                return {"elements": []}
-            log.warning(f"  Attempt {attempt+1} failed: {e}, retrying...")
-            time.sleep(3 * (attempt + 1))
+            log.warning(f"  Attempt {attempt+1} failed: {e}")
+            wait = min(5 * (attempt + 1), 30)
+            if attempt < max_attempts - 1:
+                log.info(f"  Waiting {wait}s before retry...")
+                time.sleep(wait)
+
+    log.warning(f"Road fetch failed after {max_attempts} attempts")
     return {"elements": []}
 
 

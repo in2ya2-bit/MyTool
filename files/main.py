@@ -82,12 +82,13 @@ def cmd_landscape(args):
 
     lat, lon, radius, name = resolve_coords(args)
     api_key = args.api_key or GOOGLE_MAPS_API_KEY
+    grid_size = getattr(args, 'grid_size', 0) or HEIGHTMAP_SIZE
 
     print(f"\n{'='*55}")
     print(f"  Landscape Tool")
     print(f"  Location : {name}  ({lat:.4f}, {lon:.4f})")
     print(f"  Radius   : {radius} km")
-    print(f"  Grid     : {HEIGHTMAP_SIZE} × {HEIGHTMAP_SIZE}")
+    print(f"  Grid     : {grid_size} × {grid_size}")
     print(f"  Source   : {args.elevation_source}")
     print(f"{'='*55}\n")
 
@@ -96,7 +97,7 @@ def cmd_landscape(args):
         center_lat  = lat,
         center_lon  = lon,
         radius_km   = radius,
-        grid_size   = HEIGHTMAP_SIZE,
+        grid_size   = grid_size,
         source      = args.elevation_source,
         api_key     = api_key
     )
@@ -115,8 +116,8 @@ def cmd_landscape(args):
                 center_lat       = lat,
                 center_lon       = lon,
                 radius_km        = radius,
-                grid_h           = HEIGHTMAP_SIZE,
-                grid_w           = HEIGHTMAP_SIZE,
+                grid_h           = grid_size,
+                grid_w           = grid_size,
                 output_json_path = water_path
             )
             combined = (deep_mask_arr | river_mask_arr) if river_mask_arr is not None else deep_mask_arr
@@ -301,7 +302,12 @@ def cmd_ai_textures(args):
 
 def cmd_all(args):
     cmd_landscape(args)
-    cmd_buildings(args)
+
+    try:
+        cmd_buildings(args)
+    except Exception as e:
+        print(f"\n⚠ Building fetch failed (non-fatal): {e}")
+        print("  Landscape was generated successfully. Retry buildings separately.\n")
 
     lat, lon, radius, name = resolve_coords(args)
     hm_path   = os.path.join(HEIGHTMAP_DIR, f"{name}_heightmap.png")
@@ -379,6 +385,8 @@ def build_parser():
         p.add_argument("--lon",    type=float, help="Center longitude")
         p.add_argument("--radius", type=float, default=1.0, help="Radius in km (default: 1.0)")
         p.add_argument("--name",   type=str,   default="",  help="Map name used for output filenames")
+        p.add_argument("--grid-size", type=int, default=0,
+                       help="Heightmap grid size (0 = use config.py default)")
 
     # landscape
     lp = subs.add_parser("landscape", help="Generate heightmap from elevation data")

@@ -10,14 +10,20 @@ Returns structured building data ready for:
 import math
 import time
 import json
+import hashlib
 import logging
+import os
 import requests
 import numpy as np
 from typing import List, Dict, Optional
 
 log = logging.getLogger(__name__)
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 
 
 # ─── Overpass Query Builder ───────────────────────────────────────────────────
@@ -48,32 +54,60 @@ out skel qt;
 
 # ─── Fetch Raw OSM Data ───────────────────────────────────────────────────────
 
+def _get_building_cache_dir() -> str:
+    d = os.path.join(os.path.dirname(__file__), "output", "building_cache")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _building_cache_key(lat: float, lon: float, radius_km: float) -> str:
+    raw = f"{lat:.6f}_{lon:.6f}_{radius_km:.4f}"
+    return hashlib.md5(raw.encode()).hexdigest()
+
+
 def fetch_osm_buildings_raw(
     center_lat: float,
     center_lon: float,
     radius_km:  float
 ) -> dict:
-    """Query Overpass API and return raw JSON response."""
-    query = build_overpass_query(center_lat, center_lon, radius_km)
+    """Query Overpass API and return raw JSON response (with cache + failover)."""
 
+    cache_dir = _get_building_cache_dir()
+    cache_file = os.path.join(cache_dir, _building_cache_key(center_lat, center_lon, radius_km) + ".json")
+
+    if os.path.exists(cache_file):
+        log.info(f"Building cache hit — loading from {cache_file}")
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    query = build_overpass_query(center_lat, center_lon, radius_km)
     log.info(f"Overpass query: center=({center_lat:.4f},{center_lon:.4f}), radius={radius_km}km")
 
-    for attempt in range(3):
+    max_attempts = 5
+    last_error = None
+    for attempt in range(max_attempts):
+        url = OVERPASS_ENDPOINTS[attempt % len(OVERPASS_ENDPOINTS)]
         try:
-            resp = requests.post(
-                OVERPASS_URL,
-                data={"data": query},
-                timeout=90
-            )
+            log.info(f"  Attempt {attempt+1}/{max_attempts} via {url.split('//')[1].split('/')[0]}")
+            resp = requests.post(url, data={"data": query}, timeout=120)
             resp.raise_for_status()
             data = resp.json()
             log.info(f"  Received {len(data.get('elements', []))} elements")
+
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+            log.info(f"  Cached to {cache_file}")
+
             return data
         except Exception as e:
-            if attempt == 2:
-                raise RuntimeError(f"Overpass API failed after 3 attempts: {e}")
-            log.warning(f"  Attempt {attempt+1} failed: {e}, retrying...")
-            time.sleep(3 * (attempt + 1))
+            last_error = e
+            log.warning(f"  Attempt {attempt+1} failed: {e}")
+            wait = min(5 * (attempt + 1), 30)
+            if attempt < max_attempts - 1:
+                log.info(f"  Waiting {wait}s before retry...")
+                time.sleep(wait)
+
+    raise RuntimeError(f"Overpass API failed after {max_attempts} attempts: {last_error}")
 
 
 # ─── Parse OSM Elements ───────────────────────────────────────────────────────

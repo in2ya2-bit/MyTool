@@ -30,6 +30,16 @@
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionTextureSampleParameter2D.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
+#include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionTextureCoordinate.h"
+#include "Materials/MaterialExpressionMultiply.h"
+#include "Materials/MaterialExpressionAppendVector.h"
+#include "UObject/SavePackage.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "ShaderCompiler.h"
 #include "EditorLevelLibrary.h"
 #include "LevelEditor.h"
 #include "EngineUtils.h"
@@ -452,15 +462,38 @@ FString ULevelToolSubsystem::BuildMainPyArgs(
     const ULevelToolSettings* S = ULevelToolSettings::Get();
     FString Args = Command;
 
-    // Always pass explicit coordinates — no Python-side preset lookup needed.
-    // Pass --name so output files use the preset name (or a fallback).
+    // Compute the grid size needed to cover the requested radius at the configured XY scale.
+    // Diameter in cm = 2 * radius_km * 1000 * 100;  quads = diameter / XYScaleCm;  verts = quads + 1
+    const float DiameterCm    = RadiusKm * 2.0f * 100000.0f;
+    const int32 RequiredQuads = FMath::CeilToInt(DiameterCm / S->XYScaleCm);
 
-    // Auto-match building fetch radius to Landscape XY size so buildings never exceed the terrain.
-    // LandscapeHalfSize = (HeightmapSize - 1) * XYScaleCm / 2  (in cm → convert to km)
-    float LandscapeHalfKm = (S->HeightmapSize - 1) * S->XYScaleCm / 2.0f / 100.0f / 1000.0f;
-    float EffectiveRadius  = FMath::Min(RadiusKm, LandscapeHalfKm);
+    // Pick the smallest valid UE5 landscape size that can hold the required quads.
+    // Valid sizes: (2^n * k + 1) where quads per component = 63.
+    static const int32 ValidSizes[] = { 505, 1009, 2017, 4033 };
+    int32 EffectiveGridSize = S->HeightmapSize;
+    for (int32 VS : ValidSizes)
+    {
+        if ((VS - 1) >= RequiredQuads)
+        {
+            EffectiveGridSize = VS;
+            break;
+        }
+    }
+    if ((EffectiveGridSize - 1) < RequiredQuads)
+    {
+        EffectiveGridSize = 4033;
+        UE_LOG(LogLevelTool, Warning, TEXT("Radius %.2fkm requires grid > 4033 — clamped to 4033 (%.1fkm radius)"),
+            RadiusKm, (4033 - 1) * S->XYScaleCm / 2.0f / 100000.0f);
+    }
 
-    Args += FString::Printf(TEXT(" --lat %.6f --lon %.6f --radius %.4f"), Lat, Lon, EffectiveRadius);
+    if (EffectiveGridSize != S->HeightmapSize)
+    {
+        UE_LOG(LogLevelTool, Log, TEXT("Grid auto-adjusted: %d -> %d  (to cover %.2fkm radius at %.0f cm/quad)"),
+            S->HeightmapSize, EffectiveGridSize, RadiusKm, S->XYScaleCm);
+    }
+
+    Args += FString::Printf(TEXT(" --lat %.6f --lon %.6f --radius %.4f"), Lat, Lon, RadiusKm);
+    Args += FString::Printf(TEXT(" --grid-size %d"), EffectiveGridSize);
     if (!Preset.IsEmpty())
         Args += FString::Printf(TEXT(" --name \"%s\""), *Preset);
 
@@ -630,17 +663,40 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
         return false;
     }
 
-    // Landscape component layout for 1009×1009 heightmap
-    // 1009 = 15 components × 4 sections × 16 quads + 1 = 961 + 48 = 1009
+    // Detect actual heightmap size from the R16 file (fileBytes = W * H * 2).
+    // This allows the grid to auto-adjust when BuildMainPyArgs picks a larger size for the radius.
+    int32 DetectedSize = S->HeightmapSize;
+    {
+        FString R16Check = FPaths::ChangeExtension(HeightmapPngPath, TEXT("r16"));
+        if (FPaths::FileExists(R16Check))
+        {
+            int64 FileBytes = IFileManager::Get().FileSize(*R16Check);
+            if (FileBytes > 0)
+            {
+                int32 NumPixels = static_cast<int32>(FileBytes / 2);
+                int32 Side = FMath::RoundToInt32(FMath::Sqrt(static_cast<float>(NumPixels)));
+                if (Side * Side == NumPixels && Side > 0)
+                {
+                    DetectedSize = Side;
+                    if (DetectedSize != S->HeightmapSize)
+                    {
+                        Log(FString::Printf(TEXT("  ℹ Heightmap size detected from R16: %d×%d (settings: %d)"),
+                            DetectedSize, DetectedSize, S->HeightmapSize));
+                    }
+                }
+            }
+        }
+    }
+
     const int32 SectionSize       = 63;    // quads per section
     const int32 SectionsPerComp   = 1;
     const int32 QuadsPerComp      = SectionSize * SectionsPerComp;
-    const int32 TargetSize        = S->HeightmapSize - 1;  // vertices → quads
+    const int32 TargetSize        = DetectedSize - 1;  // vertices → quads
     const int32 ComponentCountX   = FMath::CeilToInt((float)TargetSize / QuadsPerComp);
     const int32 ComponentCountY   = ComponentCountX;
 
     // Prefer .r16 raw binary (little-endian uint16) — more reliable than PNG 16-bit decoding
-    const int32 NumVerts = S->HeightmapSize * S->HeightmapSize;
+    const int32 NumVerts = DetectedSize * DetectedSize;
     TArray<uint16> HeightData;
     HeightData.SetNumUninitialized(NumVerts);
 
@@ -729,7 +785,7 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
     // the landscape, not at its corner.
     // Pixel (0,0) = NW corner = actor position.
     // Landscape total width = (HMapWidth-1) * XYScaleCm, so half = offset below.
-    const float HalfSizeCm = (S->HeightmapSize - 1) * S->XYScaleCm / 2.0f;
+    const float HalfSizeCm = (DetectedSize - 1) * S->XYScaleCm / 2.0f;
     const float ActorX     = -HalfSizeCm;
     const float ActorY     = -HalfSizeCm;
 
@@ -756,7 +812,7 @@ bool ULevelToolSubsystem::ImportHeightmapAsLandscape(
 
     // Keep a copy for direct HeightmapTexture write (see below).
     TArray<uint16> HeightDataCopy = HeightData;
-    const int32    HMapWidth      = S->HeightmapSize;   // 1009
+    const int32    HMapWidth      = DetectedSize;
 
     // Pass real data to Import() so edit-layer texture is populated.
     TMap<FGuid, TArray<uint16>> HeightDataMap;
@@ -1066,8 +1122,8 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
         }
     }
 
-    // R-C: Flatten landscape heightmap under road footprints
-    if (!CachedHeightData.IsEmpty() && CachedZScale > 0.f)
+    // R-C: Disabled — terrain flattening was distorting heightmap
+    if (false && !CachedHeightData.IsEmpty() && CachedZScale > 0.f)
     {
         TSet<int32> ModifiedPixels;
 
@@ -1577,6 +1633,59 @@ int32 ULevelToolSubsystem::PlaceBuildingsFromJson(
     return Placed;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  B-B: Building type → color palette
+// ─────────────────────────────────────────────────────────────────────────────
+namespace
+{
+    struct FBuildingPalette
+    {
+        FLinearColor Tint;
+        float Roughness;
+        float Metallic;
+    };
+
+    FBuildingPalette GetBuildingPalette(const FString& TypeKey, uint32 Hash)
+    {
+        float V = static_cast<float>(Hash & 0xFFFF) / 65535.f * 0.08f - 0.04f;
+
+        if (TypeKey == TEXT("commercial") || TypeKey == TEXT("retail") ||
+            TypeKey == TEXT("office")     || TypeKey == TEXT("hotel"))
+        {
+            return { FLinearColor(0.50f+V, 0.55f+V, 0.65f+V, 1.f), 0.30f, 0.40f };
+        }
+        if (TypeKey == TEXT("residential") || TypeKey == TEXT("apartments") ||
+            TypeKey == TEXT("house")       || TypeKey == TEXT("detached") ||
+            TypeKey == TEXT("terrace")     || TypeKey == TEXT("dormitory"))
+        {
+            return { FLinearColor(0.72f+V, 0.65f+V, 0.55f+V, 1.f), 0.85f, 0.0f };
+        }
+        if (TypeKey == TEXT("industrial") || TypeKey == TEXT("warehouse") ||
+            TypeKey == TEXT("factory")    || TypeKey == TEXT("manufacture"))
+        {
+            return { FLinearColor(0.48f+V, 0.48f+V, 0.46f+V, 1.f), 0.90f, 0.05f };
+        }
+        if (TypeKey == TEXT("church") || TypeKey == TEXT("temple") ||
+            TypeKey == TEXT("shrine") || TypeKey == TEXT("religious") ||
+            TypeKey == TEXT("cathedral"))
+        {
+            return { FLinearColor(0.76f+V, 0.70f+V, 0.60f+V, 1.f), 0.90f, 0.0f };
+        }
+        if (TypeKey == TEXT("hospital") || TypeKey == TEXT("school") ||
+            TypeKey == TEXT("university") || TypeKey == TEXT("public") ||
+            TypeKey == TEXT("civic")      || TypeKey == TEXT("government"))
+        {
+            return { FLinearColor(0.82f+V, 0.82f+V, 0.80f+V, 1.f), 0.60f, 0.05f };
+        }
+        if (TypeKey == TEXT("garage") || TypeKey == TEXT("parking") ||
+            TypeKey == TEXT("carport"))
+        {
+            return { FLinearColor(0.55f+V, 0.54f+V, 0.52f+V, 1.f), 0.92f, 0.0f };
+        }
+        return { FLinearColor(0.62f+V, 0.60f+V, 0.55f+V, 1.f), 0.80f, 0.0f };
+    }
+}
+
 AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     const FBuildingEntry& Building, ULevelToolBuildingPool* Pool, float GroundZ)
 {
@@ -1645,38 +1754,33 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     Actor->Tags.Add(*FString::Printf(TEXT("h_%dm"), FMath::RoundToInt(Building.HeightM)));
     Actor->Tags.Add(*FString::Printf(TEXT("osm_%lld"), Building.OsmId));
 
-    // Apply materials: entry-specific → pool default → engine fallback
+    // ── Apply material: type-specific entry → procedural window → BasicShapeMaterial color ──
     bool bMaterialApplied = false;
+
+    // Only use Pool materials if a SPECIFIC entry has a material set for this type
     if (Pool)
     {
-        UMaterialInterface* WallMat = nullptr;
-        UMaterialInterface* RoofMat = nullptr;
-
         if (const FBuildingMeshEntry* Entry = Pool->FindEntry(Building.TypeKey))
         {
-            WallMat = Entry->WallMaterial.LoadSynchronous();
-            RoofMat = Entry->RoofMaterial.LoadSynchronous();
+            UMaterialInterface* WallMat = Entry->WallMaterial.LoadSynchronous();
+            UMaterialInterface* RoofMat = Entry->RoofMaterial.LoadSynchronous();
+            if (WallMat) { Comp->SetMaterial(0, WallMat); bMaterialApplied = true; }
+            if (RoofMat) Comp->SetMaterial(1, RoofMat);
         }
-
-        if (!WallMat) WallMat = Pool->DefaultWallMaterial.LoadSynchronous();
-        if (!RoofMat) RoofMat = Pool->DefaultRoofMaterial.LoadSynchronous();
-
-        if (WallMat) { Comp->SetMaterial(0, WallMat); bMaterialApplied = true; }
-        if (RoofMat) Comp->SetMaterial(1, RoofMat);
     }
 
     if (!bMaterialApplied)
     {
+        uint32 OsmHash = static_cast<uint32>(Building.OsmId * 2654435761u);
+        FBuildingPalette Pal = GetBuildingPalette(Building.TypeKey, OsmHash);
+
+        // Always guaranteed to work: BasicShapeMaterial + type-based color
         UMaterialInterface* BasicMat = LoadObject<UMaterialInterface>(nullptr,
             TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
         if (BasicMat)
         {
             UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(BasicMat, Actor);
-            float H = static_cast<float>((Building.OsmId * 2654435761u) & 0xFFFF) / 65535.0f;
-            float R = 0.35f + H * 0.25f;
-            float G = 0.33f + H * 0.20f;
-            float B = 0.30f + H * 0.15f;
-            DynMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(R, G, B, 1.f));
+            DynMat->SetVectorParameterValue(TEXT("Color"), Pal.Tint);
             Comp->SetMaterial(0, DynMat);
         }
     }
@@ -1798,6 +1902,157 @@ float ULevelToolSubsystem::GetTerrainZAtWorldXY(float WorldX, float WorldY) cons
     const int32 PixY = FMath::Clamp(FMath::RoundToInt32((WorldY - CachedOriginY) / CachedXYScaleCm), 0, CachedHMapWidth - 1);
     const uint16 H   = CachedHeightData[PixY * CachedHMapWidth + PixX];
     return CachedZScale * static_cast<float>(H) / 128.0f;
+}
+
+void ULevelToolSubsystem::EnsureBuildingMaterial()
+{
+    if (CachedBuildingMaterial) return;
+
+    // Try loading previously saved material
+    static const TCHAR* MatPath = TEXT("/Game/LevelTool/M_BuildingProcedural.M_BuildingProcedural");
+    CachedBuildingMaterial = LoadObject<UMaterial>(nullptr, MatPath);
+    if (CachedBuildingMaterial)
+    {
+        // Recreate runtime texture (not saved to disk) and override via MID
+        CachedWindowTexture = nullptr;
+        CreateWindowGridTexture();
+        Log(TEXT("  ✔ Loaded saved building material from /Game/LevelTool/"));
+        return;
+    }
+
+    // ── Create runtime window grid texture ──
+    CreateWindowGridTexture();
+
+    // ── Create material in a saveable package (not transient) ──
+    FString PkgName = TEXT("/Game/LevelTool/M_BuildingProcedural");
+    UPackage* Pkg = CreatePackage(*PkgName);
+    Pkg->FullyLoad();
+
+    CachedBuildingMaterial = NewObject<UMaterial>(
+        Pkg, TEXT("M_BuildingProcedural"), RF_Public | RF_Standalone);
+    CachedBuildingMaterial->TwoSided = false;
+
+    auto* TexCoord = NewObject<UMaterialExpressionTextureCoordinate>(CachedBuildingMaterial);
+    TexCoord->CoordinateIndex = 0;
+
+    auto* ParamTX = NewObject<UMaterialExpressionScalarParameter>(CachedBuildingMaterial);
+    ParamTX->ParameterName = TEXT("UTilingX");
+    ParamTX->DefaultValue  = 1.0f;
+
+    auto* ParamTY = NewObject<UMaterialExpressionScalarParameter>(CachedBuildingMaterial);
+    ParamTY->ParameterName = TEXT("UTilingY");
+    ParamTY->DefaultValue  = 1.0f;
+
+    auto* AppendTiling = NewObject<UMaterialExpressionAppendVector>(CachedBuildingMaterial);
+    AppendTiling->A.Connect(0, ParamTX);
+    AppendTiling->B.Connect(0, ParamTY);
+
+    auto* UVMul = NewObject<UMaterialExpressionMultiply>(CachedBuildingMaterial);
+    UVMul->A.Connect(0, TexCoord);
+    UVMul->B.Connect(0, AppendTiling);
+
+    auto* TexSample = NewObject<UMaterialExpressionTextureSampleParameter2D>(CachedBuildingMaterial);
+    TexSample->ParameterName = TEXT("WindowTex");
+    TexSample->Texture       = CachedWindowTexture;
+    TexSample->SamplerType   = SAMPLERTYPE_Color;
+    TexSample->Coordinates.Connect(0, UVMul);
+
+    auto* ParamTint = NewObject<UMaterialExpressionVectorParameter>(CachedBuildingMaterial);
+    ParamTint->ParameterName = TEXT("Tint");
+    ParamTint->DefaultValue  = FLinearColor(0.7f, 0.7f, 0.65f, 1.f);
+
+    auto* ColorMul = NewObject<UMaterialExpressionMultiply>(CachedBuildingMaterial);
+    ColorMul->A.Connect(0, TexSample);
+    ColorMul->B.Connect(0, ParamTint);
+
+    auto* ParamRough = NewObject<UMaterialExpressionScalarParameter>(CachedBuildingMaterial);
+    ParamRough->ParameterName = TEXT("Roughness");
+    ParamRough->DefaultValue  = 0.75f;
+
+    auto* ParamMetal = NewObject<UMaterialExpressionScalarParameter>(CachedBuildingMaterial);
+    ParamMetal->ParameterName = TEXT("Metallic");
+    ParamMetal->DefaultValue  = 0.0f;
+
+    auto& Exprs = CachedBuildingMaterial->GetExpressionCollection().Expressions;
+    Exprs.Add(TexCoord);
+    Exprs.Add(ParamTX);
+    Exprs.Add(ParamTY);
+    Exprs.Add(AppendTiling);
+    Exprs.Add(UVMul);
+    Exprs.Add(TexSample);
+    Exprs.Add(ParamTint);
+    Exprs.Add(ColorMul);
+    Exprs.Add(ParamRough);
+    Exprs.Add(ParamMetal);
+
+    auto* Ed = CachedBuildingMaterial->GetEditorOnlyData();
+    Ed->BaseColor.Connect(0, ColorMul);
+    Ed->Roughness.Connect(0, ParamRough);
+    Ed->Metallic.Connect(0, ParamMetal);
+
+    CachedBuildingMaterial->PreEditChange(nullptr);
+    CachedBuildingMaterial->PostEditChange();
+
+    // Wait for shader compilation to complete synchronously
+    if (GShaderCompilingManager)
+    {
+        GShaderCompilingManager->FinishAllCompilation();
+    }
+
+    // Save the material package to disk so shaders are cached for future runs
+    FAssetRegistryModule::AssetCreated(CachedBuildingMaterial);
+    Pkg->MarkPackageDirty();
+
+    FString FilePath = FPackageName::LongPackageNameToFilename(
+        PkgName, FPackageName::GetAssetPackageExtension());
+    FSavePackageArgs SaveArgs;
+    SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+    UPackage::SavePackage(Pkg, CachedBuildingMaterial, *FilePath, SaveArgs);
+
+    Log(TEXT("  ✔ Building material created & saved to /Game/LevelTool/"));
+}
+
+void ULevelToolSubsystem::CreateWindowGridTexture()
+{
+    if (CachedWindowTexture) return;
+
+    constexpr int32 TS = 128;
+    constexpr int32 Cell = TS / 4;
+    constexpr int32 WL = 5, WR = 5;
+    constexpr int32 WT = 5, WB = 7;
+    constexpr int32 FLH = 2;
+
+    CachedWindowTexture = UTexture2D::CreateTransient(TS, TS, PF_B8G8R8A8);
+    CachedWindowTexture->Filter   = TF_Bilinear;
+    CachedWindowTexture->AddressX = TA_Wrap;
+    CachedWindowTexture->AddressY = TA_Wrap;
+    CachedWindowTexture->SRGB     = true;
+
+    FTexture2DMipMap& WMip = CachedWindowTexture->GetPlatformData()->Mips[0];
+    FColor* WPx = static_cast<FColor*>(WMip.BulkData.Lock(LOCK_READ_WRITE));
+
+    const FColor CWall   (185, 180, 170, 255);
+    const FColor CGlass  ( 35,  45,  55, 255);
+    const FColor CGlassHi( 55,  75,  95, 255);
+    const FColor CFloor  (120, 115, 108, 255);
+
+    for (int32 y = 0; y < TS; y++)
+    {
+        const int32 cy = y % Cell;
+        for (int32 x = 0; x < TS; x++)
+        {
+            const int32 cx = x % Cell;
+            FColor C = CWall;
+            if (cy >= Cell - FLH)
+                C = CFloor;
+            else if (cx >= WL && cx < Cell - WR && cy >= WT && cy < Cell - WB)
+                C = (cy < WT + 3) ? CGlassHi : CGlass;
+            WPx[y * TS + x] = C;
+        }
+    }
+
+    WMip.BulkData.Unlock();
+    CachedWindowTexture->UpdateResource();
 }
 
 void ULevelToolSubsystem::Log(const FString& Msg)

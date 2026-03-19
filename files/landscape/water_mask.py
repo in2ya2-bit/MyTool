@@ -16,7 +16,11 @@ from typing import Dict, List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 
 
 # ─── Overpass Query ───────────────────────────────────────────────────────────
@@ -41,19 +45,20 @@ out skel qt;
 def _fetch_osm(center_lat: float, center_lon: float, radius_km: float) -> dict:
     query = _build_query(center_lat, center_lon, radius_km)
     log.info(f"Water Overpass query: ({center_lat:.4f},{center_lon:.4f}) r={radius_km}km")
-    for attempt in range(3):
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        url = OVERPASS_ENDPOINTS[attempt % len(OVERPASS_ENDPOINTS)]
         try:
-            resp = requests.post(OVERPASS_URL, data={"data": query}, timeout=90)
+            resp = requests.post(url, data={"data": query}, timeout=120)
             resp.raise_for_status()
             data = resp.json()
             log.info(f"  Water elements received: {len(data.get('elements', []))}")
             return data
         except Exception as e:
-            if attempt == 2:
-                log.warning(f"Water OSM fetch failed: {e}")
-                return {"elements": []}
-            log.warning(f"  Attempt {attempt+1} failed, retrying… ({e})")
-            time.sleep(3 * (attempt + 1))
+            log.warning(f"  Attempt {attempt+1} failed: {e}")
+            if attempt < max_attempts - 1:
+                time.sleep(min(5 * (attempt + 1), 30))
+    log.warning("Water OSM fetch failed after all attempts")
     return {"elements": []}
 
 
