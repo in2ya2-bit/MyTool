@@ -1,0 +1,7425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>Designer Intent System — 기획 보완문서</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 960px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #172B4D; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+th, td { border: 1px solid #DFE1E6; padding: 8px 12px; text-align: left; }
+th { background: #F4F5F7; font-weight: 600; }
+tr:nth-child(even) { background: #FAFBFC; }
+h1 { color: #172B4D; border-bottom: 2px solid #0052CC; padding-bottom: 8px; }
+h2 { color: #172B4D; border-bottom: 1px solid #DFE1E6; padding-bottom: 6px; margin-top: 32px; }
+h3 { color: #42526E; margin-top: 24px; }
+code { background: #F4F5F7; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+pre { background: #F4F5F7; padding: 16px; border-radius: 3px; overflow-x: auto; }
+blockquote, ac\:structured-macro[ac\:name="info"] { border-left: 4px solid #0052CC; padding: 12px 16px; margin: 16px 0; background: #DEEBFF; }
+hr { border: none; border-top: 1px solid #DFE1E6; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1>Designer Intent System — 기획 보완문서 v4.3</h1>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body><strong>원본</strong>: <code>LevelTool_DesignerIntent_기획문서.docx</code> v1.0<br />
+<strong>보완 버전</strong>: v4.3 (3단계 핵심 목적 재정의 — 공간적 전제조건 진단)<br />
+<strong>변경 사유</strong>: 3단계 목적을 "룰셋 옵션"에서 "레퍼런스 게임의 재미가 성립하기 위한 공간적 전제조건 진단"으로 재정의. 목적 문구 3곳 반영 + 하는 것/하지 않는 것 구분 테이블 추가
+</ac:rich-text-body></ac:structured-macro></p>
+<hr/>
+<p><ac:structured-macro ac:name="toc"><ac:parameter ac:name="maxLevel">3</ac:parameter></ac:structured-macro></p>
+<hr/>
+<h2>기획의도 — 3단계 구조</h2>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>내용</th>
+<th>목적</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1단계</strong></td>
+<td>실제 지형을 토대로 한 지형·지물 생성</td>
+<td>실세계 기반 맵 골격 확보</td>
+<td>✅ 구현 완료 (기존 LevelTool)</td>
+</tr>
+<tr>
+<td><strong>2단계</strong></td>
+<td>기획의도에 따라 지형·지물 일괄 수정 (슬라이더 + 프리셋)</td>
+<td>기획자의 공간적 의도 반영</td>
+<td>신규 개발</td>
+</tr>
+<tr>
+<td><strong>3단계</strong></td>
+<td>배틀로얄·익스트랙션 룰에 어울리는 옵션 (체크 + 제안)</td>
+<td><strong>레퍼런스 게임의 재미가 성립하기 위한 공간적 전제조건을 진단하고, 미충족 시 해소 방안을 제안</strong></td>
+<td>신규 개발</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>### 3단계 핵심 목적
+</ac:rich-text-body></ac:structured-macro>&gt;
+<ac:structured-macro ac:name="info"><ac:rich-text-body><strong>"레퍼런스 게임의 재미가 성립하기 위한 공간적 전제조건을 진단하고, 미충족 시 해소 방안을 제안한다."</strong>
+</ac:rich-text-body></ac:structured-macro>&gt;
+<ac:structured-macro ac:name="info"><ac:rich-text-body>3단계는 맵의 "재미 자체"를 만들지 않는다. 재미는 게임 시스템(루트 테이블, AI, 존 수축, 사운드, 경제)이 맵 위에서 작동할 때 비로소 완성된다. 3단계의 역할은, <strong>그 재미가 성립할 수 있는 공간적 토대 — 거점 분산, 병목+우회로, 시야선 혼합, 위험-보상 배치, 동선 다양성 — 가 갖춰져 있는지 검증하고, 부족하면 기획자에게 선택지를 제시하는 것</strong>이다.
+</ac:rich-text-body></ac:structured-macro>&gt;
+<ac:structured-macro ac:name="info"><ac:rich-text-body>좋은 무대 없이 좋은 공연은 불가능하다. 3단계는 그 무대를 검증한다.
+</ac:rich-text-body></ac:structured-macro>
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[[1단계: 실사 생성] → [2단계: 의도 기반 수정] ⇄ [3단계: 공간적 전제조건 진단+제안]
+     완료             슬라이더/프리셋          "재미의 토대가 갖춰졌는가?"
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h3>2단계 ⇄ 3단계 자유 전환 규칙</h3>
+<p>2단계(의도 수정)와 3단계(룰셋 옵션)는 <strong>탭 전환으로 자유롭게 오갈 수 있다</strong>. 순서 강제 없음.</p>
+<table>
+<thead>
+<tr>
+<th>전환</th>
+<th>시스템 동작</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>2단계 → 3단계</strong> (Tab 전환)</td>
+<td>체크리스트 <strong>자동 재실행</strong> (&lt; 3초). 2단계 수정이 반영된 유효 맵 상태 기준 분석</td>
+</tr>
+<tr>
+<td><strong>3단계 → 2단계</strong> (Tab 전환)</td>
+<td>추가 동작 없음. 3단계 제안으로 생성된 레이어는 그대로 유지</td>
+</tr>
+<tr>
+<td><strong>3단계 제안 수락 후 2단계 슬라이더 조정</strong></td>
+<td>제안 레이어는 독립 유지. 슬라이더는 유효 맵 상태(제안 포함) 기준으로 동작</td>
+</tr>
+<tr>
+<td><strong>1단계 완료 직후</strong></td>
+<td>2단계 탭 자동 활성화. 3단계 탭도 즉시 사용 가능 (1단계 원본 기준 체크)</td>
+</tr>
+<tr>
+<td><strong>레퍼런스 프리셋 적용</strong></td>
+<td>2단계 슬라이더 자동 설정 + <strong>3단계 룰셋 자동 선택 + 체크 자동 실행</strong> (원클릭 전체 파이프라인)</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>체크리스트 자동 재실행은 Tab 전환 시점에 <strong>비동기</strong>로 실행되어, 기획자가 결과 목록을 보는 동안 백그라운드에서 완료된다. 진행 상황은 프로그레스 바로 표시.
+</ac:rich-text-body></ac:structured-macro></p>
+<h3>기획자 워크플로우 시나리오</h3>
+<h4>시나리오 A: "Erangel 느낌의 BR 맵을 처음 만드는 기획자" (~10분)</h4>
+<table>
+<thead>
+<tr>
+<th>시간</th>
+<th>단계</th>
+<th>기획자 행동</th>
+<th>시스템 반응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0:00</td>
+<td>1단계</td>
+<td>LevelTool에서 좌표 입력 (또는 추천 좌표 수락)</td>
+<td>실사 지형·건물·도로 생성</td>
+</tr>
+<tr>
+<td>2:00</td>
+<td>2단계</td>
+<td>"Erangel 스타일" 레퍼런스 프리셋 클릭</td>
+<td>슬라이더 5개 자동 설정 (밀도40, 개방도60...) → Edit Layer 자동 생성</td>
+</tr>
+<tr>
+<td>3:00</td>
+<td>2단계</td>
+<td>뷰포트에서 결과 확인. "도심이 너무 비어보인다" → 밀도 슬라이더 40→55 조정</td>
+<td>건물 추가 레이어 자동 생성</td>
+</tr>
+<tr>
+<td>4:00</td>
+<td>2단계</td>
+<td>"이 언덕을 더 강조하고 싶다" → 고저차 슬라이더 40→60</td>
+<td>언덕↑ 계곡↓ 레이어 생성</td>
+</tr>
+<tr>
+<td>5:00</td>
+<td>2단계</td>
+<td>"중앙에 광장이 필요하다" → 영역 드래그 → "중앙 광장 개방" 프리셋 클릭</td>
+<td>건물 제거 + 평탄화 + 도로 확장 레이어 생성</td>
+</tr>
+<tr>
+<td>6:00</td>
+<td>3단계</td>
+<td>"BR 체크" 탭 → Battle Royale 룰셋 선택</td>
+<td>자동 진단: BR-3 Fail (병목 우회로 없음)</td>
+</tr>
+<tr>
+<td>7:00</td>
+<td>3단계</td>
+<td>제안 카드 확인: "서쪽 다리 고립 위험 → 우회 도로 추가" → [수락]</td>
+<td>우회 도로 Edit Layer 생성</td>
+</tr>
+<tr>
+<td>8:00</td>
+<td>3단계</td>
+<td>히트맵(건물밀도) 켜서 분포 확인</td>
+<td>탑뷰 오버레이 표시</td>
+</tr>
+<tr>
+<td>9:00</td>
+<td>2단계</td>
+<td>레이어 목록에서 "건물 제거 #7" 이 아깝다 → 숨기기</td>
+<td>해당 건물 복원</td>
+</tr>
+<tr>
+<td>10:00</td>
+<td>—</td>
+<td>만족 → 커스텀 프리셋으로 저장</td>
+<td>JSON 내보내기</td>
+</tr>
+</tbody>
+</table>
+<h4>시나리오 B: "익스트랙션 맵을 빠르게 프로토타이핑하는 기획자" (~5분)</h4>
+<table>
+<thead>
+<tr>
+<th>시간</th>
+<th>단계</th>
+<th>기획자 행동</th>
+<th>시스템 반응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0:00</td>
+<td>1단계</td>
+<td>좌표 입력: 이탈리아 알프스 댐 인근</td>
+<td>실사 생성</td>
+</tr>
+<tr>
+<td>1:30</td>
+<td>2단계</td>
+<td>"Dam 스타일" 레퍼런스 프리셋 클릭</td>
+<td>슬라이더 설정 (밀도60, 고저차80...) + EX 룰셋 자동 선택</td>
+</tr>
+<tr>
+<td>2:30</td>
+<td>2단계</td>
+<td>"건물이 너무 파괴됐다" → 파괴도 30→15</td>
+<td>파괴 상태 복원 레이어 생성</td>
+</tr>
+<tr>
+<td>3:00</td>
+<td>3단계</td>
+<td>Extraction 체크 결과 확인 → EX-4 Fail (300m 노출 구간)</td>
+<td>제안: "건물 2개 추가" → [수락]</td>
+</tr>
+<tr>
+<td>4:00</td>
+<td>2단계</td>
+<td>병목 지점 도로 클릭 → "병목+우회로 세트" 프리셋</td>
+<td>장애물 + 우회로 + 엄폐 건물 생성</td>
+</tr>
+<tr>
+<td>5:00</td>
+<td>—</td>
+<td>결과 확인 → 저장</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2>레퍼런스 맵 분석</h2>
+<h3>B1. PUBG — Erangel (배틀로얄 레퍼런스)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://pubgmap.io/ko/erangel.html">pubgmap.io</a>, <a href="https://www.pubg.com/en/game-info/maps/erangel">PUBG 공식</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>8×8 km (64 km²)</td>
+</tr>
+<tr>
+<td>육지 비율</td>
+<td>51.47%</td>
+</tr>
+<tr>
+<td>수역 비율</td>
+<td>48.53%</td>
+</tr>
+<tr>
+<td>플레이어 수</td>
+<td>100명</td>
+</tr>
+<tr>
+<td>루트 스폰</td>
+<td>24,058개</td>
+</tr>
+<tr>
+<td>차량 스폰</td>
+<td>633개</td>
+</tr>
+<tr>
+<td>도로 커버리지</td>
+<td>4.28%</td>
+</tr>
+<tr>
+<td>식생 커버리지</td>
+<td>30.64%</td>
+</tr>
+<tr>
+<td>낙하 가능 영역</td>
+<td>58.71%</td>
+</tr>
+</tbody>
+</table>
+<h4>POI 구조 (거점 등급)</h4>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S (핫드롭)</strong></td>
+<td>Sosnovka Military Base, Pochinki, School</td>
+<td>최고 루트 + 최고 위험. 3~5팀 경쟁</td>
+</tr>
+<tr>
+<td><strong>A (고루트)</strong></td>
+<td>Georgopol (컨테이너), Novorepnoye, Yasnaya Polyana, Mylta Power</td>
+<td>안정적 루팅, 2~3팀</td>
+</tr>
+<tr>
+<td><strong>B (중루트)</strong></td>
+<td>Rozhok, Prison, Mansion + Shelter, Ferry Pier</td>
+<td>중간 위험, 솔로·듀오 적합</td>
+</tr>
+<tr>
+<td><strong>C (저위험)</strong></td>
+<td>Gatka, Stalber, 농가 산포</td>
+<td>안전 루팅, 루트 품질 낮음</td>
+</tr>
+</tbody>
+</table>
+<h4>동선 및 병목 구조</h4>
+<table>
+<thead>
+<tr>
+<th>요소</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>2개 다리 (동·서)</strong></td>
+<td>본토 ↔ Military Island 유일한 차량 이동 경로. 맵 최대 병목</td>
+</tr>
+<tr>
+<td><strong>다리 하부 캣워크</strong></td>
+<td>다리 캠핑 대응용 우회 경로 (Update 11.2 추가)</td>
+</tr>
+<tr>
+<td><strong>도로 네트워크</strong></td>
+<td>전체 면적의 4.28%. 차량 이동 필수 (8km 맵 도보 불가)</td>
+</tr>
+<tr>
+<td><strong>자기장 수축</strong></td>
+<td>원형 수축, 임의 중심. 후반으로 갈수록 이동 강제</td>
+</tr>
+<tr>
+<td><strong>지형 다양성</strong></td>
+<td>초원, 산악, 도시, 농지, 해안 혼합. 교전 거리 분포 다양</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징 — 룰셋 옵션에 반영할 기준</h4>
+<table>
+<thead>
+<tr>
+<th>설계 원칙</th>
+<th>Erangel 적용 사례</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>거점 간 거리 확보</td>
+<td>S등급 거점 간 최소 1.5~2km 이격</td>
+</tr>
+<tr>
+<td>병목 + 우회로 공존</td>
+<td>다리(병목) + 캣워크(우회) + 수영(고위험 우회)</td>
+</tr>
+<tr>
+<td>루트 등급 그래디언트</td>
+<td>위험=고루트, 안전=저루트. 중앙=위험, 외곽=안전</td>
+</tr>
+<tr>
+<td>개방/폐쇄 혼합</td>
+<td>도시(폐쇄 근접전) + 농지(개방 저격전) 교차 배치</td>
+</tr>
+<tr>
+<td>차량 필요성</td>
+<td>8km 스케일에서 차량 없이 자기장 이동 불가 → 도로=동선</td>
+</tr>
+<tr>
+<td>수축 경로 형평성</td>
+<td>어떤 위치든 이동 가능해야 함 → 병목이 완전 차단하면 안 됨</td>
+</tr>
+</tbody>
+</table>
+<h4>상세 거점 분석 (나무위키 기반)</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>유형</th>
+<th>설계 특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sosnovka Military Base (밀베)</strong></td>
+<td>분리된 섬의 대규모 군사기지</td>
+<td>2개 다리로만 진입 → 최강 병목. ㄷ자 생활관(옥상 파밍), 레이더 철탑(고지대 저격), 활주로 격납고. 풍부한 루트 대신 탈출 리스크 극대화</td>
+</tr>
+<tr>
+<td><strong>Pochinki (포친키)</strong></td>
+<td>중앙 대도시</td>
+<td>맵 정중앙. 3층 옥상 지붕 뛰기(닌자 플레이). 밀집된 건물+골목 → 시가전 대표 거점. "헬친키" 별명</td>
+</tr>
+<tr>
+<td><strong>School+Apartments (학교/아파트)</strong></td>
+<td>대형 단일 건물+아파트 단지</td>
+<td>교실/강당/수영장 복합. 좁은 공간 다층 CQB. 졸업 후 Rozhok/아파트로 연계 진출</td>
+</tr>
+<tr>
+<td><strong>Georgopol (게오르고폴)</strong></td>
+<td>만 기준 남/북 분리 대도시</td>
+<td>강남=꿀집+컨테이너항, 강북=9파트 아파트. 같은 도시 내 병목(만) 존재</td>
+</tr>
+<tr>
+<td><strong>Yasnaya Polyana (야스나야)</strong></td>
+<td>북동쪽 대도시</td>
+<td>고층 감옥 건물(전략적 요충지), 꿀집 4채, 다양한 파밍 루트. 존버 유저 다수</td>
+</tr>
+<tr>
+<td><strong>Mylta Power (밀타발전소)</strong></td>
+<td>남동쪽 끝 발전소</td>
+<td>좁은 면적 고밀도 루트. 굴뚝=극한 저격 포지션. 주변 폐공장 연계 파밍</td>
+</tr>
+<tr>
+<td><strong>Shelter (대피소)</strong></td>
+<td>지하 벙커</td>
+<td>지상 표시 없는 숨겨진 4출입구 대형 벙커. 미로 구조 → 산탄총/투척무기 강제. 탐험 리워드 설계의 원형</td>
+</tr>
+<tr>
+<td><strong>Quarry (채석장)</strong></td>
+<td>분지 채석장</td>
+<td>분지=엄폐 없음 → 고지대 선점 필수. 비밀 지하실(업데이트 추가)</td>
+</tr>
+</tbody>
+</table>
+<h4>에란겔 핵심 설계 원칙 (나무위키 분석 종합)</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>다양한 전장 환경</strong></td>
+<td>야전, 시가전, 폐공장, 군사기지, 항구, 채석장, 유적지, 벙커, 밀밭, 산악, 수몰지대, 늪지대, 검문소 등 모든 무기 활용 가능</td>
+</tr>
+<tr>
+<td><strong>섬 분리 병목</strong></td>
+<td>소스노브카 섬(밀베) 2개 다리 = 맵 최대 병목. 통곡의 다리 캠핑 메타 → 캣워크 우회로 추가로 밸런스 조정</td>
+</tr>
+<tr>
+<td><strong>기상 시스템</strong></td>
+<td>비/안개/흐림 날씨 변화 → 시야·소리 변수. (한때 삭제 후 재추가)</td>
+</tr>
+<tr>
+<td><strong>비밀 요소</strong></td>
+<td>비밀의 방(열쇠+판자 파괴), 비밀 지하실 등 탐험 리워드</td>
+</tr>
+<tr>
+<td><strong>밸런스 조정 역사</strong></td>
+<td>아이템 드랍률 반복 조정 → "짤파밍 vs 대도시" 메타 변화. 건물 추가 패치로 외곽 생존 가능성 확보</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>B2. PUBG — Miramar (배틀로얄 / 사막)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://pubgmap.io/miramar.html">pubgmap.io</a>, <a href="https://pubgmap.io/compare.html">pubgmap.io 비교</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>8×8 km (64 km²)</td>
+</tr>
+<tr>
+<td>육지 비율</td>
+<td>80.59%</td>
+</tr>
+<tr>
+<td>수역 비율</td>
+<td>19.41%</td>
+</tr>
+<tr>
+<td>루트 스폰</td>
+<td>43,343개</td>
+</tr>
+<tr>
+<td>군사 무기 스폰</td>
+<td>7,929개</td>
+</tr>
+<tr>
+<td>차량 스폰</td>
+<td>452개</td>
+</tr>
+<tr>
+<td>도로 커버리지</td>
+<td>6.92%</td>
+</tr>
+<tr>
+<td>식생 커버리지</td>
+<td>32.64%</td>
+</tr>
+<tr>
+<td>낙하 가능 영역</td>
+<td>64.79%</td>
+</tr>
+</tbody>
+</table>
+<h4>POI 구조</h4>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S</strong></td>
+<td>Pecado (카지노), Hacienda del Patron</td>
+<td>중앙 핫드롭. 즉시 교전</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>Los Leones (대도시), Military Base, Water Treatment</td>
+<td>넓은 도시 전투, 장거리</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>San Martin, Prison, Ruins</td>
+<td>중간 위험, 우회 가능</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>Valle del Mar, 소규모 농가</td>
+<td>안전, 저루트</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징 — Erangel과의 차이</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>Miramar 적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>개방 지형 지배</strong></td>
+<td>육지 80%+. 사막 평원에서 장거리 교전 빈번 → 차량·능선이 유일한 엄폐</td>
+</tr>
+<tr>
+<td><strong>수직 지형 활용</strong></td>
+<td>날카로운 능선·절벽이 자연 벽 역할. 언덕=엄폐, 골짜기=복도</td>
+</tr>
+<tr>
+<td><strong>도시 밀집도 낮음</strong></td>
+<td>건물이 띄엄띄엄 → 도시 간 이동이 노출 구간</td>
+</tr>
+<tr>
+<td><strong>차량 필수</strong></td>
+<td>개방 지형 + 넓은 맵 → 차량 없이 자기장 이동 불가</td>
+</tr>
+<tr>
+<td><strong>자연 병목</strong></td>
+<td>능선/절벽/협곡이 다리 대신 병목 역할</td>
+</tr>
+</tbody>
+</table>
+<h4>상세 거점 분석 (나무위키 기반)</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>유형</th>
+<th>설계 특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pecado (페카도)</strong></td>
+<td>중앙 유흥도시</td>
+<td>카지노+레슬링 경기장+호텔. 포친키와 유사한 정중앙 시가전. 고층 건물 다수 → 저격+시가전 혼합</td>
+</tr>
+<tr>
+<td><strong>Hacienda del Patron</strong></td>
+<td>고밀도 소형 핫드롭</td>
+<td>단일 저택+수영장 구조. 극소 면적 최고 루트 밀도. "에란겔의 학교" 포지션. 졸업 후 San Martin 연계</td>
+</tr>
+<tr>
+<td><strong>Los Leones (로스 레오네스)</strong></td>
+<td>최대 도시</td>
+<td>맵 최대 면적 도시. 고층 건물 다수 → "저격의 도시". 면적 대비 인구밀도 낮음. 고층 건물 간 장거리 전투</td>
+</tr>
+<tr>
+<td><strong>El Pozo (엘 포소)</strong></td>
+<td>서쪽 산업단지</td>
+<td>투우장+레슬링 경기장. 에란겔 각 도시 랜드마크를 모아놓은 구조</td>
+</tr>
+<tr>
+<td><strong>Campo Militar (캄포 밀리타르)</strong></td>
+<td>동북단 군사기지</td>
+<td>창고+막사. 풍부한 루트, 최악의 접근성 → 하이리스크-하이리턴. 탈출 시 3개 마을 포위 위험</td>
+</tr>
+<tr>
+<td><strong>Prison (감옥)</strong></td>
+<td>남서쪽 섬</td>
+<td>3개 육로+남쪽 해안으로만 진입 → 자기장 시 극유리. 에란겔 밀베급 병목+루트</td>
+</tr>
+</tbody>
+</table>
+<h4>미라마 핵심 설계 원칙 (나무위키 분석 종합)</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>개활지 저격전 강제</strong></td>
+<td>식생 부족, 사막 지형 → SR/DMR 필수. 능선 엄폐가 유일한 생존법</td>
+</tr>
+<tr>
+<td><strong>파쿠르 시스템 활용</strong></td>
+<td>건물 다양화+파쿠르 → 옥상·지붕 접근 가능. 전략적 수직 이동</td>
+</tr>
+<tr>
+<td><strong>울퉁불퉁 지형</strong></td>
+<td>의도적 지형 굴곡(엄폐용) → 차량 운전 난이도 상승. 도로 주행 반강제</td>
+</tr>
+<tr>
+<td><strong>외곽 섬 고립 위험</strong></td>
+<td>남서쪽 섬(감옥), 동쪽 군도 → 보트 미스폰 시 고립+전기사</td>
+</tr>
+<tr>
+<td><strong>3차 리메이크</strong></td>
+<td>모래폭풍(레드존 대체), 집라인 추가, 도시 재편 → 지속적 밸런스 조정 사례</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>B3. PUBG — Sanhok (배틀로얄 / 정글·소규모)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://pubgmap.io/savage.html">pubgmap.io</a>, <a href="https://pubgmap.io/compare.html">pubgmap.io 비교</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>4×4 km (16 km²)</td>
+</tr>
+<tr>
+<td>육지 비율</td>
+<td>49.26%</td>
+</tr>
+<tr>
+<td>수역 비율</td>
+<td>50.74%</td>
+</tr>
+<tr>
+<td>루트 스폰</td>
+<td>13,889개</td>
+</tr>
+<tr>
+<td>군사 무기 스폰</td>
+<td>4,546개</td>
+</tr>
+<tr>
+<td>차량 스폰</td>
+<td>198개</td>
+</tr>
+<tr>
+<td>도로 커버리지</td>
+<td>7.27%</td>
+</tr>
+<tr>
+<td>식생 커버리지</td>
+<td>43.18%</td>
+</tr>
+<tr>
+<td>낙하 가능 영역</td>
+<td>38.47%</td>
+</tr>
+</tbody>
+</table>
+<h4>POI 구조</h4>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S</strong></td>
+<td>Bootcamp, Paradise Resort</td>
+<td>즉시 CQB 교전</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>Camp Alpha/Bravo/Charlie, Ruins/Temple</td>
+<td>군사 시설, 고루트</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Pai Nan, Ha Tinh, Quarry</td>
+<td>중앙부 마을</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>Khao, Docks, Mongnai</td>
+<td>외곽, 안전 루팅</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징 — 소규모 맵 원칙</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>Sanhok 적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>밀집 전투</strong></td>
+<td>4km 맵에 100명 → 밀도 4배 (Erangel 대비). 빠른 교전 발생</td>
+</tr>
+<tr>
+<td><strong>식생=엄폐</strong></td>
+<td>식생 43% (전 맵 중 최고). 나무·덤불이 건물 대신 엄폐 역할</td>
+</tr>
+<tr>
+<td><strong>3개 섬 구조</strong></td>
+<td>호수로 분리된 3개 섬 + 다리 연결 → 자연 병목</td>
+</tr>
+<tr>
+<td><strong>차량 의존도 낮음</strong></td>
+<td>4km 도보 가능 → 차량 198대 (Erangel의 1/3)</td>
+</tr>
+<tr>
+<td><strong>날씨 변동</strong></td>
+<td>맑음/일출/비/안개 4종 → 시야·소리 변수</td>
+</tr>
+<tr>
+<td><strong>높은 도로 밀도</strong></td>
+<td>도로 7.27% (전 맵 중 최고) → 좁은 맵에 촘촘한 동선</td>
+</tr>
+</tbody>
+</table>
+<h4>상세 거점 분석 (나무위키 기반)</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>유형</th>
+<th>설계 특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bootcamp (부트캠프)</strong></td>
+<td>중앙 대규모 군사훈련소</td>
+<td>맵 정중앙 = 100% 1차 자기장 인써클. Y자 건물(사녹 상징). 창고 3동 + 소형 건물 다수. 사녹 최대 핫드롭</td>
+</tr>
+<tr>
+<td><strong>Paradise Resort</strong></td>
+<td>대규모 동양식 리조트</td>
+<td>부트캠프 다음 인기. 건물 내부+외부 바닥 모두 루트 스폰 → 총기운빨 최소화. 시가전+존버 복합</td>
+</tr>
+<tr>
+<td><strong>Ruins (사원/유적지)</strong></td>
+<td>정사각형 밀폐 건물</td>
+<td>옥상/1층/지하 3레이어. 근접 CQB 강제. 천장 구멍으로 수직 교전. 부트캠프·리조트와 인기 3강</td>
+</tr>
+<tr>
+<td><strong>Quarry (채석장)</strong></td>
+<td>물 고인 대형 분지</td>
+<td>완전 개방 → 능선 위 저격에 취약. 주변 창고에서 무장 후 진입 정석</td>
+</tr>
+<tr>
+<td><strong>Camp Alpha/Bravo/Charlie</strong></td>
+<td>군사 캠프 3개</td>
+<td>알파(북서), 브라보(동), 찰리(남). 찰리=가장 밀집, 가장 비인기 → "개꿀"</td>
+</tr>
+<tr>
+<td><strong>Cave (동굴)</strong></td>
+<td>지하 해식동굴</td>
+<td>지상 구멍으로 낙하 진입. 보트/아쿠아레일 확정 스폰. 좁은 면적 고밀도 루트</td>
+</tr>
+</tbody>
+</table>
+<h4>사녹 핵심 설계 원칙 (나무위키 분석 종합)</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>초밀집 전투</strong></td>
+<td>4km² 맵에 100명 → 에란겔 대비 4배 밀도. 어디서든 교전 발생</td>
+</tr>
+<tr>
+<td><strong>식생 위장</strong></td>
+<td>풀숲 엎드리기 → 코앞 통과해도 미발견. 매복 메타 극대화</td>
+</tr>
+<tr>
+<td><strong>3개 섬 + 강</strong></td>
+<td>호수/강으로 분리 → 수영 강제, 다리 검문. 도하(渡河) 자체가 전략적 결정</td>
+</tr>
+<tr>
+<td><strong>차량=자살행위</strong></td>
+<td>좁은 맵+높은 밀도 → 차량 소음이 다각 집중포화 유발. 대부분 도보 이동</td>
+</tr>
+<tr>
+<td><strong>실시간 기상</strong></td>
+<td>스콜(비)/안개 실시간 전환 → 시야·소리 동적 변화. 비 시 바닥 물 고임, 천막 젖음 등 상호작용</td>
+</tr>
+<tr>
+<td><strong>크리처 시스템</strong></td>
+<td>논 위의 새 (위치 노출), 닭 (소리 노출) → 비전투 환경 요소가 전술에 영향</td>
+</tr>
+<tr>
+<td><strong>건물 파괴</strong></td>
+<td>2024년 월드 업데이트로 건물 외벽 파괴 도입 (콘크리트=수류탄 2발, 나무=1발)</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>B4. PUBG — Vikendi (배틀로얄 / 설원)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://pubgmap.io/vikendi.html">pubgmap.io</a>, <a href="https://pubgmap.io/compare.html">pubgmap.io 비교</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>6×6 km (36 km²)</td>
+</tr>
+<tr>
+<td>육지 비율</td>
+<td>40.29%</td>
+</tr>
+<tr>
+<td>수역 비율</td>
+<td>59.71%</td>
+</tr>
+<tr>
+<td>루트 스폰</td>
+<td>28,614개</td>
+</tr>
+<tr>
+<td>군사 무기 스폰</td>
+<td>5,443개</td>
+</tr>
+<tr>
+<td>차량 스폰</td>
+<td>336개</td>
+</tr>
+<tr>
+<td>식생 커버리지</td>
+<td>6.92%</td>
+</tr>
+<tr>
+<td>낙하 가능 영역</td>
+<td>58.78%</td>
+</tr>
+</tbody>
+</table>
+<h4>POI 구조</h4>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S</strong></td>
+<td>Dobro Mesto, Castle, Cosmodrome</td>
+<td>대도시/랜드마크</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>Goroka, Volnova, Cement Factory, Dino Park</td>
+<td>중대형 도시</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Winery, Lumber Yard, Hot Springs</td>
+<td>중소규모</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>산간 농가, 소규모 마을</td>
+<td>외곽 안전</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징 — 환경 메카닉</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>Vikendi 적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>엄폐물 부족</strong></td>
+<td>식생 6.92% (전 맵 중 최저). 설원=개방지 → 건물·바위만 엄폐</td>
+</tr>
+<tr>
+<td><strong>동적 환경</strong></td>
+<td>눈보라 구역 (시야·소리 감소), 눈사태 투척, 케이블카 이동</td>
+</tr>
+<tr>
+<td><strong>이동 수단 다양화</strong></td>
+<td>스노모빌 + 일반 차량. 설원 이동 특화</td>
+</tr>
+<tr>
+<td><strong>비밀 접근</strong></td>
+<td>빠루로 비밀방 개방 → 고루트 보상. 탐험 리워드</td>
+</tr>
+<tr>
+<td><strong>열차 시스템</strong></td>
+<td>이동하는 열차에 고루트 → 동적 거점</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>B5. PUBG — Taego (배틀로얄 / 한국 80년대)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://namu.wiki/w/%ED%83%9C%EC%9D%B4%EA%B3%A0">나무위키 태이고</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>8×8 km (64 km²)</td>
+</tr>
+<tr>
+<td>배경</td>
+<td>1980년대 대한민국 전라남도 진도군 부근 가상 도시</td>
+</tr>
+<tr>
+<td>플레이어 수</td>
+<td>100명</td>
+</tr>
+<tr>
+<td>지형 구조</td>
+<td>북서쪽 섬 + 남동쪽 반도 (강으로 분리)</td>
+</tr>
+<tr>
+<td>전용 차량</td>
+<td>포니 쿠페, 현대 포터 (고속+고조향)</td>
+</tr>
+<tr>
+<td>전용 무기</td>
+<td>K2 (5.56mm AR)</td>
+</tr>
+<tr>
+<td>특수 피처</td>
+<td>비밀의 방(열쇠), 부서지는 항아리(부스트), 크리처(새/닭)</td>
+</tr>
+</tbody>
+</table>
+<h4>POI 구조</h4>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S (핫드롭)</strong></td>
+<td>고궁(Palace), 북산사(Buk San Sa), 터미널(Terminal)</td>
+<td>맵 중앙~남동. 파쿠르 지붕전, 시장 전투</td>
+</tr>
+<tr>
+<td><strong>A (고루트)</strong></td>
+<td>호산(Ho San), 고덕(Go Dok), 용천(Yong Cheon), 군부대(Army Base)</td>
+<td>대도시, 풍부한 파밍</td>
+</tr>
+<tr>
+<td><strong>B (중루트)</strong></td>
+<td>조선소(Shipyard), 학교(School), 공항(Airport), 하포(Ha Po)</td>
+<td>중규모, 연계 파밍</td>
+</tr>
+<tr>
+<td><strong>C (저위험)</strong></td>
+<td>해무사(Hae Moo Sa), 월송(Wol Song), 오향(Oh Hyang)</td>
+<td>외곽 사찰/마을, 안전</td>
+</tr>
+</tbody>
+</table>
+<h4>상세 거점 분석</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>유형</th>
+<th>설계 특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>고궁 (Palace)</strong></td>
+<td>맵 정중앙 조선시대 궁궐 유적</td>
+<td>경복궁 모티브. 파쿠르로 지붕 올라가기 → 닌자 전투. 낮은 외벽+넓은 구조</td>
+</tr>
+<tr>
+<td><strong>호산 (Ho San)</strong></td>
+<td>최대 대도시</td>
+<td>중심 사거리+극장. 남/북 4개 아파트 단지. 넓은 시가전</td>
+</tr>
+<tr>
+<td><strong>고덕 (Go Dok)</strong></td>
+<td>대도시</td>
+<td>재래시장 중심. 4스쿼드 동시 파밍 가능한 넓은 영역. 옥상 접근 가능 아파트</td>
+</tr>
+<tr>
+<td><strong>군부대 (Army Base)</strong></td>
+<td>군사기지</td>
+<td>막사+PRI교장+사격장. 규모 대비 파밍 준수. 에란겔 밀베의 한국 버전</td>
+</tr>
+<tr>
+<td><strong>북산사 (Buk San Sa)</strong></td>
+<td>사찰</td>
+<td>언덕 위 계단식 구조. 복잡한 건물 배치. 비행기 경로 초중반 시 40명 낙하 핫플</td>
+</tr>
+<tr>
+<td><strong>터미널 (Terminal)</strong></td>
+<td>고속버스 터미널+시장</td>
+<td>3층 터미널+대형 시장. 시장 지붕 파쿠르 → 위에서 기습. 구멍 틈 사격</td>
+</tr>
+<tr>
+<td><strong>호산 교도소 (Prison)</strong></td>
+<td>교도소</td>
+<td>파놉티콘 중앙건물+서대문형무소 모티브 수감동. 그라운드 제로 영화 배경</td>
+</tr>
+</tbody>
+</table>
+<h4>태이고 핵심 설계 원칙 (나무위키 분석 종합)</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>강 분리 구조</strong></td>
+<td>맵 중앙 강이 북서 섬/남동 반도 분리 → 끊어진 다리, 절벽 "따개비" 플레이 발생</td>
+</tr>
+<tr>
+<td><strong>한국 80년대 재현</strong></td>
+<td>논, 소나무, 장독대, 재래시장, 국민학교, 목욕탕 등 → 문화적 디테일이 레벨 디자인 요소</td>
+</tr>
+<tr>
+<td><strong>빠른 게임 진행</strong></td>
+<td>풍부한 파밍 + 고속 전용 차량(포니 쿠페) → 에란겔보다 교전 빈번</td>
+</tr>
+<tr>
+<td><strong>탐험 리워드</strong></td>
+<td>비밀의 방(열쇠+병풍 문), 부서지는 항아리(부스트/갓) → 인터랙티브 환경</td>
+</tr>
+<tr>
+<td><strong>크리처 연동</strong></td>
+<td>논 위 새(위치 노출), 닭(소리+사살 가능) → 비전투 요소가 전술에 영향</td>
+</tr>
+<tr>
+<td><strong>직관적 지형</strong></td>
+<td>에란겔 수준 식생 + 명확한 도로 → 차량 운전·포지셔닝 편안. 논 미끄러짐 주의</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>PUBG 5맵 비교 요약 (pubgmap.io + 나무위키 데이터)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>Erangel</th>
+<th>Miramar</th>
+<th>Sanhok</th>
+<th>Vikendi</th>
+<th>Taego</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>8×8 km</td>
+<td>8×8 km</td>
+<td>4×4 km</td>
+<td>6×6 km</td>
+<td>8×8 km</td>
+</tr>
+<tr>
+<td>육지</td>
+<td>51.47%</td>
+<td>80.59%</td>
+<td>49.26%</td>
+<td>40.29%</td>
+<td>~60% (섬+반도)</td>
+</tr>
+<tr>
+<td>루트 스폰</td>
+<td>24,058</td>
+<td>43,343</td>
+<td>13,889</td>
+<td>28,614</td>
+<td>높음 (짤파밍 풍부)</td>
+</tr>
+<tr>
+<td>차량</td>
+<td>633</td>
+<td>452</td>
+<td>198</td>
+<td>336</td>
+<td>다수 (고속 전용차)</td>
+</tr>
+<tr>
+<td>도로</td>
+<td>4.28%</td>
+<td>6.92%</td>
+<td>7.27%</td>
+<td>—</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>식생</td>
+<td>30.64%</td>
+<td>32.64%</td>
+<td>43.18%</td>
+<td>6.92%</td>
+<td>~30% (논+소나무)</td>
+</tr>
+<tr>
+<td>테마</td>
+<td>초원·도시</td>
+<td>사막</td>
+<td>정글</td>
+<td>설원</td>
+<td>한국 80년대 농촌</td>
+</tr>
+<tr>
+<td>엄폐 주력</td>
+<td>건물+나무</td>
+<td>능선+건물</td>
+<td>식생+지형</td>
+<td>건물+바위</td>
+<td>건물+논+소나무</td>
+</tr>
+<tr>
+<td>고유 병목</td>
+<td>다리 2개</td>
+<td>능선/협곡</td>
+<td>섬 간 다리</td>
+<td>산맥</td>
+<td>강+끊어진 다리</td>
+</tr>
+<tr>
+<td>고유 메카닉</td>
+<td>비밀의 방</td>
+<td>모래폭풍</td>
+<td>건물 파괴·크리처</td>
+<td>열차·눈보라</td>
+<td>비밀의 방·항아리·크리처</td>
+</tr>
+<tr>
+<td>전투 템포</td>
+<td>중간</td>
+<td>느림 (중반 늘어짐)</td>
+<td>매우 빠름</td>
+<td>중간</td>
+<td>빠름</td>
+</tr>
+<tr>
+<td>e스포츠 적합</td>
+<td>최고</td>
+<td>낮음 (부동산 운)</td>
+<td>논란 (운빨)</td>
+<td>중간</td>
+<td>높음 (2023~)</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>B6. CoD: Warzone — Verdansk (배틀로얄 / 도시·대규모)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://www.callofduty.com/guides/tac-atlas-verdansk">callofduty.com Tac Atlas</a>, <a href="https://gamerant.com/call-of-duty-warzone-all-verdansk-points-of-interest">gamerant</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>~5.84 km² (실측)</td>
+</tr>
+<tr>
+<td>플레이어 수</td>
+<td>150명 (PUBG 대비 50% 증가)</td>
+</tr>
+<tr>
+<td>주요 POI</td>
+<td>19개 대형 + 277개 소형 = 총 296개</td>
+</tr>
+<tr>
+<td>배경</td>
+<td>가상 동유럽 도시 "Verdansk" (카스토비아 연방)</td>
+</tr>
+<tr>
+<td>시스템</td>
+<td>가스 서클 수축, Gulag(부활 1회), Buy Station(팀 부활/장비 구매), Loadout Drop</td>
+</tr>
+<tr>
+<td>전용 메카닉</td>
+<td>열차(이동+루트), 지하벙커(열쇠/이스터에그), 어센더(수직이동)</td>
+</tr>
+<tr>
+<td>차량</td>
+<td>SUV, ATV, 헬리콥터, 카고트럭, 택티컬 로버</td>
+</tr>
+</tbody>
+</table>
+<h4>POI 구조 (19대 거점)</h4>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S (핫드롭)</strong></td>
+<td>Superstore, Hospital, Downtown</td>
+<td>고밀도 루트+극초반 교전. Superstore=리플렉스 CQB, Hospital=옥상 제어, Downtown=고층 저격</td>
+</tr>
+<tr>
+<td><strong>A (고루트)</strong></td>
+<td>Airport, TV Station, Prison, Stadium</td>
+<td>Airport=활주로 장거리, Prison=Gulag 원본 건물, Stadium=내부 미사일 이벤트. 복잡한 실내 구조</td>
+</tr>
+<tr>
+<td><strong>B (중루트)</strong></td>
+<td>Train Station, Boneyard, Port, Storage Town</td>
+<td>중규모 복합 시설. Train Station=이동 거점, Boneyard=비행기 잔해 엄폐</td>
+</tr>
+<tr>
+<td><strong>C (저위험)</strong></td>
+<td>Farmland, Lumber, Hills, Park</td>
+<td>외곽 농지/산림. 안전 파밍, 후반 자기장 이동용</td>
+</tr>
+</tbody>
+</table>
+<h4>상세 거점 분석</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>유형</th>
+<th>설계 특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dam (고라 댐)</strong></td>
+<td>북서 설산 거대 댐</td>
+<td>맵 최고 고도 → 전체 맵 조망 가능. 댐 구조물+발전기실+Bunker 04. 극소 인원 파밍지</td>
+</tr>
+<tr>
+<td><strong>Military Base</strong></td>
+<td>북쪽 군사기지</td>
+<td>전략적 회전 거점. ATC 타워=360도 감시, 활주로·격납고·막사 복합</td>
+</tr>
+<tr>
+<td><strong>Airport</strong></td>
+<td>북동 공항</td>
+<td>터미널 미로+활주로 장거리 → 근/원거리 혼합. 지하 도로로 회전 가능</td>
+</tr>
+<tr>
+<td><strong>Superstore</strong></td>
+<td>중앙 대형마트</td>
+<td>내부 선반+지붕 구멍 = 수직 교전. 맵 가장 빠른 템포. 초반 6~10팀 낙하</td>
+</tr>
+<tr>
+<td><strong>Hospital</strong></td>
+<td>중앙서 병원</td>
+<td>옥상 헬기패드(고지대), 스카이브리지(건물간 이동), 화재 옥상 → 다층 전투</td>
+</tr>
+<tr>
+<td><strong>Downtown</strong></td>
+<td>중앙남 도심</td>
+<td>SKN 방송타워(16층)=맵 최고층 건물. 옥상 간 크로스파이어. "저격수의 천국"</td>
+</tr>
+<tr>
+<td><strong>Stadium</strong></td>
+<td>중앙 아레나</td>
+<td>시즌 5 개방: 미사일 이벤트+내부 탐험. 3층 구조 대형 경기장</td>
+</tr>
+<tr>
+<td><strong>Train Station</strong></td>
+<td>중앙 기차역</td>
+<td>열차 노선 중심. 내부 플랫폼+외부 광장 = 중거리 교전</td>
+</tr>
+<tr>
+<td><strong>Prison (교도소)</strong></td>
+<td>남동쪽 끝</td>
+<td>Gulag 건물 원본. 격리된 위치 → 자기장 시 탈출 어려움. 루트 풍부</td>
+</tr>
+</tbody>
+</table>
+<h4>Verdansk 핵심 설계 원칙</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>150명 대규모 + 부활</strong></td>
+<td>Gulag(1회 1v1 부활) + Buy Station(팀원 부활) → 사망=즉퇴장 아님. PUBG 대비 공격적 플레이 유도</td>
+</tr>
+<tr>
+<td><strong>Loadout Drop</strong></td>
+<td>자기 커스텀 무기 호출 가능 → 바닥 루트 의존도↓, 포지셔닝·전략 비중↑</td>
+</tr>
+<tr>
+<td><strong>수직 도시 전투</strong></td>
+<td>고층 건물 다수 + 어센더(엘리베이터) → 3차원 전투. PUBG보다 수직성 극대화</td>
+</tr>
+<tr>
+<td><strong>열차 동적 거점</strong></td>
+<td>순환 열차에 고루트 + 이동 수단 역할 → Vikendi 열차와 유사하나 더 전략적</td>
+</tr>
+<tr>
+<td><strong>지하 벙커 시스템</strong></td>
+<td>열쇠/이스터에그로 개방 → 극고루트 보상. 탐험 메타 레이어</td>
+</tr>
+<tr>
+<td><strong>5개 섹터 분할</strong></td>
+<td>북(군사/댐), 동(농지/항구), 중앙(도심), 남(병원/경기장), 서남(교도소) → 지역 테마 다양성</td>
+</tr>
+<tr>
+<td><strong>다양한 교전 거리</strong></td>
+<td>Superstore(10m CQB) ~ Dam(500m+ 저격) → 단일 맵 내 모든 교전 거리 커버</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E1. ARC Raiders — Dam Battlegrounds (익스트랙션 레퍼런스)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://metaforge.app/arc-raiders/map/dam">metaforge.app</a>, <a href="https://arcraiders.cc/arc-raiders-dam-battlegrounds-map/">arcraiders.cc</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>~2.5 km²</td>
+</tr>
+<tr>
+<td>플레이어 수</td>
+<td>소규모 (스쿼드 기반)</td>
+</tr>
+<tr>
+<td>추출 포인트</td>
+<td>2~3 Cargo Elevator + 4 Raider Hatch</td>
+</tr>
+<tr>
+<td>수직 레이어</td>
+<td>4단 (지하/지상/2층/댐 상단)</td>
+</tr>
+<tr>
+<td>지역 수</td>
+<td>5 (Power Plant, Research Campus, Apartment, Northern Forest, Dam Crest)</td>
+</tr>
+<tr>
+<td>Field Depot</td>
+<td>6개 (전 맵 중 최다)</td>
+</tr>
+</tbody>
+</table>
+<h4>5개 지역 구조</h4>
+<table>
+<thead>
+<tr>
+<th>지역</th>
+<th>특징</th>
+<th>루트 등급</th>
+<th>위험도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Power Plant</strong></td>
+<td>맵 북단. 발전기 가동 시 지하 배수 → 숨겨진 루트 공개</td>
+<td>최고 (Vault: 레전더리 23% 확률)</td>
+<td>높음</td>
+</tr>
+<tr>
+<td><strong>Research Campus</strong></td>
+<td>맵 중앙. 연구소 건물 밀집</td>
+<td>높음 (연구소: 18% 확률)</td>
+<td>높음</td>
+</tr>
+<tr>
+<td><strong>Apartment District</strong></td>
+<td>도시 전투 구역. 2층 건물 다수</td>
+<td>중간</td>
+<td>중간</td>
+</tr>
+<tr>
+<td><strong>Northern Forest</strong></td>
+<td>자연 지형. 엄폐물 적음</td>
+<td>낮음</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td><strong>Dam Crest</strong></td>
+<td>40m+ 고지대 플랫폼. 장거리 시야</td>
+<td>높음</td>
+<td>매우 높음 (노출)</td>
+</tr>
+</tbody>
+</table>
+<h4>추출 시스템</h4>
+<table>
+<thead>
+<tr>
+<th>추출 타입</th>
+<th>개수</th>
+<th>활성화 시간</th>
+<th>소음</th>
+<th>요구 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cargo Elevator</strong></td>
+<td>2~3</td>
+<td>~90초</td>
+<td>사이렌 (전역 알림)</td>
+<td>없음</td>
+</tr>
+<tr>
+<td><strong>Raider Hatch</strong></td>
+<td>4</td>
+<td>즉시</td>
+<td>무소음</td>
+<td>열쇠 필요</td>
+</tr>
+</tbody>
+</table>
+<h4>수직 레이어 상세</h4>
+<table>
+<thead>
+<tr>
+<th>레이어</th>
+<th>높이</th>
+<th>전투 특성</th>
+<th>동선 역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>지하 (하부 산업 시설)</strong></td>
+<td>지표 -5m 이하</td>
+<td>근접 CQB, 좁은 복도</td>
+<td>안전 회전 경로, 저위험·저루트</td>
+</tr>
+<tr>
+<td><strong>지상</strong></td>
+<td>0m</td>
+<td>중거리, 도로·광장</td>
+<td>주요 이동 경로</td>
+</tr>
+<tr>
+<td><strong>2층</strong></td>
+<td>+5~10m</td>
+<td>중거리, 창문 엄폐</td>
+<td>감시·매복 포지션</td>
+</tr>
+<tr>
+<td><strong>댐 상단</strong></td>
+<td>+40m</td>
+<td>장거리, 완전 노출</td>
+<td>고위험·고루트 앵커 포인트</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징 — 룰셋 옵션에 반영할 기준</h4>
+<table>
+<thead>
+<tr>
+<th>설계 원칙</th>
+<th>Dam 적용 사례</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>탈출 루트 복수성</td>
+<td>Elevator(소음) + Hatch(무소음·열쇠). 경로 2+개 보장</td>
+</tr>
+<tr>
+<td>위험=보상 비례</td>
+<td>Power Plant(최고 루트) 주변에 추출 포인트 배치 → 탈출까지 위험 구간 유지</td>
+</tr>
+<tr>
+<td>수직 전투 다양성</td>
+<td>4단 수직 레이어. 지하=회피, 지상=이동, 2층=매복, 상단=저격</td>
+</tr>
+<tr>
+<td>동적 환경 변화</td>
+<td>발전기 가동 → 지하 배수 → 새 경로 + 소음 발생 (리스크-리워드 트레이드오프)</td>
+</tr>
+<tr>
+<td>추출 긴장감</td>
+<td>Elevator 90초 대기 + 사이렌 = 추출 시 최대 긴장. Hatch = 열쇠 획득 필요</td>
+</tr>
+<tr>
+<td>은신 루트 존재</td>
+<td>지하 유지보수 터널로 핵심 포지션 우회 가능</td>
+</tr>
+</tbody>
+</table>
+<h4>기타 ARC Raiders 맵 (비교)</h4>
+<table>
+<thead>
+<tr>
+<th>맵</th>
+<th>크기</th>
+<th>Elevator</th>
+<th>Hatch</th>
+<th>특수 추출</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dam</strong></td>
+<td>Large</td>
+<td>2~3</td>
+<td>4</td>
+<td>—</td>
+<td>수직 4단, 동적 수계</td>
+</tr>
+<tr>
+<td><strong>Spaceport</strong></td>
+<td>Large</td>
+<td>4</td>
+<td>4</td>
+<td>—</td>
+<td>개방형</td>
+</tr>
+<tr>
+<td><strong>Buried City</strong></td>
+<td>Large</td>
+<td>—</td>
+<td>4</td>
+<td>Metro Station 4</td>
+<td>지하 메트로 네트워크</td>
+</tr>
+<tr>
+<td><strong>Blue Gate</strong></td>
+<td>Large</td>
+<td>—</td>
+<td>4</td>
+<td>Airshaft 1</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Stella Montis</strong></td>
+<td>Large</td>
+<td>—</td>
+<td>5</td>
+<td>Airshaft 1</td>
+<td>상/하 분리 구조</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E2. ARC Raiders — Spaceport (익스트랙션 / 산업·수직)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://metaforge.app/arc-raiders/map/spaceport">metaforge.app</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>구조</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>Large</td>
+</tr>
+<tr>
+<td>레이어</td>
+<td>지상 + 지하 터널 (Tunnels/Surface 전환)</td>
+</tr>
+<tr>
+<td>Elevator</td>
+<td>4 (서/중앙/남/동)</td>
+</tr>
+<tr>
+<td>Raider Hatch</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Field Depot</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h4>5개 핵심 구역</h4>
+<table>
+<thead>
+<tr>
+<th>구역</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Launch Towers</strong></td>
+<td>최고 루트 수직 구조물. 고위험</td>
+</tr>
+<tr>
+<td><strong>Departure/Arrival Buildings</strong></td>
+<td>다층 건물, 중~고 루트</td>
+</tr>
+<tr>
+<td><strong>Rocket Assembly</strong></td>
+<td>산업 시설, 고가치 스폰</td>
+</tr>
+<tr>
+<td><strong>Container Storage</strong></td>
+<td>컨테이너 밀집, 근접 교전</td>
+</tr>
+<tr>
+<td><strong>Trench/Control Towers</strong></td>
+<td>소규모 팀 적합, 낮은 경쟁</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>건물 간 이동</strong></td>
+<td>개방 지형 치명적 → 건물-건물 커버 루트 필수</td>
+</tr>
+<tr>
+<td><strong>수직 이동</strong></td>
+<td>집라인 + 사다리로 층간 이동</td>
+</tr>
+<tr>
+<td><strong>지하 안전 회전</strong></td>
+<td>Launch Tower 인근 지하 터널로 은밀 이동</td>
+</tr>
+<tr>
+<td><strong>키 잠금 루트</strong></td>
+<td>Control Tower A6 열쇠 필요 → 고루트 접근 제한</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E3. ARC Raiders — Buried City (익스트랙션 / 도시·메트로)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://metaforge.app/arc-raiders/map/buried-city">metaforge.app</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>구조</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>Large</td>
+</tr>
+<tr>
+<td>레이어</td>
+<td>단일 (지상, 다층 건물)</td>
+</tr>
+<tr>
+<td>Metro Station</td>
+<td>4 (동/북/서/남) — 이 맵 고유 추출 방식</td>
+</tr>
+<tr>
+<td>Raider Hatch</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Field Depot</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<h4>핵심 거점</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>루트</th>
+<th>위험도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hospital</strong></td>
+<td>최고 (의료+무기)</td>
+<td>매우 높음 (PvP 집중)</td>
+</tr>
+<tr>
+<td><strong>Mall Complex</strong></td>
+<td>높음 (다층 상점)</td>
+<td>높음</td>
+</tr>
+<tr>
+<td><strong>Town Hall</strong></td>
+<td>높음 (열쇠 필요)</td>
+<td>중~높음</td>
+</tr>
+<tr>
+<td><strong>Residential</strong></td>
+<td>중간 (마스터키 필요)</td>
+<td>중간</td>
+</tr>
+<tr>
+<td><strong>Market Ruins</strong></td>
+<td>낮음</td>
+<td>낮음</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>메트로 추출</strong></td>
+<td>퍼즐 풀기 또는 마스터키 → 90초 대기 + 경보 → 전역 알림. 맵당 1회만 사용 가능</td>
+</tr>
+<tr>
+<td><strong>도시 밀집전</strong></td>
+<td>좁은 거리, 광장, 다층 건물 → 사격선이 수시로 변화</td>
+</tr>
+<tr>
+<td><strong>수직 전투</strong></td>
+<td>옥상·발코니·주차장 구조 활용</td>
+</tr>
+<tr>
+<td><strong>모래 매몰 테마</strong></td>
+<td>모래 언덕 아래 묻힌 도시 → 고저차 자연 발생</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E4. ARC Raiders — Blue Gate (익스트랙션 / 지하 동굴)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://metaforge.app/arc-raiders/map/blue-gate">metaforge.app</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>구조</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>Large</td>
+</tr>
+<tr>
+<td>레이어</td>
+<td>지상 (Surface) + 지하 (Underground) — 듀얼 레이어</td>
+</tr>
+<tr>
+<td>Airshaft</td>
+<td>1 (Processing Tower 인근)</td>
+</tr>
+<tr>
+<td>Raider Hatch</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<h4>지상 vs 지하 대비</h4>
+<table>
+<thead>
+<tr>
+<th>레이어</th>
+<th>특징</th>
+<th>전투 성격</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>지상 (Surface)</strong></td>
+<td>빙하 능선, 개방 지형. 장거리 사선 치명적</td>
+<td>장거리, 고위험</td>
+</tr>
+<tr>
+<td><strong>지하 (Underground)</strong></td>
+<td>터널 미로, 좁은 복도, 잠긴 방</td>
+<td>근접 CQB, 루트 밀집</td>
+</tr>
+</tbody>
+</table>
+<h4>핵심 구역</h4>
+<table>
+<thead>
+<tr>
+<th>구역</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Standard Passage</strong></td>
+<td>지하 기본 통로, 초보 적합</td>
+</tr>
+<tr>
+<td><strong>Communication Tower Passage</strong></td>
+<td>중간 난이도, 타워키 필요</td>
+</tr>
+<tr>
+<td><strong>Vertical Shaft</strong></td>
+<td>지하↔지상 메인 연결, 소음+위험</td>
+</tr>
+<tr>
+<td><strong>Confiscation Room</strong></td>
+<td>잠긴 루트방, 고보상</td>
+</tr>
+<tr>
+<td><strong>Loot Caves</strong></td>
+<td>지하 숨겨진 동굴, 집라인 접근</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>지상/지하 대비</strong></td>
+<td>지상=위험+이동, 지하=안전+루트. 수직 이동이 전략적 결정</td>
+</tr>
+<tr>
+<td><strong>터널 네트워크</strong></td>
+<td>4개 주요 통로가 맵 전체 지하 관통 → 회전 경로 다양</td>
+</tr>
+<tr>
+<td><strong>Airshaft 추출</strong></td>
+<td>수직 이동 필수 → 추출 자체가 위험 구간</td>
+</tr>
+<tr>
+<td><strong>솔로 파밍 루트</strong></td>
+<td>지하 외곽 루트로 12~18분에 70~120k 크레딧 가능</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E5. ARC Raiders — Stella Montis (익스트랙션 / 2층 벙커)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://metaforge.app/arc-raiders/map/stella-montis">metaforge.app</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>구조</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>Large</td>
+</tr>
+<tr>
+<td>레이어</td>
+<td>상층 (Top Floor) + 하층 (Bottom Floor)</td>
+</tr>
+<tr>
+<td>Airshaft</td>
+<td>1 (Eastern Tunnel)</td>
+</tr>
+<tr>
+<td>Raider Hatch</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Field Depot</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h4>2층 구조</h4>
+<table>
+<thead>
+<tr>
+<th>층</th>
+<th>주요 구역</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>상층</strong></td>
+<td>Assembly, Lobby, Cultural Archive, Loading Bay, Medical Research</td>
+<td>고루트 POI 밀집</td>
+</tr>
+<tr>
+<td><strong>하층</strong></td>
+<td>Loading Bay, Sandbox, Seed Vault</td>
+<td>이동 경로 + 탈출</td>
+</tr>
+</tbody>
+</table>
+<h4>핵심 거점</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>층</th>
+<th>루트 등급</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cultural Archives</strong></td>
+<td>상층 남동</td>
+<td>최고 (Old World 루트)</td>
+</tr>
+<tr>
+<td><strong>Medical Research</strong></td>
+<td>상층</td>
+<td>높음</td>
+</tr>
+<tr>
+<td><strong>Auditorium Server Room</strong></td>
+<td>상층 남</td>
+<td>높음 (테크 루트)</td>
+</tr>
+<tr>
+<td><strong>Seed Vault</strong></td>
+<td>하층 남</td>
+<td>높음 (연료전지 필요)</td>
+</tr>
+<tr>
+<td><strong>Security Checkpoint</strong></td>
+<td>상층 로비 동</td>
+<td>높음 (열쇠 필요)</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>초밀집 맵</strong></td>
+<td>전 맵 중 가장 작고 밀집 → CQB 100%</td>
+</tr>
+<tr>
+<td><strong>상층=루트, 하층=탈출</strong></td>
+<td>루트는 위에서, 탈출은 아래로 → 수직 이동이 진행 방향</td>
+</tr>
+<tr>
+<td><strong>높은 희귀템 확률</strong></td>
+<td>Rare/Epic 스폰 빈도 높음 → 짧은 레이드 고보상</td>
+</tr>
+<tr>
+<td><strong>미로 구조</strong></td>
+<td>자주 맵 확인 필요 → 방향 감각 상실 위험</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>ARC Raiders 5맵 비교 요약</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>Dam</th>
+<th>Spaceport</th>
+<th>Buried City</th>
+<th>Blue Gate</th>
+<th>Stella Montis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>테마</td>
+<td>댐+산업</td>
+<td>우주항</td>
+<td>모래 매몰 도시</td>
+<td>빙하+동굴</td>
+<td>지하 벙커</td>
+</tr>
+<tr>
+<td>수직 레이어</td>
+<td>4단</td>
+<td>지상+터널</td>
+<td>단일(다층건물)</td>
+<td>지상+지하</td>
+<td>상/하 2층</td>
+</tr>
+<tr>
+<td>주력 추출</td>
+<td>Elevator</td>
+<td>Elevator</td>
+<td>Metro Station</td>
+<td>Airshaft</td>
+<td>Airshaft+Hatch</td>
+</tr>
+<tr>
+<td>Hatch</td>
+<td>4</td>
+<td>4</td>
+<td>4</td>
+<td>4</td>
+<td>5</td>
+</tr>
+<tr>
+<td>고유 메카닉</td>
+<td>발전기→배수</td>
+<td>집라인 수직이동</td>
+<td>퍼즐 메트로</td>
+<td>터널 네트워크</td>
+<td>연료전지 문</td>
+</tr>
+<tr>
+<td>전투 거리</td>
+<td>혼합</td>
+<td>중~장거리</td>
+<td>근~중거리</td>
+<td>지하근접/지상장거리</td>
+<td>근접 CQB</td>
+</tr>
+<tr>
+<td>핵심 설계</td>
+<td>수직+동적환경</td>
+<td>건물간커버</td>
+<td>도시밀집+추출제한</td>
+<td>지상/지하대비</td>
+<td>상층루트/하층탈출</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E6. Escape from Tarkov — Customs (익스트랙션 / 산업·선형)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://namu.wiki/w/Customs(%ED%83%80%EB%A5%B4%EC%BD%94%ED%94%84)">나무위키</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PMC 인원</td>
+<td>10~12명</td>
+</tr>
+<tr>
+<td>레이드 시간</td>
+<td>35분</td>
+</tr>
+<tr>
+<td>맵 형태</td>
+<td>가로로 긴 선형 (서→동)</td>
+</tr>
+<tr>
+<td>핵심 거점</td>
+<td>기숙사(마크방), 신골조, 인텔방, 주유소, 중앙 공장</td>
+</tr>
+<tr>
+<td>보스</td>
+<td>르샬라 (기숙사/신골조/주유소 스폰)</td>
+</tr>
+<tr>
+<td>추출</td>
+<td>PMC 7+ / SCAV 10+ (조건부·열쇠·비용 포함)</td>
+</tr>
+</tbody>
+</table>
+<h4>핵심 거점</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>루트 등급</th>
+<th>위험도</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>기숙사 (가동 마크방)</strong></td>
+<td>최고</td>
+<td>매우 높음</td>
+<td>열쇠 필요, 보스 스폰, 주변 수풀 존버 위험</td>
+</tr>
+<tr>
+<td><strong>신골조</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>고저차 큰 골조 건물, 수비 유리, 보스 스폰</td>
+</tr>
+<tr>
+<td><strong>인텔방</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>인텔+의약품, PMC 스폰 밀집 구역 인접</td>
+</tr>
+<tr>
+<td><strong>주유소</strong></td>
+<td>중간</td>
+<td>중간</td>
+<td>보스 스폰, 탈출 루트 경유지</td>
+</tr>
+<tr>
+<td><strong>중앙 공장</strong></td>
+<td>중간</td>
+<td>중간</td>
+<td>확장 구역, 복층 내부, 안전 횡단 루트</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>선형 강제 이동</strong></td>
+<td>서쪽↔동쪽 스폰, 반대쪽으로 탈출. 중앙 병목 강제 통과</td>
+</tr>
+<tr>
+<td><strong>다리 병목</strong></td>
+<td>4개 다리 = 저격 위험. 스태미나 관리 후 전력 질주 필요</td>
+</tr>
+<tr>
+<td><strong>열쇠=고루트</strong></td>
+<td>마크방(314호) 등 고가치 방은 열쇠 필수</td>
+</tr>
+<tr>
+<td><strong>존버 메타</strong></td>
+<td>수풀+병목 = 기습 유리. 기숙사 북쪽 숲이 대표 존버 지역</td>
+</tr>
+<tr>
+<td><strong>우회 루트 확장</strong></td>
+<td>0.12.7 패치 신골조 추가 → 병목 완화. 중앙 공장 내부 루트 → 안전 횡단</td>
+</tr>
+<tr>
+<td><strong>스폰 밀집 교전</strong></td>
+<td>빨간 창고 인근 PMC 스폰 밀집 → 게임 시작 즉시 교전</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E7. Escape from Tarkov — Shoreline (익스트랙션 / 리조트·개방)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://namu.wiki/w/Shoreline(%ED%83%80%EB%A5%B4%EC%BD%94%ED%94%84)">나무위키</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PMC 인원</td>
+<td>10~13명</td>
+</tr>
+<tr>
+<td>레이드 시간</td>
+<td>45분</td>
+</tr>
+<tr>
+<td>맵 형태</td>
+<td>대형 개방 (숲+해안+중앙 리조트)</td>
+</tr>
+<tr>
+<td>핵심 거점</td>
+<td>헬스 리조트 (서관/동관/본관), 부잣집, 주유소, 기상 관측소, 밀수 기지</td>
+</tr>
+<tr>
+<td>보스</td>
+<td>세니타 (리조트/부잣집/피어보트 스폰)</td>
+</tr>
+<tr>
+<td>추출</td>
+<td>PMC 5+ / SCAV 7+</td>
+</tr>
+</tbody>
+</table>
+<h4>핵심 거점</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>루트 등급</th>
+<th>위험도</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>리조트 (서관·동관·본관)</strong></td>
+<td>최고</td>
+<td>매우 높음</td>
+<td>수십 종 열쇠, 키카드 스폰, 고인물 집결지</td>
+</tr>
+<tr>
+<td><strong>부잣집 (Cottage)</strong></td>
+<td>높음 (금고)</td>
+<td>중~높음</td>
+<td>보스 스폰, 퀘스트 밀집</td>
+</tr>
+<tr>
+<td><strong>기상 관측소</strong></td>
+<td>중간</td>
+<td>높음</td>
+<td>고지대 저격 스팟, 로그 보스 스폰</td>
+</tr>
+<tr>
+<td><strong>밀수 기지</strong></td>
+<td>중간</td>
+<td>중간</td>
+<td>확장 구역, 공구류 파밍</td>
+</tr>
+<tr>
+<td><strong>외곽 (마을·해안선)</strong></td>
+<td>낮음</td>
+<td>낮음</td>
+<td>히든 스태쉬, 솔로 안전 파밍</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>중앙 집중 vs 외곽 분산</strong></td>
+<td>리조트=고위험·고루트, 외곽 숲/해안=저위험·저루트. 명확한 위험-보상 분리</td>
+</tr>
+<tr>
+<td><strong>열쇠 경제</strong></td>
+<td>리조트 열쇠 수십 종, 일부 수백만 루블 → 장기 수집 투자</td>
+</tr>
+<tr>
+<td><strong>개방 지형 저격</strong></td>
+<td>리조트 외곽 = 숲+개방지, 장거리 저격 빈번</td>
+</tr>
+<tr>
+<td><strong>솔로 외곽 루트</strong></td>
+<td>마을·해안선 = 뉴비/솔로 추천 루트, 히든 스태쉬 파밍</td>
+</tr>
+<tr>
+<td><strong>주야 변동</strong></td>
+<td>야간 컬티스트 스폰, 야간투시경 필수 → 장비 투자=리스크</td>
+</tr>
+<tr>
+<td><strong>이정표 랜드마크</strong></td>
+<td>리조트 건물이 맵 어디서든 보이는 랜드마크 → 방향 감각</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E8. Escape from Tarkov — Streets of Tarkov (익스트랙션 / 대형 시가전)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://namu.wiki/w/Streets%20of%20Tarkov">나무위키</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PMC 인원</td>
+<td>15~16명</td>
+</tr>
+<tr>
+<td>레이드 시간</td>
+<td>50분</td>
+</tr>
+<tr>
+<td>맵 형태</td>
+<td>대형 도시 (대부분 건물 내부 구현)</td>
+</tr>
+<tr>
+<td>핵심 거점</td>
+<td>서쪽 학교 블록, 동쪽 공장 블록(마크방), 렉서스(보스), 콘코디아, 벨루가 쇼핑몰</td>
+</tr>
+<tr>
+<td>보스</td>
+<td>카반 (렉서스 — 거치 무기+지뢰 방어)</td>
+</tr>
+<tr>
+<td>추출</td>
+<td>택시, 엘리베이터, 맨홀, 조명탄 기믹 등 다양</td>
+</tr>
+<tr>
+<td>특수</td>
+<td>BTR-82 장갑차 순찰 (이동·엄호·배송 서비스)</td>
+</tr>
+</tbody>
+</table>
+<h4>핵심 거점</h4>
+<table>
+<thead>
+<tr>
+<th>거점</th>
+<th>루트 등급</th>
+<th>위험도</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>공장 블록 (마크방)</strong></td>
+<td>최고</td>
+<td>매우 높음</td>
+<td>블록 중앙 마크방 + 주변 다수 파밍 포인트</td>
+</tr>
+<tr>
+<td><strong>서쪽 학교 블록</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>우체국·약국·학교, 복잡한 바둑판+커브 구조</td>
+</tr>
+<tr>
+<td><strong>렉서스</strong></td>
+<td>높음</td>
+<td>극도 위험</td>
+<td>보스+거치 무기+지뢰. 진입 자체가 도전</td>
+</tr>
+<tr>
+<td><strong>콘코디아 아파트</strong></td>
+<td>중~높음 (열쇠)</td>
+<td>중간</td>
+<td>열쇠 다수 필요, 귀중품 밀집</td>
+</tr>
+<tr>
+<td><strong>벨루가 쇼핑몰</strong></td>
+<td>중간</td>
+<td>중간</td>
+<td>3층 엘리베이터 탈출구, 퀘스트 밀집</td>
+</tr>
+</tbody>
+</table>
+<h4>설계 특징</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>밀집 도시 CQB</strong></td>
+<td>모든 건물 내부 구현 → 근접 시가전 지배적. 장거리 교전 거의 없음</td>
+</tr>
+<tr>
+<td><strong>블록 단위 구조</strong></td>
+<td>맵을 "블록"으로 구분 (학교 블록, 공장 블록, 극장 등) → 이해·학습 용이</td>
+</tr>
+<tr>
+<td><strong>극고밀도 AI</strong></td>
+<td>스캐브 3+ 마리/구역, 옥상 저격 스캐브, 유저 스캐브 5분 내 진입 → 끊임없는 교전</td>
+</tr>
+<tr>
+<td><strong>보스 영역 거부</strong></td>
+<td>렉서스 = 거치 무기+지뢰+유탄. 진입 전략 없이 접근 불가</td>
+</tr>
+<tr>
+<td><strong>다양한 추출</strong></td>
+<td>택시(비용), 엘리베이터(건물 진입), 맨홀(하수구), 조명탄(아이템) → 추출 방식마다 리스크 다름</td>
+</tr>
+<tr>
+<td><strong>BTR 동적 요소</strong></td>
+<td>장갑차가 도로 순찰 → 엄호/이동 서비스 or 적대 시 기관총 반격</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>Tarkov 3맵 비교 요약</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>Customs</th>
+<th>Shoreline</th>
+<th>Streets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>중형 (선형)</td>
+<td>대형 (개방)</td>
+<td>대형 (도시)</td>
+</tr>
+<tr>
+<td>PMC</td>
+<td>10~12</td>
+<td>10~13</td>
+<td>15~16</td>
+</tr>
+<tr>
+<td>시간</td>
+<td>35분</td>
+<td>45분</td>
+<td>50분</td>
+</tr>
+<tr>
+<td>핵심 건물</td>
+<td>기숙사</td>
+<td>리조트</td>
+<td>공장 블록</td>
+</tr>
+<tr>
+<td>주력 전투</td>
+<td>중거리+병목</td>
+<td>장거리 저격+실내 CQB</td>
+<td>근접 시가전</td>
+</tr>
+<tr>
+<td>열쇠 의존</td>
+<td>높음 (마크방)</td>
+<td>매우 높음 (수십 종)</td>
+<td>높음 (마크방+다수)</td>
+</tr>
+<tr>
+<td>보스</td>
+<td>르샬라</td>
+<td>세니타</td>
+<td>카반 (거치 무기)</td>
+</tr>
+<tr>
+<td>고유 메카닉</td>
+<td>선형 강제 이동</td>
+<td>중앙 집중 vs 외곽 분산</td>
+<td>BTR 장갑차 순찰</td>
+</tr>
+<tr>
+<td>존버 위험</td>
+<td>매우 높음</td>
+<td>높음</td>
+<td>중간 (AI 밀도 높아 은폐 어려움)</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>E9. Hunt: Showdown 1896 — Stillwater Bayou (익스트랙션 / PvPvE 바운티)</h3>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>출처: <a href="https://huntshowdown.wiki.gg/wiki/Maps">huntshowdown.wiki.gg</a>, <a href="https://huntshowdown.fandom.com/wiki/Stillwater_Bayou">huntshowdown.fandom.com</a>
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>기본 스펙</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기</td>
+<td>~1 km²</td>
+</tr>
+<tr>
+<td>플레이어 수</td>
+<td>최대 12명 (솔로/듀오/트리오, 4팀)</td>
+</tr>
+<tr>
+<td>컴파운드 수</td>
+<td>16개 (고정 배치)</td>
+</tr>
+<tr>
+<td>추출 포인트</td>
+<td>Bounty Hunt: 3개 (랜덤 선택, 전체 후보 15개), Bounty Clash: 2개 (고정)</td>
+</tr>
+<tr>
+<td>보스 스폰</td>
+<td>16개 컴파운드 중 1~2곳 랜덤</td>
+</tr>
+<tr>
+<td>배경</td>
+<td>1895년 루이지애나 늪지대</td>
+</tr>
+<tr>
+<td>시간대</td>
+<td>낮/새벽/밤/안개 랜덤 → 시야·분위기 변동</td>
+</tr>
+<tr>
+<td>코어 루프</td>
+<td>단서 수집 → 보스 위치 특정 → 보스 처치 → 바운티 토큰 획득 → 추출 (PvPvE)</td>
+</tr>
+</tbody>
+</table>
+<h4>16개 컴파운드 구조</h4>
+<table>
+<thead>
+<tr>
+<th>컴파운드</th>
+<th>유형</th>
+<th>설계 특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>The Slaughterhouse</strong></td>
+<td>도축장</td>
+<td>폐쇄 실내+외부 마당. 보스 라이어 빈발 지점. 다중 출입구 CQB</td>
+</tr>
+<tr>
+<td><strong>Port Reeker</strong></td>
+<td>항구/부두</td>
+<td>수상 접근 가능. 크레인+선창 수직 요소. 중거리 교전</td>
+</tr>
+<tr>
+<td><strong>Healing Waters Church</strong></td>
+<td>교회</td>
+<td>종탑=고지대 저격 포지션. 묘지 주변 개방지+교회 내부 폐쇄</td>
+</tr>
+<tr>
+<td><strong>Lockbay Docks</strong></td>
+<td>선착장</td>
+<td>메인 건물+엘리베이터 플랫폼. Update 2.0에서 창문·지붕 확장 → 다중 진입로</td>
+</tr>
+<tr>
+<td><strong>Pitching Crematorium</strong></td>
+<td>화장터</td>
+<td>지하 보스룸 + 수변 진입로. 엘리베이터 → 지하↔지상 수직 이동</td>
+</tr>
+<tr>
+<td><strong>Reynard Mill &amp; Lumber</strong></td>
+<td>제재소</td>
+<td>목재 더미=엄폐. 수변 개방지+실내 혼합</td>
+</tr>
+<tr>
+<td><strong>Davant Ranch</strong></td>
+<td>목장</td>
+<td>개방 평원+축사. 장거리 사선 지배적</td>
+</tr>
+<tr>
+<td><strong>Scupper Lake</strong></td>
+<td>호수</td>
+<td>수중 접근+목재 보도. Update 2.0에서 육지 확장+식생 정리</td>
+</tr>
+<tr>
+<td><strong>Alice Farm</strong></td>
+<td>농장</td>
+<td>헛간+농가. 중규모 엄폐+시야</td>
+</tr>
+<tr>
+<td><strong>Catfish Grove</strong></td>
+<td>습지</td>
+<td>나무+늪. 제한된 시야, 식생 은폐</td>
+</tr>
+<tr>
+<td><strong>Cyprus Huts</strong></td>
+<td>수상 오두막</td>
+<td>물 위 목재 구조물. 독특한 수상 전투</td>
+</tr>
+<tr>
+<td><strong>Blanchett Graves</strong></td>
+<td>묘지</td>
+<td>묘비=저엄폐. 개방+고저차 조합</td>
+</tr>
+<tr>
+<td><strong>Darrow Livestock</strong></td>
+<td>가축 농장</td>
+<td>축사+창고. 중규모</td>
+</tr>
+<tr>
+<td><strong>Stillwater Bend</strong></td>
+<td>강변</td>
+<td>수변 진입+중규모 건물</td>
+</tr>
+<tr>
+<td><strong>Chapel of Madonna Noir</strong></td>
+<td>예배당</td>
+<td>소규모 폐쇄 구조</td>
+</tr>
+<tr>
+<td><strong>Alain &amp; Son's Fish</strong></td>
+<td>어장</td>
+<td>수변 소규모</td>
+</tr>
+</tbody>
+</table>
+<h4>Hunt: Showdown 핵심 설계 원칙</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>바운티 = 동적 목표</strong></td>
+<td>보스 위치 미확정 → 단서 수집으로 특정. 보스 처치 후 바운티 토큰 소유자가 맵에 표시됨 → "사냥꾼이 사냥감이 되는" 역전 구조</td>
+</tr>
+<tr>
+<td><strong>초소규모 고밀도</strong></td>
+<td>1km² 맵에 12명. PUBG(8km²/100명) 대비 면적당 밀도 ~7배. 즉각 교전+긴장감</td>
+</tr>
+<tr>
+<td><strong>소음 기반 정보전</strong></td>
+<td>유리 파편, 새(까마귀/오리), 말, 개, 닭장, 창문 셔터 → 환경 소음 트리거로 위치 노출. "소리가 가장 위험한 무기"</td>
+</tr>
+<tr>
+<td><strong>PvPvE 하이브리드</strong></td>
+<td>AI 몬스터(그런트, 하이브, 미트헤드, 이모레이터 등) + PvP 동시 진행 → AI와 교전 중 PvP 기습 가능</td>
+</tr>
+<tr>
+<td><strong>영구 사망 + 고위험</strong></td>
+<td>헌터 사망 시 영구 상실 (장비+경험치). Tarkov와 동일한 하이 스테이크</td>
+</tr>
+<tr>
+<td><strong>시간대별 전략 변화</strong></td>
+<td>낮(장거리 유리), 밤(야간 시야 제한, 다크사이트 필수), 안개(시야 극제한, 근접 강제)</td>
+</tr>
+<tr>
+<td><strong>수변 지형 특화</strong></td>
+<td>늪지 = 이동 소음 + 속도 저하. 보트 추출 + 수중 접근 → 수변이 전술 변수</td>
+</tr>
+<tr>
+<td><strong>컴파운드 중심 동선</strong></td>
+<td>단서·보스·보급·추출 모두 컴파운드에 집중 → 컴파운드 간 이동이 "위험한 공백"</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>익스트랙션 전체 비교 요약 (ARC 5맵 + Tarkov 3맵 + Hunt)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>Dam (E1)</th>
+<th>Spaceport (E2)</th>
+<th>Buried City (E3)</th>
+<th>Blue Gate (E4)</th>
+<th>Stella Montis (E5)</th>
+<th>Customs (E6)</th>
+<th>Shoreline (E7)</th>
+<th>Streets (E8)</th>
+<th>Hunt (E9)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>크기</td>
+<td>~2.5 km²</td>
+<td>Large</td>
+<td>Large</td>
+<td>Large</td>
+<td>Small (최소)</td>
+<td>중형 (선형)</td>
+<td>대형 (개방)</td>
+<td>대형 (도시)</td>
+<td>~1 km²</td>
+</tr>
+<tr>
+<td>수직 레이어</td>
+<td>4단</td>
+<td>지상+터널</td>
+<td>단일(다층)</td>
+<td>지상+지하</td>
+<td>상/하 2층</td>
+<td>단일</td>
+<td>단일</td>
+<td>단일(복층)</td>
+<td>단일</td>
+</tr>
+<tr>
+<td>주력 추출</td>
+<td>Elevator</td>
+<td>Elevator</td>
+<td>Metro</td>
+<td>Airshaft</td>
+<td>Airshaft+Hatch</td>
+<td>다양 (7+)</td>
+<td>다양 (5+)</td>
+<td>택시/엘리</td>
+<td>마차/보트</td>
+</tr>
+<tr>
+<td>열쇠/잠금</td>
+<td>Hatch 열쇠</td>
+<td>A6키</td>
+<td>마스터키</td>
+<td>타워키</td>
+<td>연료전지</td>
+<td>마크방 열쇠</td>
+<td>리조트 수십종</td>
+<td>마크방+다수</td>
+<td>—</td>
+</tr>
+<tr>
+<td>AI 역할</td>
+<td>PvE 중심</td>
+<td>PvE 중심</td>
+<td>PvE 중심</td>
+<td>PvE 중심</td>
+<td>PvE 중심</td>
+<td>중간 (스캐브)</td>
+<td>중간</td>
+<td>극고밀도</td>
+<td>PvPvE 핵심</td>
+</tr>
+<tr>
+<td>전투 거리</td>
+<td>혼합</td>
+<td>중~장거리</td>
+<td>근~중거리</td>
+<td>지하근접/지상장거리</td>
+<td>근접 CQB</td>
+<td>중거리+병목</td>
+<td>장거리 저격</td>
+<td>근접 시가전</td>
+<td>중~장거리</td>
+</tr>
+<tr>
+<td>소음 시스템</td>
+<td>추출 사이렌</td>
+<td>집라인 소음</td>
+<td>Metro 경보</td>
+<td>수직이동 소음</td>
+<td>좁은 공간 반향</td>
+<td>발소리</td>
+<td>발소리</td>
+<td>발소리</td>
+<td>환경 트리거</td>
+</tr>
+<tr>
+<td>영구 사망</td>
+<td>아니오</td>
+<td>아니오</td>
+<td>아니오</td>
+<td>아니오</td>
+<td>아니오</td>
+<td>예</td>
+<td>예</td>
+<td>예</td>
+<td>예</td>
+</tr>
+<tr>
+<td>고유 특징</td>
+<td>발전기→배수</td>
+<td>건물간 커버</td>
+<td>퍼즐 메트로</td>
+<td>터널 네트워크</td>
+<td>상루트/하탈출</td>
+<td>선형 강제</td>
+<td>키 이코노미</td>
+<td>BTR 장갑차</td>
+<td>바운티 역전</td>
+</tr>
+<tr>
+<td>핵심 설계</td>
+<td>수직+동적환경</td>
+<td>개방+수직이동</td>
+<td>도시밀집+추출제한</td>
+<td>지상/지하 대비</td>
+<td>초밀집 CQB</td>
+<td>병목+우회</td>
+<td>중앙집중/외곽분산</td>
+<td>블록단위 시가전</td>
+<td>컴파운드 동선</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h3>레퍼런스에서 도출한 공통 설계 원칙</h3>
+<h4>배틀로얄 (PUBG 5맵 + Verdansk 공통)</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>맵 크기별 밀도 조절</td>
+<td>4km(Sanhok)→ 고밀도 빠른전투, 8km(Erangel/Miramar/Taego)→ 차량 이동+구역별 밀도 차등, Verdansk(~6km²/150명)→ 최고 인구밀도</td>
+</tr>
+<tr>
+<td>거점 등급 그래디언트</td>
+<td>S~C 4단계. 중앙/위험=고루트, 외곽/안전=저루트 (6맵 공통)</td>
+</tr>
+<tr>
+<td>병목+우회로 공존</td>
+<td>Erangel 다리+캣워크, Sanhok 섬간 다리, Miramar 협곡, Vikendi 산맥, Taego 끊어진 다리+강</td>
+</tr>
+<tr>
+<td>환경별 엄폐 전환</td>
+<td>건물(도시), 능선(사막), 식생(정글), 바위(설원), 논+소나무(농촌), 고층건물(Verdansk) — 테마에 따라 주력 엄폐물 변경</td>
+</tr>
+<tr>
+<td>동적 환경 변수</td>
+<td>Sanhok 날씨+크리처, Vikendi 눈보라/열차, Taego 항아리+크리처, Verdansk 열차+벙커 → 게임 중 상황 변화</td>
+</tr>
+<tr>
+<td>수축 형평성</td>
+<td>모든 위치에서 중심 이동 가능해야 함 (완전 차단 병목 금지)</td>
+</tr>
+<tr>
+<td><strong>탐험 리워드</strong></td>
+<td>Erangel 비밀의 방, Taego 비밀의 방+항아리, Vikendi 비밀방+열차, Sanhok 동굴, Verdansk 지하벙커 → 인터랙티브 환경 보상</td>
+</tr>
+<tr>
+<td><strong>비전투 요소의 전술 영향</strong></td>
+<td>Sanhok·Taego 크리처(새=위치 노출, 닭=소리 노출), Sanhok 건물 파괴 → 순수 전투 외 전략 변수</td>
+</tr>
+<tr>
+<td><strong>수직 전투</strong></td>
+<td>Verdansk 고층빌딩+어센더, PUBG 파쿠르(Miramar/Taego) → 3차원 교전. 지붕·옥상 포지셔닝 전략</td>
+</tr>
+<tr>
+<td><strong>부활·재진입</strong></td>
+<td>Verdansk Gulag+Buy Station → 사망 후 복귀 가능. PUBG 대비 공격적 플레이 유도. BR 장르 내 스펙트럼</td>
+</tr>
+</tbody>
+</table>
+<h4>익스트랙션 (ARC Raiders 5맵 + Tarkov 3맵 + Hunt: Showdown 공통)</h4>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>ARC Raiders 근거</th>
+<th>Tarkov 근거</th>
+<th>Hunt 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>추출 방식 다양화</td>
+<td>Elevator(소음), Hatch(열쇠), Metro(퍼즐), Airshaft(수직)</td>
+<td>택시(비용), 열쇠 문, 맨홀(하수구), 조명탄, 보트(조건부)</td>
+<td>마차(육상)/보트(수상) 3개 랜덤 선택</td>
+</tr>
+<tr>
+<td>위험=보상 비례</td>
+<td>고루트 거점 → 추출까지 위험 구간 경유 필수</td>
+<td>마크방·리조트=고루트=고위험, 외곽=안전=저루트</td>
+<td>바운티 토큰 소유자=맵 표시→"사냥감" 전환</td>
+</tr>
+<tr>
+<td>수직 레이어</td>
+<td>5맵 모두 수직 요소 포함 (지하/지상/상층)</td>
+<td>리조트 3층 구조, 신골조 고저차, Streets 복층 건물</td>
+<td>교회 종탑, Crematorium 지하↔지상 엘리베이터</td>
+</tr>
+<tr>
+<td>열쇠/아이템 잠금</td>
+<td>열쇠/연료로 고루트 접근 제한</td>
+<td>수십 종 열쇠 시스템, 마크방 열쇠=핵심 자원</td>
+<td>— (바운티 토큰=공유 목표)</td>
+</tr>
+<tr>
+<td>솔로 vs 스쿼드 분리</td>
+<td>외곽 저위험 루트(솔로) vs 중앙 고위험 거점(스쿼드)</td>
+<td>Shoreline 외곽(솔로) vs 리조트(스쿼드), Customs 기숙사(다인큐)</td>
+<td>솔로/듀오/트리오 매칭 분리</td>
+</tr>
+<tr>
+<td>소음=리스크</td>
+<td>추출·발전기·문 개방 시 소음 → 위치 노출</td>
+<td>발소리로 위치 파악, 수류탄으로 클리어링</td>
+<td>환경 트리거(새, 유리, 말, 닭장)=극도 세밀한 소음 설계</td>
+</tr>
+<tr>
+<td><strong>선형 vs 개방 선택</strong></td>
+<td>—</td>
+<td>Customs(선형 강제 교전) vs Shoreline(개방 우회 가능)</td>
+<td>16 컴파운드 분산 → 다방향 자유 동선</td>
+</tr>
+<tr>
+<td><strong>보스 영역 거부</strong></td>
+<td>—</td>
+<td>르샬라(기숙사), 카반(렉서스 거치 무기+지뢰) → 특정 구역 고난도화</td>
+<td>AI 보스(Butcher, Spider, Assassin, Scrapbeak) → 컴파운드 점거</td>
+</tr>
+<tr>
+<td><strong>병목 = 초크포인트</strong></td>
+<td>Dam 벽 통로, Spaceport 중앙 데크</td>
+<td>Customs 다리 4개, Streets 메인도로 횡단</td>
+<td>늪지 좁은 길+수변 = 자연 초크포인트</td>
+</tr>
+<tr>
+<td><strong>AI 밀도 긴장감</strong></td>
+<td>—</td>
+<td>Streets 스캐브 극고밀도 → 끊임없는 교전·소음 유발</td>
+<td>그런트·하이브·미트헤드 상시 배치 → PvP 중 AI 난입</td>
+</tr>
+<tr>
+<td><strong>PvPvE 하이브리드</strong></td>
+<td>PvE 중심</td>
+<td>PvP 중심 (AI 보조)</td>
+<td>PvP·PvE 동등 비중 → AI 교전=소음=PvP 유발 체인</td>
+</tr>
+<tr>
+<td><strong>영구 사망 고위험</strong></td>
+<td>아니오</td>
+<td>장비+경험치 상실</td>
+<td>헌터 영구 상실 → 교전 회피/진입 의사결정 극대화</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2>2단계 — 기획의도에 따라 지형·지물 수정</h2>
+<p><strong>프리셋 + 파라미터 슬라이더</strong>로 1단계에서 생성된 실제 맵을 의도 기반 수정.<br />
+무에서 생성하지 않는다. 항상 1단계 결과물(실제 지형) 위에 적용한다.</p>
+<p>슬라이더·프리셋 조작 시 내부적으로 <strong>Edit Layer</strong>(비파괴 레이어)가 자동 생성된다. 기획자는 생성된 레이어를 목록에서 보기/숨기기·삭제할 수 있다.</p>
+<h3>2.1 의도 파라미터 — 슬라이더</h3>
+<p>기존 맵의 건물·도로·지형을 일괄 조정하는 슬라이더.</p>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>범위</th>
+<th>동작</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>도심 밀도</strong></td>
+<td>0~100</td>
+<td>현재값보다 낮추면 건물 일부 자동 제거, 높이면 빈 필지에 건물 추가</td>
+</tr>
+<tr>
+<td><strong>개방도</strong></td>
+<td>0~100</td>
+<td>높이면 시야 차단 건물 선별 제거 + 잔해 대체, 낮추면 빈 공간에 건물 추가</td>
+</tr>
+<tr>
+<td><strong>동선 복잡도</strong></td>
+<td>0~100</td>
+<td>높이면 우회 도로 추가, 낮추면 비주요 도로 차단</td>
+</tr>
+<tr>
+<td><strong>고저차 강조</strong></td>
+<td>0~100</td>
+<td>높이면 기존 언덕 고도↑ + 계곡 고도↓, 낮추면 전체 평탄화 방향</td>
+</tr>
+<tr>
+<td><strong>파괴도</strong></td>
+<td>0~100</td>
+<td>기존 건물의 destruction_state 비율 조정 (0=intact, 100=대부분 destroyed)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>동작 원리</strong>: 슬라이더 변경 시 기존 맵 데이터를 분석하여 2단계 Edit Layer를 <strong>자동 생성</strong>. 기획자는 생성된 레이어를 개별 검토·수정·삭제 가능.</p>
+<h4>슬라이더 초기값 산출 — 맵 로드 시 자동 분석</h4>
+<p>맵을 처음 열거나 1단계 생성 직후, 기존 데이터를 분석하여 5개 슬라이더의 "현재 맵 상태"를 0~100으로 환산한다.</p>
+<table>
+<thead>
+<tr>
+<th>슬라이더</th>
+<th>입력 데이터</th>
+<th>산출 공식</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>도심 밀도</strong></td>
+<td><code>buildings.json</code> 건물 수, 맵 면적</td>
+<td><code>min(100, 건물수 / (맵면적_km² × 50) × 100)</code></td>
+<td>3km² 맵에 80건물 → 80/(3×50)×100 = <strong>53</strong></td>
+</tr>
+<tr>
+<td><strong>개방도</strong></td>
+<td>200m 그리드 4방향 시선 분석</td>
+<td><code>(시야 비차단 방향 수 / 전체 방향 수) × 100</code></td>
+<td>총 400방향 중 240 개방 → <strong>60</strong></td>
+</tr>
+<tr>
+<td><strong>동선 복잡도</strong></td>
+<td><code>roads.json</code> 노드·엣지 수</td>
+<td><code>min(100, 평균_노드_degree / 4 × 100)</code></td>
+<td>평균 degree 2.4 → 2.4/4×100 = <strong>60</strong></td>
+</tr>
+<tr>
+<td><strong>고저차</strong></td>
+<td><code>heightmap.png</code> 샘플링</td>
+<td><code>min(100, (최고-최저) / (맵반경_m × 0.1) × 100)</code></td>
+<td>고도차 30m, 반경 1500m → 30/150×100 = <strong>20</strong></td>
+</tr>
+<tr>
+<td><strong>파괴도</strong></td>
+<td><code>buildings.json</code> destruction_state</td>
+<td><code>(partial+destroyed 건물 수 / 전체 건물 수) × 100</code></td>
+<td>80건물 중 파괴 8 → <strong>10</strong></td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>산출은 1단계 데이터(JSON + heightmap)만 사용하므로 &lt; 1초. 레퍼런스 프리셋 적용 시에는 프리셋 값이 초기값을 덮어쓴다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>슬라이더별 선별 알고리즘</h4>
+<p><strong>도심 밀도 (Urban Density)</strong> — 건물 수 증감</p>
+<table>
+<thead>
+<tr>
+<th>방향</th>
+<th>알고리즘</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>감소</strong> (현재값→낮은값)</td>
+<td>1. 전체 건물을 <code>buildings.json</code>에서 로드<br>2. 맵 중심에서 거리순 정렬 (먼 건물 = 우선 제거 후보)<br>3. 동일 거리면 바닥 면적 작은 순서<br>4. 감소 비율 = <code>(현재값 - 목표값) / 현재값</code> → 해당 비율만큼 건물 선택<br>5. 선택된 건물마다 <code>building_remove</code> Edit Layer 생성</td>
+</tr>
+<tr>
+<td><strong>증가</strong> (현재값→높은값)</td>
+<td>1. <code>FSpatialHash2D</code>로 건물 미배치 영역(빈 셀) 탐색<br>2. 빈 셀 중 도로 인접(50m 이내) 셀 우선<br>3. 증가 비율만큼 빈 셀에 <code>building_add</code> Edit Layer 생성<br>4. 형상은 아래 <strong>건물 추가 형상 결정 규칙</strong> 참조</td>
+</tr>
+</tbody>
+</table>
+<p><strong>건물 추가 형상 결정 규칙</strong> — <code>building_add</code> 레이어의 메쉬·크기·높이 결정</p>
+<p>2단계에서 추가하는 건물은 OSM 데이터가 없으므로, 인접 건물 분석으로 형상을 결정한다.</p>
+<table>
+<thead>
+<tr>
+<th>속성</th>
+<th>결정 방법</th>
+<th>폴백</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TypeKey</strong></td>
+<td>반경 200m 내 인접 건물의 TypeKey <strong>최빈값</strong></td>
+<td><code>Residential_Mid</code></td>
+</tr>
+<tr>
+<td><strong>Footprint</strong></td>
+<td>인접 건물 바닥면적의 <strong>중앙값</strong> (극단값 배제)</td>
+<td>10m × 10m</td>
+</tr>
+<tr>
+<td><strong>높이</strong></td>
+<td>인접 건물 높이의 <strong>중앙값</strong></td>
+<td>8m (2층)</td>
+</tr>
+<tr>
+<td><strong>회전</strong></td>
+<td>인접 도로 방향에 <strong>평행 정렬</strong> (도로 Normal ±5° 랜덤)</td>
+<td>0°</td>
+</tr>
+<tr>
+<td><strong>파괴 상태</strong></td>
+<td>주변 50m 건물 파괴 비율에 비례하여 확률 결정</td>
+<td><code>intact</code></td>
+</tr>
+</tbody>
+</table>
+<p>메쉬 매핑 — <code>TypeKey → FBuildingMeshEntry</code> (기존 <code>ULevelToolBuildingPool</code> 재사용)</p>
+<table>
+<thead>
+<tr>
+<th>TypeKey</th>
+<th>대표 메쉬</th>
+<th>높이 범위</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Residential_Low</code></td>
+<td>저층 주거 박스</td>
+<td>3~6m</td>
+<td>단독주택</td>
+</tr>
+<tr>
+<td><code>Residential_Mid</code></td>
+<td>중층 아파트 박스</td>
+<td>8~20m</td>
+<td>범용 주거</td>
+</tr>
+<tr>
+<td><code>Commercial</code></td>
+<td>상가 박스 (넓은 footprint)</td>
+<td>4~12m</td>
+<td>상업</td>
+</tr>
+<tr>
+<td><code>Industrial</code></td>
+<td>공장/창고 (넓고 낮음)</td>
+<td>6~15m</td>
+<td>산업</td>
+</tr>
+<tr>
+<td><code>Public</code></td>
+<td>대형 건물</td>
+<td>10~25m</td>
+<td>공공시설</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>1단계 OSM 데이터의 <code>TypeKey</code> 분포가 맵마다 다르므로, 추가 건물도 해당 맵의 분포를 자연스럽게 따른다.
+</ac:rich-text-body></ac:structured-macro>
+<strong>건물 배치 충돌 해소</strong> — <code>building_add</code> 시 기존 건물·도로와 겹침 방지</p>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>동작</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>후보 셀 선택</td>
+<td><code>FSpatialHash2D</code>로 빈 셀 탐색 (도로 인접 50m 우선)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>AABB 겹침 검사</td>
+<td>후보 위치에 건물 footprint AABB 배치 → 기존 건물 AABB와 <strong>최소 이격 5m</strong> 검사</td>
+</tr>
+<tr>
+<td>3-a</td>
+<td>겹침 없음</td>
+<td>그대로 배치</td>
+</tr>
+<tr>
+<td>3-b</td>
+<td>겹침 발생</td>
+<td>후보 위치를 <strong>4방향(N/E/S/W) × 10m 씩 이동</strong>하여 재검사 (최대 3회, 반경 30m)</td>
+</tr>
+<tr>
+<td>3-c</td>
+<td>도로 겹침</td>
+<td>후보 footprint가 도로 폴리곤과 교차 → <strong>해당 방향으로 도로 폭 + 3m 이격</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td>실패</td>
+<td>3회 시도 후에도 배치 불가 → <strong>스킵</strong> + <code>OnLog(Warning, "Building_add 배치 실패: {위치}")</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>값</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>최소 건물 간 이격</td>
+<td>5m</td>
+<td>OSM 데이터 평균 건물 간격의 최솟값</td>
+</tr>
+<tr>
+<td>최소 도로 이격</td>
+<td>도로 폭 + 3m</td>
+<td>인도·보도 여유 공간</td>
+</tr>
+<tr>
+<td>재시도 이동 간격</td>
+<td>10m</td>
+<td>footprint 중앙값(10m)의 1배</td>
+</tr>
+<tr>
+<td>최대 재시도</td>
+<td>3회 (4방향 × 3 = 12 후보)</td>
+<td>성능 vs 배치 성공률 균형</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>배치 실패는 대시보드 프리뷰에 반영: "밀도 53→70: 건물 15개 추가 예정, <strong>2개 배치 실패 예상</strong>". 슬라이더 목표값 대비 실제 달성률이 90% 미만이면 Warning 표시.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>슬라이더 달성률 표시</h4>
+<p>실사 기반 맵은 OSM 데이터에 의존하므로, 밀도·개방도 등 건물 증감 슬라이더의 목표값을 100% 달성하지 못할 수 있다. 이를 기획자에게 투명하게 보여준다.</p>
+<p><strong>슬라이더 UI 확장</strong>:</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[도심 밀도    [■■■■■■■□□□] 42     목표: 45  달성: 93%
+             ⚠ 빈 공간 부족 (배치 실패 4건)
+]]></ac:plain-text-body></ac:structured-macro></p>
+<table>
+<thead>
+<tr>
+<th>표시 조건</th>
+<th>UI 동작</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>달성률 ≥ 95%</td>
+<td>목표값만 표시 (정상)</td>
+</tr>
+<tr>
+<td>달성률 90~95%</td>
+<td>목표/달성 표시 + 연한 노랑 바</td>
+</tr>
+<tr>
+<td>달성률 &lt; 90%</td>
+<td>목표/달성 표시 + ⚠ Warning + 주황 바 + "빈 공간 부족" 사유</td>
+</tr>
+<tr>
+<td>감소 방향 (제거)</td>
+<td>항상 100% 달성 (제거는 빈 공간 무관)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>사전 예측</strong> (드래그 중, 경량 시뮬레이션):</p>
+<p>밀도 슬라이더를 드래그하는 동안, 경량 모드로 빈 셀 수를 빠르게 카운트하여 <strong>예상 달성률</strong>을 표시한다.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[도심 밀도    [■■■■■■■■□□] 드래그 중: 55
+             예상 배치: ~180/220 (82%)  ← 빈 셀 180개 / 필요 220개
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>이를 통해 기획자는 슬라이더를 릴리즈하기 전에 "이 값으로 올리면 얼마나 채워지는지" 미리 파악하고, 다른 슬라이더(개방도 감소 → 빈 셀 증가)로 보완 가능.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>지형 유형별 달성률 한계 안내</h4>
+<p>실사 기반 맵은 OSM 데이터·지형 특성에 따라 슬라이더 달성률에 <strong>물리적 상한선</strong>이 존재한다. 이를 기획자에게 사전 안내하여 혼란을 방지한다.</p>
+<table>
+<thead>
+<tr>
+<th>지형 유형</th>
+<th>밀도 증가 한계</th>
+<th>개방도 감소(건물 추가) 한계</th>
+<th>원인</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>밀집 도심</strong> (서울 종로, 도쿄 시부야 등)</td>
+<td>낮음 (40~60%)</td>
+<td>높음 (빈 공간 적음)</td>
+<td>OSM 건물이 이미 빽빽하여 추가 배치 셀이 부족</td>
+</tr>
+<tr>
+<td><strong>산악 지형</strong> (알프스, 히말라야 등)</td>
+<td>낮음 (50~70%)</td>
+<td>낮음 (40~60%)</td>
+<td>급경사·수역으로 배치 불가 셀이 많음</td>
+</tr>
+<tr>
+<td><strong>교외/농촌</strong> (프로방스, 토스카나 등)</td>
+<td>높음 (90%+)</td>
+<td>높음 (90%+)</td>
+<td>평탄지가 넓어 빈 셀 풍부</td>
+</tr>
+<tr>
+<td><strong>해안/섬</strong> (푸켓, 제주 등)</td>
+<td>중간 (70~85%)</td>
+<td>중간 (70~85%)</td>
+<td>수역 경계로 절반 정도 배치 불가</td>
+</tr>
+</tbody>
+</table>
+<p><strong>UI 안내 메시지</strong> — 달성률 &lt; 70% 시 사유별 문구 표시:</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[⚠ 밀도 달성률 51% — 기존 건물 밀집으로 추가 배치 공간 부족
+  💡 개방도를 낮추면 기존 건물 제거 없이 시야 차단 건물이 추가됩니다
+  💡 이 맵은 이미 고밀도 도심입니다 — 낮은 밀도 목표를 권장합니다
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[⚠ 개방도 달성률 60% — 급경사지·수역으로 건물 배치 불가
+  💡 고저차를 낮추면(평탄화) 배치 가능 영역이 증가합니다
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>달성률 한계는 맵의 <strong>고유 특성</strong>이므로 결함이 아니다. 기획자가 의도적으로 높은 목표를 설정해도, 달성률 표시와 안내 문구로 현실적 기대치를 제공한다.
+</ac:rich-text-body></ac:structured-macro>
+<strong>개방도 (Openness)</strong> — 시야 차단 건물 선별 제거</p>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>동작</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>맵을 200m 그리드로 분할, 각 그리드 중심에서 4방향(N/E/S/W) 시선 추적</td>
+</tr>
+<tr>
+<td>2</td>
+<td>시선 추적 = 그리드 중심에서 해당 방향 200m 직선상에 <code>buildings.json</code> 건물 AABB가 교차하는지 판정</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4방향 중 3방향 이상 차단하는 건물 = "시야 차단 건물"로 태깅</td>
+</tr>
+<tr>
+<td>4</td>
+<td>개방도 증가 시: 시야 차단 건물 중 높이 낮은 순서로 제거 비율만큼 <code>building_remove</code> 생성</td>
+</tr>
+<tr>
+<td>5</td>
+<td>개방도 감소 시: 시선이 탁 트인 그리드 셀에 <code>building_add</code> 생성</td>
+</tr>
+</tbody>
+</table>
+<p><strong>동선 복잡도 (Route Complexity)</strong> — 도로 네트워크 조정</p>
+<table>
+<thead>
+<tr>
+<th>방향</th>
+<th>알고리즘</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>증가</strong></td>
+<td><code>roads.json</code> 그래프에서 degree-2 이상 노드(교차로) 사이에 우회 경로가 없는 구간 탐색 → 해당 구간 옆에 <code>road_add</code> Edit Layer 생성</td>
+</tr>
+<tr>
+<td><strong>감소</strong></td>
+<td><code>roads.json</code> 그래프에서 degree-1 노드(막다른 길) 또는 전체 교통량에 기여가 낮은 말단 도로 → <code>road_block</code> Edit Layer 생성</td>
+</tr>
+</tbody>
+</table>
+<p><strong>고저차 강조 (Elevation Contrast)</strong> — 지형 고도 조정</p>
+<table>
+<thead>
+<tr>
+<th>방향</th>
+<th>알고리즘</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>증가</strong></td>
+<td>1. Landscape를 200m 그리드 샘플링하여 평균 고도 산출<br>2. 평균 이상 지점 → <code>terrain_modify(offset, +delta)</code> / 평균 이하 지점 → <code>terrain_modify(offset, -delta)</code><br>3. delta = <code>(목표값 - 현재값) / 100 × max_delta</code></td>
+</tr>
+<tr>
+<td><strong>감소</strong></td>
+<td>전체 지형에 대해 평균 고도로 <code>terrain_modify(flatten)</code> Edit Layer 생성</td>
+</tr>
+</tbody>
+</table>
+<p><strong>max_delta 동적 산출</strong>: 맵 규모별 고정값이 아닌 <strong>맵 실제 고도 범위에 비례</strong>하여 결정.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[max_delta = (맵_최고고도 - 맵_최저고도) × 0.05
+]]></ac:plain-text-body></ac:structured-macro></p>
+<table>
+<thead>
+<tr>
+<th>맵</th>
+<th>고도 범위</th>
+<th>max_delta</th>
+<th>효과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>서울 종로 (15~342m)</td>
+<td>327m</td>
+<td>16.35m/셀</td>
+<td>도시 구릉 적절 변형</td>
+</tr>
+<tr>
+<td>알프스 댐 (420~780m)</td>
+<td>360m</td>
+<td>18.0m/셀</td>
+<td>산악 지형 의미 있는 변형</td>
+</tr>
+<tr>
+<td>태국 푸켓 (0~50m)</td>
+<td>50m</td>
+<td>2.5m/셀</td>
+<td>저지대 미세 조정</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>고도 범위 데이터는 <code>heightmap.png</code> 로드 시 min/max 샘플링으로 <code>map_meta.json</code>에 <code>"elevation_range_m": [420, 780]</code> 필드로 저장한다.
+</ac:rich-text-body></ac:structured-macro>
+<strong>파괴도 (Destruction Level)</strong> — 건물 상태 일괄 변경</p>
+<table>
+<thead>
+<tr>
+<th>방향</th>
+<th>알고리즘</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>증가</strong></td>
+<td>전체 건물을 무작위 셔플 → 목표 비율에 도달할 때까지 <code>destruction_state</code>를 intact→partial→destroyed 순서로 승격하는 Edit Layer 생성</td>
+</tr>
+<tr>
+<td><strong>감소</strong></td>
+<td>destroyed→partial→intact 순서로 강등. 단, 이미 intact인 건물은 스킵</td>
+</tr>
+</tbody>
+</table>
+<p>예시: 도심 밀도 70→40
+1. 감소 비율 = (70−40)/70 ≈ 43%
+2. 전체 건물을 맵 중심 기준 먼 거리순 정렬
+3. 상위 43% 건물에 대해 <code>building_remove</code> 레이어 자동 생성 (keep_foundation: true)
+4. 기획자가 "이 건물은 살리고 싶다" → 해당 레이어만 삭제</p>
+<h4>슬라이더 동시 적용 — 충돌 해소 규칙</h4>
+<p>레퍼런스 프리셋이 5개 슬라이더를 동시에 변경할 때, 슬라이더 간 대상이 겹칠 수 있다. 이를 해소하기 위한 <strong>적용 순서와 중복 처리</strong> 규칙:</p>
+<p><strong>적용 순서</strong> (의존성 기반, 고정)</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[① 고저차 → ② 파괴도 → ③ 도심 밀도 → ④ 개방도 → ⑤ 동선 복잡도
+]]></ac:plain-text-body></ac:structured-macro></p>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>슬라이더</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①</td>
+<td>고저차</td>
+<td>지형 변경이 최하위 → 건물/도로 기반을 먼저 확정</td>
+</tr>
+<tr>
+<td>②</td>
+<td>파괴도</td>
+<td>파괴 상태 변경은 건물 존재 여부에 영향 없음 → 밀도·개방도 전에 처리</td>
+</tr>
+<tr>
+<td>③</td>
+<td>도심 밀도</td>
+<td>건물 수 증감이 개방도 산출에 영향 → 밀도 먼저</td>
+</tr>
+<tr>
+<td>④</td>
+<td>개방도</td>
+<td>③에서 확정된 건물 목록 기준으로 시야 차단 분석</td>
+</tr>
+<tr>
+<td>⑤</td>
+<td>동선 복잡도</td>
+<td>건물 배치 완료 후 도로 네트워크 조정</td>
+</tr>
+</tbody>
+</table>
+<p><strong>중복 대상 처리</strong></p>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>③ 밀도에서 제거한 건물을 ④ 개방도도 제거 후보로 선택</td>
+<td><strong>스킵</strong> — 이미 제거된 건물은 ④ 후보에서 자동 제외</td>
+</tr>
+<tr>
+<td>③ 밀도에서 추가한 건물이 ④ 개방도에서 시야 차단</td>
+<td><strong>제거 가능</strong> — 새로 추가한 건물도 개방도 분석 대상에 포함</td>
+</tr>
+<tr>
+<td>④ 개방도 변경 후 슬라이더 초기값이 달라짐</td>
+<td><strong>재산출 안 함</strong> — 동시 적용은 원본 상태 기준으로 전체 계산. 적용 완료 후 초기값 1회 갱신</td>
+</tr>
+</tbody>
+</table>
+<p><strong>교차 대상 시나리오 예시</strong> — Erangel 프리셋 (밀도 40, 개방도 60) 적용 시:</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body>&lt;![CDATA[초기 상태: 건물 80개, 밀도 초기값 53, 개방도 초기값 45</p>
+<p>③ 밀도 53→40 (감소)
+   → 외곽 건물 10개 선택 → building_remove 레이어 10개 생성
+   → 유효 건물: 70개</p>
+<p>④ 개방도 45→60 (증가 = 시야 차단 건물 제거)
+   → 유효 70개에서 시야 차단 건물 탐색
+   → 후보 8개 중 2개는 ③에서 이미 제거됨 → 스킵
+   → 나머지 6개 중, ③에서 추가된 건물 0개 (밀도 감소였으므로)
+   → building_remove 레이어 6개 생성
+   → 유효 건물: 64개
+]]&gt;</ac:plain-text-body></ac:structured-macro></p>
+<p>반대 방향 — Sanhok 프리셋 (밀도 70, 개방도 30) 적용 시:</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body>&lt;![CDATA[③ 밀도 53→70 (증가)
+   → 빈 셀에 건물 30개 추가 → building_add 레이어 30개 생성
+   → 유효 건물: 110개</p>
+<p>④ 개방도 45→30 (감소 = 빈 공간에 건물 추가)
+   → 유효 110개 기준 시야 분석 → 이미 개방도가 낮아져 있음
+   → 추가 필요 건물 5개만 생성 (③에서 추가한 30개가 이미 개방도를 낮춤)
+   → building_add 레이어 5개 생성
+   → 유효 건물: 115개
+]]&gt;</ac:plain-text-body></ac:structured-macro></p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>핵심: 각 단계가 <strong>직전 단계 결과를 반영한 유효 상태</strong>를 입력받으므로, 교차 대상 문제가 자연스럽게 해소된다.
+</ac:rich-text-body></ac:structured-macro>
+구현: 각 슬라이더 알고리즘은 <strong>유효 맵 상태</strong>(공통 사항 참조)를 입력으로 받는다. ①→⑤ 순서로 적용하면서, 각 단계 완료 후 유효 상태를 재구성하고 다음 단계에 전달한다.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[effective_state = RebuildEffectiveState(base + existing_layers)
+for slider in [고저차, 파괴도, 도심밀도, 개방도, 동선복잡도]:
+    new_layers = slider.Generate(effective_state, target_value)
+    add_layers(new_layers)
+    effective_state = RebuildEffectiveState(base + all_layers)
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h4>개별 건물 단건 편집</h4>
+<p>슬라이더·프리셋은 일괄 수정 도구이지만, 기획자가 <strong>특정 건물 1개</strong>만 제거/높이 변경하고 싶은 경우도 빈번하다. 이를 위한 <strong>뷰포트 컨텍스트 메뉴</strong> 경로:</p>
+<table>
+<thead>
+<tr>
+<th>조작</th>
+<th>동작</th>
+<th>생성 레이어</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>건물 Actor <strong>우클릭</strong></td>
+<td>컨텍스트 메뉴 표시</td>
+<td>—</td>
+</tr>
+<tr>
+<td>→ "건물 제거"</td>
+<td><code>building_remove</code> 레이어 1개 생성 (해당 건물 ID)</td>
+<td><code>created_by: "manual"</code></td>
+</tr>
+<tr>
+<td>→ "건물 높이 변경" → 슬라이더 팝업(0.5~2.0)</td>
+<td><code>building_height</code> 레이어 1개 생성</td>
+<td><code>created_by: "manual"</code></td>
+</tr>
+<tr>
+<td>→ "파괴 상태 변경" → intact/partial/destroyed 선택</td>
+<td><code>destruction_state</code> 레이어 1개 생성</td>
+<td><code>created_by: "manual"</code></td>
+</tr>
+<tr>
+<td>→ "마커 부여" → 마커 타입 선택</td>
+<td><code>marker</code> 레이어 1개 생성 (해당 건물 위치)</td>
+<td><code>created_by: "manual"</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Undo: 각 단건 편집 = 1 Transaction (Ctrl+Z 1회로 복원)</li>
+<li>레이어 목록: <code>created_by: "manual"</code> 필터로 수동 편집 레이어만 모아볼 수 있음</li>
+<li>도로도 동일: 도로 Actor 우클릭 → "도로 차단" / "도로 폭 변경"</li>
+</ul>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>단건 편집은 슬라이더 일괄 수정과 독립적으로 동작한다. 슬라이더를 재조정해도 수동 레이어는 유지되며, 레이어 누적 정책의 "제안=추가"와 동일하게 취급된다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h3>2.2 프리셋 — 편집 레이어 자동 생성 세트</h3>
+<h4>프리셋 인터랙션 모델</h4>
+<p>프리셋은 <strong>대상 선택 → 프리셋 버튼 클릭</strong>의 2단계로 동작한다.</p>
+<table>
+<thead>
+<tr>
+<th>선택 타입</th>
+<th>뷰포트 조작</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>건물 선택</strong></td>
+<td>뷰포트에서 건물 Actor 클릭 → 하이라이트</td>
+<td>저격 포인트 강조, 수직 전투 강조</td>
+</tr>
+<tr>
+<td><strong>영역 선택</strong></td>
+<td>뷰포트에서 드래그로 원형 영역 지정 (중심+반경)</td>
+<td>중앙 광장 개방</td>
+</tr>
+<tr>
+<td><strong>도로 선택</strong></td>
+<td>뷰포트에서 도로 Actor 클릭 → 하이라이트</td>
+<td>진입로 좁히기, 병목+우회로</td>
+</tr>
+<tr>
+<td><strong>없음</strong></td>
+<td>선택 불필요 (맵 전체 대상)</td>
+<td>레퍼런스 프리셋, 슬라이더</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>이 선택 도구는 "편집 도구"가 아니라 <strong>프리셋 적용 대상을 지정하는 선택기</strong>이다. 선택 후 프리셋 버튼을 누르면 Edit Layer가 자동 생성되며, 기획자가 대상을 직접 수정하는 것이 아니다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>뷰포트 프리뷰 — 적용 전 시각 피드백</h4>
+<p>프리셋·슬라이더·레퍼런스 프리셋 적용 전에, 기획자가 뷰포트에서 변경 결과를 미리 확인할 수 있다.</p>
+<table>
+<thead>
+<tr>
+<th>트리거</th>
+<th>뷰포트 표시</th>
+<th>비용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>프리셋 버튼 호버</strong> (0.5초 이상)</td>
+<td>제거 대상 건물 = <strong>빨간 반투명</strong>, 추가 위치 = <strong>초록 반투명 와이어프레임</strong></td>
+<td>&lt; 200ms (대상 산출만, Actor 미생성)</td>
+</tr>
+<tr>
+<td><strong>슬라이더 드래그 중</strong></td>
+<td>현재 드래그 값 기준 제거/추가 대상 하이라이트 (위와 동일)</td>
+<td>&lt; 200ms</td>
+</tr>
+<tr>
+<td><strong>레퍼런스 프리셋 호버</strong></td>
+<td>5개 슬라이더 변경 전체의 제거/추가 대상 하이라이트</td>
+<td>&lt; 500ms</td>
+</tr>
+<tr>
+<td><strong>마우스 떠남 / 드래그 취소</strong></td>
+<td>하이라이트 즉시 해제</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>클릭 / 릴리즈 (적용)</strong></td>
+<td>하이라이트 해제 → 실제 레이어 생성</td>
+<td>기존 성능 예산</td>
+</tr>
+</tbody>
+</table>
+<p>구현: 프리뷰는 실제 Actor를 생성/삭제하지 않고, <code>ULineBatchComponent</code> 또는 기존 Actor의 <code>SetRenderCustomDepth(true)</code> + 커스텀 스텐실 값으로 하이라이트. 호버 해제 시 즉시 복원.</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>프리뷰는 <strong>대시보드 수치 프리뷰</strong>와 동시에 작동한다. 기획자는 뷰포트(시각)와 대시보드(수치) 양쪽에서 변경 영향을 확인한 뒤 적용 여부를 결정할 수 있다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>경량 시뮬레이션 모드 — 프리뷰 전용</h4>
+<p>레퍼런스 프리셋 호버 시 5개 슬라이더를 전부 시뮬레이션하면 정규 알고리즘 5회 = 최대 1~2초가 소요된다. 프리뷰는 <strong>정확도보다 속도</strong>가 중요하므로, 경량 모드를 사용한다.</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>정규 모드 (적용 시)</th>
+<th>경량 모드 (프리뷰 시)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>건물 선별</td>
+<td>전체 건물 정렬+필터</td>
+<td><strong>샘플링</strong>: 전체의 20% 무작위 추출 → 대상 수 역산</td>
+</tr>
+<tr>
+<td>시야 분석</td>
+<td>200m 그리드 4방향 전체</td>
+<td><strong>4배 거친 그리드</strong> (400m/800m) → 셀 수 1/4</td>
+</tr>
+<tr>
+<td>도로 그래프</td>
+<td>전체 BFS</td>
+<td><strong>스킵</strong>: 제거/추가 대상 도로 수만 카운트</td>
+</tr>
+<tr>
+<td>지형 시뮬레이션</td>
+<td>Heightmap 실제 수정</td>
+<td><strong>스킵</strong>: 영향 영역 바운드만 표시 (등고선 오버레이)</td>
+</tr>
+<tr>
+<td>충돌 검사</td>
+<td>Spatial Hash 충돌 판정</td>
+<td><strong>스킵</strong>: 빈 셀 탐색만 (겹침 허용)</td>
+</tr>
+</tbody>
+</table>
+<p>성능 목표:</p>
+<table>
+<thead>
+<tr>
+<th>맵 크기</th>
+<th>건물 수</th>
+<th>경량 시뮬레이션</th>
+<th>정규 시뮬레이션</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1km (소형)</td>
+<td>~80</td>
+<td>&lt; 50ms</td>
+<td>&lt; 1초</td>
+</tr>
+<tr>
+<td>3km (중형)</td>
+<td>~200</td>
+<td>&lt; 150ms</td>
+<td>&lt; 3초</td>
+</tr>
+<tr>
+<td>5km (대형)</td>
+<td>~500</td>
+<td>&lt; 300ms</td>
+<td>&lt; 5초</td>
+</tr>
+</tbody>
+</table>
+<p>경량 모드 결과는 "~N개 건물 제거, ~M개 추가 예상"으로 <strong>근사치</strong>를 표시한다. 뷰포트 하이라이트 대상도 샘플링 결과 기준이므로 실제 적용 시와 위치가 다를 수 있다. UI에 <code>"프리뷰 (근사)"</code> 라벨을 표시.</p>
+<h4>"저격 포인트 강조" (건물 선택)</h4>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>생성 레이어</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>terrain_modify</td>
+<td>선택 건물 반경 50m 지형 +5m 올림</td>
+</tr>
+<tr>
+<td>2</td>
+<td>building_height</td>
+<td>해당 건물 scale_factor 1.3</td>
+</tr>
+<tr>
+<td>3</td>
+<td>building_remove</td>
+<td>정면 60° 시야각 내 저층 건물 1~2개 제거</td>
+</tr>
+</tbody>
+</table>
+<h4>"중앙 광장 개방" (영역 선택 — 드래그)</h4>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>생성 레이어</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>building_remove</td>
+<td>반경 100m 내 건물 일괄 제거 (keep_foundation: true)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>terrain_modify</td>
+<td>해당 영역 flatten (영역 평균 높이)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>road_width</td>
+<td>광장 연결 도로 2개 폭 +3m</td>
+</tr>
+</tbody>
+</table>
+<h4>"진입로 좁히기" (도로 선택 — 클릭)</h4>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>생성 레이어</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>road_width</td>
+<td>선택 도로 폭 -3m (최소 2m)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>road_block</td>
+<td>도로 양쪽에 vehicle 장애물</td>
+</tr>
+<tr>
+<td>3</td>
+<td>building_add</td>
+<td>도로 측면에 Wall_Segment 2개 추가</td>
+</tr>
+</tbody>
+</table>
+<h4>"병목 + 우회로 세트" (도로 선택 — 클릭) — Erangel 다리 설계 참조</h4>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>생성 레이어</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>road_block</td>
+<td>선택 도로에 rubble 장애물 (차량 차단, 도보 통과 가능)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>road_add</td>
+<td>장애물 옆으로 좁은 path (폭 3m) 우회로 생성</td>
+</tr>
+<tr>
+<td>3</td>
+<td>building_add</td>
+<td>우회로 입구에 엄폐용 파괴 건물 1개</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>Erangel 다리 리디자인(Update 11.2)에서 캣워크 추가로 병목 캠핑 대응 경로를 만든 설계 원칙 적용.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>"수직 전투 강조" — ARC Raiders Dam 참조</h4>
+<table>
+<thead>
+<tr>
+<th>순서</th>
+<th>생성 레이어</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>building_height</td>
+<td>선택 건물 scale_factor 1.5 (시야 확보 고층화)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>building_add</td>
+<td>인접 건물 사이에 저층 건물 추가 (2층 연결 매복 포지션)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>terrain_modify</td>
+<td>건물 주변 지형 -2m (지상↔건물 고저차 강조)</td>
+</tr>
+</tbody>
+</table>
+<h3>2.3 레퍼런스 맵 프리셋 — 실제 게임 스타일 원클릭 적용</h3>
+<p>레퍼런스 게임의 맵 스타일을 재현하는 통합 프리셋. 선택 시 <strong>추천 좌표 + 슬라이더 자동 설정 + 룰셋 자동 선택</strong>이 한번에 적용된다.</p>
+<h4>동작 흐름</h4>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[[레퍼런스 프리셋 선택: "Erangel 스타일"]
+  ↓
+1단계: 추천 좌표로 실제 지형 생성 (또는 기획자가 직접 좌표 입력)
+  ↓
+2단계: 슬라이더 5개 자동 설정 → Edit Layer 자동 생성
+  ↓
+3단계: 해당 룰셋 체크리스트 자동 실행
+  ↓
+기획자: 결과 확인 후 슬라이더/프리셋으로 세부 조정
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h4>Battle Royale 프리셋 (PUBG + Verdansk 기반)</h4>
+<table>
+<thead>
+<tr>
+<th>프리셋</th>
+<th>추천 좌표 테마</th>
+<th>도심밀도</th>
+<th>개방도</th>
+<th>동선복잡도</th>
+<th>고저차</th>
+<th>파괴도</th>
+<th>룰셋</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Erangel 스타일</strong></td>
+<td>러시아 섬/해안 도시 (초원+도시+해안 혼합)</td>
+<td>40</td>
+<td>60</td>
+<td>50</td>
+<td>40</td>
+<td>10</td>
+<td>BR</td>
+</tr>
+<tr>
+<td><strong>Miramar 스타일</strong></td>
+<td>멕시코 사막 도시 (개방 사막+능선+산발 도시)</td>
+<td>20</td>
+<td>80</td>
+<td>60</td>
+<td>70</td>
+<td>15</td>
+<td>BR</td>
+</tr>
+<tr>
+<td><strong>Sanhok 스타일</strong></td>
+<td>동남아 섬 (소규모 밀집, 고밀도 건물)</td>
+<td>70</td>
+<td>30</td>
+<td>70</td>
+<td>50</td>
+<td>5</td>
+<td>BR</td>
+</tr>
+<tr>
+<td><strong>Vikendi 스타일</strong></td>
+<td>북유럽/발칸 해안 (산악+해안, 건물 산발)</td>
+<td>35</td>
+<td>65</td>
+<td>45</td>
+<td>60</td>
+<td>10</td>
+<td>BR</td>
+</tr>
+<tr>
+<td><strong>Verdansk 스타일</strong></td>
+<td>동유럽 도심 (고층 밀집+도시 수직전투)</td>
+<td>75</td>
+<td>25</td>
+<td>65</td>
+<td>50</td>
+<td>20</td>
+<td>BR</td>
+</tr>
+</tbody>
+</table>
+<h4>Extraction 프리셋 (ARC Raiders + Tarkov + Hunt 기반)</h4>
+<table>
+<thead>
+<tr>
+<th>프리셋</th>
+<th>추천 좌표 테마</th>
+<th>도심밀도</th>
+<th>개방도</th>
+<th>동선복잡도</th>
+<th>고저차</th>
+<th>파괴도</th>
+<th>룰셋</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dam 스타일</strong></td>
+<td>댐/산업단지 인근 (수직 지형+산업 건물)</td>
+<td>60</td>
+<td>40</td>
+<td>50</td>
+<td>80</td>
+<td>30</td>
+<td>EX</td>
+</tr>
+<tr>
+<td><strong>Spaceport 스타일</strong></td>
+<td>공항/발사장 인근 (산업 건물+개방지 혼합)</td>
+<td>50</td>
+<td>50</td>
+<td>40</td>
+<td>30</td>
+<td>40</td>
+<td>EX</td>
+</tr>
+<tr>
+<td><strong>Buried City 스타일</strong></td>
+<td>사막 도심 (밀집 도시+높은 파괴도)</td>
+<td>80</td>
+<td>20</td>
+<td>60</td>
+<td>40</td>
+<td>50</td>
+<td>EX</td>
+</tr>
+<tr>
+<td><strong>Customs 스타일</strong></td>
+<td>산업단지+주거 선형 (선형 병목+다리 강제 통과)</td>
+<td>45</td>
+<td>55</td>
+<td>35</td>
+<td>30</td>
+<td>25</td>
+<td>EX</td>
+</tr>
+<tr>
+<td><strong>Shoreline 스타일</strong></td>
+<td>해안 리조트 (중앙 대형 건물+외곽 분산)</td>
+<td>30</td>
+<td>70</td>
+<td>55</td>
+<td>45</td>
+<td>15</td>
+<td>EX</td>
+</tr>
+<tr>
+<td><strong>Bayou 스타일</strong></td>
+<td>미국 남부 늪지 (저밀도 분산 컴파운드+수변)</td>
+<td>25</td>
+<td>75</td>
+<td>60</td>
+<td>15</td>
+<td>10</td>
+<td>EX</td>
+</tr>
+</tbody>
+</table>
+<h4>슬라이더 값 도출 근거</h4>
+<p>각 프리셋의 슬라이더 수치는 레퍼런스 맵의 실제 특성에서 역산했다.</p>
+<table>
+<thead>
+<tr>
+<th>슬라이더</th>
+<th>측정 기준</th>
+<th>역산 방법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>도심 밀도</strong></td>
+<td>맵 전체 면적 대비 건물 점유율</td>
+<td>Erangel 8×8km 중 건물 밀집 지역 ≈ 15~20% → 40. Sanhok 4×4km 전체 밀집 → 70</td>
+</tr>
+<tr>
+<td><strong>개방도</strong></td>
+<td>주요 이동 경로에서 100m 이상 시선이 트이는 비율</td>
+<td>Miramar 사막 구간 80%+ 개방 → 80. Buried City 골목 밀집 → 20</td>
+</tr>
+<tr>
+<td><strong>동선 복잡도</strong></td>
+<td>두 거점 간 유효 경로 수 (1=직선, 3+=복잡)</td>
+<td>Sanhok 밀집 교차로 평균 3.2경로 → 70. Spaceport 직선 위주 → 40</td>
+</tr>
+<tr>
+<td><strong>고저차</strong></td>
+<td>맵 내 최고-최저 고도차 / 맵 반경 비율</td>
+<td>Dam 수직 80m+ → 80. Spaceport 평지 → 30. Miramar 능선 → 70</td>
+</tr>
+<tr>
+<td><strong>파괴도</strong></td>
+<td>전체 건물 중 파괴/손상 상태 건물 비율</td>
+<td>Buried City 50%+ 파괴 → 50. Erangel 대부분 intact → 10</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>이 값은 "정확한 측정치"가 아니라 <strong>레퍼런스 맵 플레이 경험과 공개 맵 데이터에서 도출한 근사치</strong>로, 기획자가 프리셋 적용 후 세부 조정하는 것을 전제로 한다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>추천 좌표 예시</h4>
+<p>기획자가 직접 좌표를 입력할 수도 있지만, 프리셋 선택 시 테마에 맞는 실제 좌표를 제안한다.</p>
+<table>
+<thead>
+<tr>
+<th>프리셋</th>
+<th>추천 좌표 (위도, 경도)</th>
+<th>반경</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Erangel</td>
+<td>59.95, 30.32</td>
+<td>3km</td>
+<td>상트페테르부르크 교외 — 섬+해안+도시</td>
+</tr>
+<tr>
+<td>Miramar</td>
+<td>31.69, -106.42</td>
+<td>3km</td>
+<td>엘패소 인근 사막 — 능선+산발 도시</td>
+</tr>
+<tr>
+<td>Sanhok</td>
+<td>7.88, 98.38</td>
+<td>1.5km</td>
+<td>태국 푸켓 — 섬+밀집 건물</td>
+</tr>
+<tr>
+<td>Vikendi</td>
+<td>42.65, 18.09</td>
+<td>2km</td>
+<td>크로아티아 해안 — 산악+해안 마을</td>
+</tr>
+<tr>
+<td>Verdansk</td>
+<td>50.45, 30.52</td>
+<td>2.5km</td>
+<td>키이우 교외 — 동유럽 도시+고층+산업</td>
+</tr>
+<tr>
+<td>Dam</td>
+<td>46.53, 11.95</td>
+<td>1km</td>
+<td>이탈리아 알프스 댐 인근 — 산업+고저차</td>
+</tr>
+<tr>
+<td>Spaceport</td>
+<td>28.57, -80.65</td>
+<td>2km</td>
+<td>케이프 커내버럴 — 발사장+산업시설</td>
+</tr>
+<tr>
+<td>Buried City</td>
+<td>30.03, 31.23</td>
+<td>1.5km</td>
+<td>카이로 구도심 — 밀집 도시+사막</td>
+</tr>
+<tr>
+<td>Customs</td>
+<td>56.32, 43.98</td>
+<td>1.5km</td>
+<td>니즈니노브고로드 산업지대 — 선형 공장+주거</td>
+</tr>
+<tr>
+<td>Shoreline</td>
+<td>43.36, 39.96</td>
+<td>2km</td>
+<td>소치 해안 리조트 — 중앙 리조트+외곽 마을</td>
+</tr>
+<tr>
+<td>Bayou</td>
+<td>29.95, -90.07</td>
+<td>1km</td>
+<td>루이지애나 늪지 — 분산 농가+수변</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body><strong>기대치</strong>: "Erangel과 똑같은 맵"이 아니라 <strong>"Erangel과 비슷한 지형 구조·건물 밀도·동선 패턴을 가진 실제 위치 기반 맵"</strong>. 건물·도로는 실제 OSM 데이터에서 오므로 게임 맵과 1:1 대응은 아니지만, 전체적인 느낌과 게임플레이 구조가 유사해진다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>프리셋 JSON 포맷</h4>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "preset_name": "Erangel 스타일",
+  "reference_game": "PUBG",
+  "reference_map": "Erangel",
+  "recommended_coords": {
+    "lat": 59.95,
+    "lon": 30.32,
+    "radius_km": 3.0,
+    "description": "상트페테르부르크 교외 — 섬+해안+도시"
+  },
+  "sliders": {
+    "urban_density": 40,
+    "openness": 60,
+    "route_complexity": 50,
+    "elevation_emphasis": 40,
+    "destruction": 10
+  },
+  "ruleset": "battle_royale"
+}
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p>저장 경로: <code>{ProjectDir}/Saved/LevelTool/ReferencePresets/</code><br />
+기획자가 슬라이더 값이나 좌표를 수정한 뒤 커스텀 프리셋으로 저장 가능.</p>
+<h3>2.4 커스텀 프리셋 저장</h3>
+<p>기획자가 만든 레이어 그룹 또는 레퍼런스 프리셋 수정본을 "프리셋으로 저장" → JSON 내보내기.</p>
+<h4>저장 포맷</h4>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "preset_name": "종로_시가전_v2",
+  "author": "designer_kim",
+  "created_at": "2026-03-19T14:30:00Z",
+  "base_reference": "Erangel 스타일",
+  "sliders": {
+    "urban_density": 55,
+    "openness": 45,
+    "route_complexity": 60,
+    "elevation_emphasis": 40,
+    "destruction": 20
+  },
+  "ruleset": "battle_royale",
+  "object_presets_applied": ["병목+우회로 세트", "수직 전투 강조"],
+  "description": "종로 기반 시가전 강화 버전. Erangel에서 밀도+15, 개방도-15 조정"
+}
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p>저장 경로: <code>{ProjectDir}/Saved/LevelTool/CustomPresets/{preset_name}.json</code></p>
+<h4>저장 시 포함/제외 항목</h4>
+<table>
+<thead>
+<tr>
+<th>포함</th>
+<th>제외</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>슬라이더 5값</td>
+<td>개별 Edit Layer 상세</td>
+<td>레이어는 맵 종속이므로 다른 맵에 재적용 불가</td>
+</tr>
+<tr>
+<td>적용한 오브젝트 프리셋 목록</td>
+<td>제안 카드 수락 내역</td>
+<td>제안은 맵 구조 종속</td>
+</tr>
+<tr>
+<td>룰셋 선택 (BR/EX)</td>
+<td>좌표</td>
+<td>좌표는 맵마다 다름</td>
+</tr>
+<tr>
+<td>기반 레퍼런스 프리셋명</td>
+<td>체크 결과</td>
+<td>체크는 실시간 산출</td>
+</tr>
+<tr>
+<td>작성자·날짜·설명</td>
+<td>—</td>
+<td>팀 공유 시 식별용</td>
+</tr>
+</tbody>
+</table>
+<h4>로드 시 검증</h4>
+<table>
+<thead>
+<tr>
+<th>검증 항목</th>
+<th>실패 시 처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON 스키마 유효성</td>
+<td>파싱 실패 → Warning 토스트 + 로드 중단</td>
+</tr>
+<tr>
+<td>슬라이더 값 범위 (0~100)</td>
+<td>범위 초과 → <code>clamp(0, 100)</code> + Warning</td>
+</tr>
+<tr>
+<td>오브젝트 프리셋명 존재 확인</td>
+<td>미존재 프리셋 → 스킵 + "'{이름}' 프리셋을 찾을 수 없습니다"</td>
+</tr>
+<tr>
+<td><code>ruleset</code> 값</td>
+<td>"battle_royale" 또는 "extraction" 외 → 기본 BR</td>
+</tr>
+</tbody>
+</table>
+<h4>팀 공유</h4>
+<table>
+<thead>
+<tr>
+<th>방식</th>
+<th>절차</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>파일 공유</strong></td>
+<td><code>CustomPresets/</code> 폴더를 프로젝트 VCS(Git/Perforce)에 포함 → 팀원이 자동으로 프리셋 목록에서 확인</td>
+</tr>
+<tr>
+<td><strong>내보내기</strong></td>
+<td>[내보내기] 버튼 → 지정 경로에 <code>.json</code> 복사 (이메일·메신저 공유용)</td>
+</tr>
+<tr>
+<td><strong>가져오기</strong></td>
+<td>[가져오기] 버튼 → <code>.json</code> 선택 → <code>CustomPresets/</code>에 복사 + 프리셋 목록 갱신</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>커스텀 프리셋은 <strong>슬라이더 값 + 메타정보</strong>만 저장하므로 파일 크기 &lt; 1KB. 팀 내 수십 개를 공유해도 부담 없다.
+</ac:rich-text-body></ac:structured-macro></p>
+<hr/>
+<h2>3단계 — 레퍼런스 게임의 재미를 위한 공간적 전제조건 진단</h2>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body><strong>목적: 레퍼런스 게임의 재미가 성립하기 위한 공간적 전제조건을 진단하고, 미충족 시 해소 방안을 제안한다.</strong>
+</ac:rich-text-body></ac:structured-macro>
+배틀로얄의 "핫드랍 선택 긴장", "다리 교착", "포지셔닝 싸움"이나, 익스트랙션의 "리스크 판단", "추출 긴장", "우회 판단" 같은 <strong>재미 요소는 맵의 공간 구조가 전제조건</strong>이다. 거점이 분산되지 않으면 핫드랍 선택이 없고, 병목이 없으면 다리 교착이 없고, 엄폐가 없으면 포지셔닝 싸움이 없다.</p>
+<p>3단계는 이 전제조건을 <strong>15개 레퍼런스 맵에서 도출한 체크리스트로 진단</strong>하고, 문제 지점에 대한 <strong>편집 옵션을 제안</strong>한다. AI가 자동으로 고치는 것이 아니라, 기획자에게 선택지를 보여준다.</p>
+<table>
+<thead>
+<tr>
+<th>구분</th>
+<th>3단계가 하는 것</th>
+<th>3단계가 하지 않는 것</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>진단</strong></td>
+<td>거점 분산, 병목 우회로, 시야 혼합, 위험-보상 배치 등 <strong>공간 구조</strong> 검증</td>
+<td>루트 테이블, AI 밸런스, 존 수축 패턴 등 <strong>게임 시스템</strong> 검증</td>
+</tr>
+<tr>
+<td><strong>제안</strong></td>
+<td>도로 추가, 건물 제거/추가, 지형 변경, 마커 배치 등 <strong>공간 수정</strong></td>
+<td>아이템 배치, AI 스폰, 사운드 설정 등 <strong>런타임 시스템 설정</strong></td>
+</tr>
+<tr>
+<td><strong>보장</strong></td>
+<td>"이 맵 위에서 재미가 <strong>성립할 수 있다</strong>" (전제조건 충족)</td>
+<td>"이 맵이 <strong>반드시 재미있다</strong>" (재미 = 공간 + 게임 시스템)</td>
+</tr>
+</tbody>
+</table>
+<h3>3.1 룰셋 선택</h3>
+<table>
+<thead>
+<tr>
+<th>룰셋</th>
+<th>레퍼런스</th>
+<th>핵심 질문</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Battle Royale</strong></td>
+<td>PUBG Erangel</td>
+<td>"100명이 떨어져서 싸울 때, 이 맵이 공정하고 재미있는가?"</td>
+</tr>
+<tr>
+<td><strong>Extraction</strong></td>
+<td>ARC Raiders Dam</td>
+<td>"소규모 팀이 루트하고 탈출할 때, 긴장감과 선택지가 충분한가?"</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2 Battle Royale 체크리스트 — PUBG 5맵 + Verdansk 기준</h3>
+<p>Erangel·Miramar·Sanhok·Vikendi·Taego + Verdansk 공통 설계 원칙에서 도출한 체크리스트.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>체크 항목</th>
+<th>기준 (레퍼런스)</th>
+<th>진단 방법</th>
+<th>미충족 시 제안 옵션</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-1</td>
+<td><strong>거점 분산</strong></td>
+<td>S등급 거점 간 최소 맵 크기×0.2 이격 (Erangel: Pochinki↔Military 2km+)</td>
+<td>거점 마커 간 거리 측정</td>
+<td>"거점 {A}와 {B}가 너무 가깝습니다" → [건물 제거로 한쪽 등급 낮추기]</td>
+</tr>
+<tr>
+<td>BR-2</td>
+<td><strong>루트 등급 그래디언트</strong></td>
+<td>중심/위험=고루트, 외곽/안전=저루트 (전 맵 공통)</td>
+<td>거점 마커 위치 vs 맵 중심 거리</td>
+<td>"외곽에 S등급 거점이 있습니다" → [거점 마커 재배치] 또는 [건물 밀도 조정]</td>
+</tr>
+<tr>
+<td>BR-3</td>
+<td><strong>병목 우회로</strong></td>
+<td>모든 병목에 우회 경로 1개 이상 (Erangel: 다리+캣워크, Sanhok: 섬간 다리+수영)</td>
+<td>도로 그래프에서 제거 시 단절되는 간선 식별</td>
+<td>"다리 {X}를 차단하면 고립됩니다" → [우회 도로 추가] 또는 [수영 가능 수역 표시]</td>
+</tr>
+<tr>
+<td>BR-4</td>
+<td><strong>개방/폐쇄 혼합</strong></td>
+<td>건물 밀집 30~50% (Erangel 30%, Miramar 20%, Sanhok 50%)</td>
+<td>건물 분포 밀도 맵</td>
+<td>"전체가 도심입니다 (80%)" → [외곽 건물 제거]</td>
+</tr>
+<tr>
+<td>BR-5</td>
+<td><strong>엄폐물 테마 적합성</strong> 🏷️<code>terrain_only</code></td>
+<td>테마별 주력 엄폐물 존재 확인 (사막→능선, 정글→식생, 설원→바위). <strong>식생·바위 등 폴리지/스태틱메시 배치는 본 도구 범위 밖</strong> — 진단은 지형+건물 기준으로만 수행하고, 엄폐물이 부족하면 제안 카드에 "식생/바위 수동 배치 권장" 라벨을 표시한다.</td>
+<td>지형 + 건물 분포 교차 확인</td>
+<td>"사막 테마인데 평탄지만 있습니다" → [능선 추가] 또는 "🏷️ 식생/바위 수동 배치 권장"</td>
+</tr>
+<tr>
+<td>BR-6</td>
+<td><strong>차량 이동 경로</strong></td>
+<td>맵 대각선 &gt; 2km이면 도로 연결성 필수 (Miramar: 도로 6.92%)</td>
+<td>거점 간 도로 경로 존재 여부</td>
+<td>"거점 {A}→{B} 도로 없음" → [도로 추가]</td>
+</tr>
+<tr>
+<td>BR-7</td>
+<td><strong>수축 형평성</strong></td>
+<td>맵 어디서든 중심 이동 가능 (완전 차단 병목 금지, 전 맵 공통)</td>
+<td>4방향 → 중심 경로 확인</td>
+<td>"{방향}에서 접근 불가" → [도로 추가] 또는 [건물 제거]</td>
+</tr>
+<tr>
+<td>BR-8</td>
+<td><strong>맵 크기별 밀도</strong></td>
+<td>4km→고밀도, 8km→구역별 밀도 차등 (Sanhok vs Erangel). <strong>판정 대상은 유효 맵 상태(Edit Layer 반영 후) 건물 수</strong>이며, 1단계 OSM 원본이 아님. 기준 밀도: 소형(1km)=80/km², 중형(2~3km)=50/km², 대형(5km)=30/km²</td>
+<td>유효 건물 수 / 맵 면적(km²)</td>
+<td>"8km 맵인데 밀도가 Sanhok 수준입니다" → [건물 간격 확대]</td>
+</tr>
+<tr>
+<td>BR-9</td>
+<td><strong>수직 전투 가능성</strong></td>
+<td>고루트 거점에 3층+ 건물 또는 10m+ 고저차 1개 이상 (Verdansk: Downtown 16층, Hospital 옥상)</td>
+<td>거점 내 최고층 건물 높이 + 지형 고도</td>
+<td>"모든 거점이 평층입니다" → [건물 고층화] 또는 [고저차 강조]</td>
+</tr>
+<tr>
+<td>BR-10</td>
+<td><strong>탐험 리워드</strong></td>
+<td>비밀/잠금 공간 1개 이상 (Erangel 비밀의 방, Verdansk 벙커, Taego 항아리)</td>
+<td>거점 마커에 "탐험 요소" 태그 존재 여부</td>
+<td>"탐험 요소 없음" → [건물 1개에 잠금 마커 부여]</td>
+</tr>
+</tbody>
+</table>
+<h4>BR 체크리스트 Pass/Warning/Fail 임계값</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Pass</th>
+<th>Warning</th>
+<th>Fail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-1</td>
+<td>S등급 간 거리 ≥ 맵크기×0.2</td>
+<td>S등급 간 거리 ≥ 맵크기×0.1</td>
+<td>S등급 간 거리 &lt; 맵크기×0.1</td>
+</tr>
+<tr>
+<td>BR-2</td>
+<td>S등급 전부 맵 중심 50% 내</td>
+<td>S등급 1개가 외곽</td>
+<td>S등급 2개+ 가 외곽</td>
+</tr>
+<tr>
+<td>BR-3</td>
+<td>모든 병목에 우회로 1개+</td>
+<td>병목 1개에 우회로 없음</td>
+<td>병목 2개+ 에 우회로 없음</td>
+</tr>
+<tr>
+<td>BR-4</td>
+<td>건물 밀집 30~50%</td>
+<td>밀집 20~30% 또는 50~65%</td>
+<td>밀집 &lt;20% 또는 &gt;65%</td>
+</tr>
+<tr>
+<td>BR-5</td>
+<td>주력 엄폐물 = 테마 일치</td>
+<td>혼합 (2종 이상 엄폐)</td>
+<td>테마와 완전 불일치</td>
+</tr>
+<tr>
+<td>BR-6</td>
+<td>모든 S등급 간 도로 존재</td>
+<td>도로 1개 누락</td>
+<td>도로 2개+ 누락</td>
+</tr>
+<tr>
+<td>BR-7</td>
+<td>4방향 모두 중심 접근 가능</td>
+<td>1방향 우회 필요 (직선 불가)</td>
+<td>1방향+ 완전 차단</td>
+</tr>
+<tr>
+<td>BR-8</td>
+<td><strong>유효</strong> 밀도가 기준(소형80/중형50/대형30 /km²) ±20% 내</td>
+<td>±20~40%</td>
+<td>±40% 초과</td>
+</tr>
+<tr>
+<td>BR-9</td>
+<td>고루트 거점에 10m+ 고저차 1개+</td>
+<td>5~10m 고저차만 존재</td>
+<td>모든 거점 &lt;5m</td>
+</tr>
+<tr>
+<td>BR-10</td>
+<td>잠금/탐험 마커 2개+</td>
+<td>잠금/탐험 마커 1개</td>
+<td>마커 0개 (⬜ 미설정)</td>
+</tr>
+</tbody>
+</table>
+<h3>3.3 Extraction 체크리스트 — ARC Raiders 5맵 + Tarkov 3맵 + Hunt 기준</h3>
+<p>ARC Raiders 5맵 + Tarkov 3맵 + Hunt: Showdown 공통 설계 원칙에서 도출한 체크리스트.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>체크 항목</th>
+<th>기준 (레퍼런스)</th>
+<th>진단 방법</th>
+<th>미충족 시 제안 옵션</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EX-1</td>
+<td><strong>탈출 루트 복수성</strong></td>
+<td>모든 고루트 거점에서 추출까지 경로 2개 이상 (전 맵 공통)</td>
+<td>거점 마커 → 추출 마커 경로 탐색</td>
+<td>"거점 {A}에서 추출까지 경로 1개뿐" → [건물 제거로 우회로 확보]</td>
+</tr>
+<tr>
+<td>EX-2</td>
+<td><strong>위험=보상 비례</strong></td>
+<td>고루트→추출 경로에 최소 1개 위험 구간 (Dam: Power Plant→Elevator 경유 노출 구간)</td>
+<td>거점→추출 경로의 엄폐 상태</td>
+<td>"전구간 엄폐입니다" → [구간 건물 제거로 노출 생성]</td>
+</tr>
+<tr>
+<td>EX-3</td>
+<td><strong>수직 전투</strong></td>
+<td>고루트 구역에 고저차 10m+ (Dam: 4단, Spaceport: 집라인, Stella Montis: 2층)</td>
+<td>건물 높이 + 지형 고도</td>
+<td>"완전 평탄합니다" → [건물 고층화] 또는 [지형 올리기]</td>
+</tr>
+<tr>
+<td>EX-4</td>
+<td><strong>은신 루트</strong></td>
+<td>노출 200m 연속 구간 없음 (Blue Gate: 지하 터널, Spaceport: 건물간 커버)</td>
+<td>건물/지형 간 가시선 분석</td>
+<td>"{A}↔{B} 300m 노출" → [건물 추가] 또는 [능선 추가]</td>
+</tr>
+<tr>
+<td>EX-5</td>
+<td><strong>추출 긴장감</strong></td>
+<td>추출 반경 50m 엄폐 부족 (Dam: Elevator 사이렌, Buried City: Metro 경보)</td>
+<td>추출 마커 주변 건물 밀도</td>
+<td>"추출이 건물 내부 (안전)" → [건물 제거]</td>
+</tr>
+<tr>
+<td>EX-6</td>
+<td><strong>회전 경로 다양성</strong></td>
+<td>거점 간 2개+ 경로 (Blue Gate: 4개 터널, Buried City: 거리+광장)</td>
+<td>거점 간 도로/경로 분석</td>
+<td>"직선 1개뿐" → [우회 도로 추가]</td>
+</tr>
+<tr>
+<td>EX-7</td>
+<td><strong>솔로/스쿼드 분리</strong></td>
+<td>외곽 저위험 루트 + 중앙 고위험 거점 공존 (Blue Gate: 외곽 동굴 솔로 파밍)</td>
+<td>거점 마커 분포 vs 맵 위치</td>
+<td>"모든 거점이 중앙 밀집" → [외곽에 B~C등급 거점 추가]</td>
+</tr>
+<tr>
+<td>EX-8</td>
+<td><strong>잠금 루트 존재</strong></td>
+<td>열쇠/연료 필요 고루트 지점 1개+ (Stella Montis: Seed Vault 연료전지, Spaceport: A6키, Tarkov: 마크방 열쇠)</td>
+<td>거점 마커에 "열쇠 필요" 태그</td>
+<td>"모든 거점이 자유 접근" → [거점 1~2개에 잠금 마커 부여]</td>
+</tr>
+<tr>
+<td>EX-9</td>
+<td><strong>소음 트리거 배치</strong></td>
+<td>이동 경로에 소음 발생 요소 존재 (Hunt: 새/유리/닭장, Tarkov: 발소리 차이)</td>
+<td>거점 간 이동 경로에 "소음 트리거" 마커</td>
+<td>"전 경로 무소음" → [경로 중간에 소음 마커 추가]</td>
+</tr>
+<tr>
+<td>EX-10</td>
+<td><strong>AI/PvE 구역 존재</strong></td>
+<td>고루트 거점 1개+ 에 AI 위협 마커 (Hunt: 보스+그런트, Tarkov: 스캐브, ARC: PvE 존)</td>
+<td>거점 마커에 "AI 위협" 태그</td>
+<td>"PvP만 존재" → [거점 1~2개에 AI 위협 마커 부여]</td>
+</tr>
+</tbody>
+</table>
+<h4>EX 체크리스트 Pass/Warning/Fail 임계값</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Pass</th>
+<th>Warning</th>
+<th>Fail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EX-1</td>
+<td>추출점 2개+ &amp; 경로 3가지+ 존재</td>
+<td>추출점 2개 but 경로 2가지 이하</td>
+<td>추출점 &lt;2 또는 N/A</td>
+</tr>
+<tr>
+<td>EX-2</td>
+<td>S등급 거점 3개+ (잠입·교전·회피 혼합)</td>
+<td>S등급 2개, 단일 유형</td>
+<td>S등급 ≤1</td>
+</tr>
+<tr>
+<td>EX-3</td>
+<td>다중 교전 거리 (CQB+중거리) 공간 존재</td>
+<td>중거리만 또는 CQB만</td>
+<td>모두 개활지</td>
+</tr>
+<tr>
+<td>EX-4</td>
+<td>Gini계수 ≥0.4 &amp; 고가치 존 뚜렷</td>
+<td>Gini 0.2~0.4</td>
+<td>Gini &lt;0.2 (균일)</td>
+</tr>
+<tr>
+<td>EX-5</td>
+<td>추출 입구 ≥2 &amp; 캠핑 차단 구조물</td>
+<td>추출 입구 1개</td>
+<td>추출점 N/A</td>
+</tr>
+<tr>
+<td>EX-6</td>
+<td>거점↔거점 주경로 1개 + 대안 1개+</td>
+<td>주경로만 존재</td>
+<td>경로 없음</td>
+</tr>
+<tr>
+<td>EX-7</td>
+<td>건물+바위+수풀 3종 엄폐 비율 각 15%+</td>
+<td>1종 &lt;15%</td>
+<td>2종+ &lt;15%</td>
+</tr>
+<tr>
+<td>EX-8</td>
+<td>잠금 마커 2개+ (열쇠·코드 등)</td>
+<td>잠금 마커 1개</td>
+<td>마커 0개 (⬜ 미설정)</td>
+</tr>
+<tr>
+<td>EX-9</td>
+<td>소음 마커 3개+ (다양한 유형)</td>
+<td>소음 마커 1~2개</td>
+<td>마커 0개 (⬜ 미설정)</td>
+</tr>
+<tr>
+<td>EX-10</td>
+<td>AI 존 2개+ (다른 위협 수준)</td>
+<td>AI 존 1개</td>
+<td>마커 0개 (⬜ 미설정)</td>
+</tr>
+</tbody>
+</table>
+<h3>3.4 체크 진단 동작 방식</h3>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[[기획자: 룰셋 선택 (BR 또는 Extraction)]
+  ↓
+[시스템: 맵 데이터 자동 분석]
+  - 거점 자동 탐지 (건물 밀집 클러스터 → S/A/B/C 등급 추정)
+  - 건물 분포 밀도 계산
+  - 도로 네트워크 연결성 확인
+  - 지형 고저차 분석
+  ↓
+[체크리스트 결과 표시]
+  - Pass ✅ / Fail ❌ / Warning ⚠️ / N/A (데이터 없음)
+  - Fail 항목에 제안 카드 표시
+  ↓
+[기획자: 제안 카드 수락/거절]
+  - 수락 → 해당 Edit Layer 자동 생성
+  - 거절 → 무시
+  - 이후 2단계 슬라이더/프리셋으로 추가 조정
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h4>EX 체크리스트 2단계 진단 전략</h4>
+<p>EX 체크리스트 10항 중 5항(EX-1, EX-5, EX-8, EX-9, EX-10)은 <strong>마커 존재를 전제</strong>로 한다. 맵에 마커가 없는 상태(첫 진단)에서는 이 항목이 항상 Fail/N/A로 나오므로, 진단을 <strong>2단계로 나눠서</strong> 기획자 혼란을 방지한다.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[[1차 진단: 구조 체크]  ← 마커 없이 분석 가능한 항목
+  EX-1~4, EX-6, EX-7   (지형·건물·도로 기반 6항)
+  ↓
+  Fail 항목 제안 카드 표시 → 기획자 수락/거절
+  ↓
+[시스템: 마커 미배치 감지]
+  EX-5, EX-8, EX-9, EX-10 → "마커 필요" 안내 + 자동 제안
+  "추출 포인트가 설정되지 않았습니다. 배치를 제안합니다."
+  ↓
+[기획자: 마커 제안 수락/거절]
+  ↓
+[2차 진단: 마커 체크]  ← 마커 배치 후 실행
+  EX-1(추출 경로 재분석), EX-5, EX-8, EX-9, EX-10
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p>UI 표시:</p>
+<table>
+<thead>
+<tr>
+<th>마커 미배치 시</th>
+<th>표시</th>
+<th>기획자 행동</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>추출 마커 없음</td>
+<td><code>EX-1: N/A (추출 미설정)</code>, <code>EX-5: N/A</code></td>
+<td>제안 카드로 추출 배치</td>
+</tr>
+<tr>
+<td>잠금 마커 없음</td>
+<td><code>EX-8: ⬜ 미설정 (선택 사항)</code></td>
+<td>제안 수락 또는 의도적 스킵</td>
+</tr>
+<tr>
+<td>소음/AI 없음</td>
+<td><code>EX-9: ⬜ 미설정</code>, <code>EX-10: ⬜ 미설정</code></td>
+<td>제안 수락 또는 의도적 스킵</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>BR 체크리스트는 마커 의존 항목이 BR-10(탐험 리워드) 1건뿐이므로 별도 단계 없이 "⬜ 미설정" 표시로 충분하다.
+</ac:rich-text-body></ac:structured-macro>
+<strong>거점 자동 탐지</strong>: <code>buildings.json</code>에서 건물 중심 좌표를 추출하고, DBSCAN 클러스터링으로 거점을 그룹핑한다.</p>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>값</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eps</code> (탐색 반경)</td>
+<td>150m</td>
+<td>Erangel 도시 거점 내 건물 간격 평균 100~200m</td>
+</tr>
+<tr>
+<td><code>min_samples</code> (최소 건물 수)</td>
+<td>5</td>
+<td>5개 미만은 독립 건물이지 거점이 아님</td>
+</tr>
+</tbody>
+</table>
+<p>클러스터링 후, 클러스터 내 <strong>건물 수 × 평균 바닥면적</strong>으로 "거점 스코어"를 산출하고 등급을 부여한다.</p>
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>거점 스코어 조건</th>
+<th>레퍼런스 대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S</strong></td>
+<td>상위 10%</td>
+<td>Erangel Military Base, Buried City Hospital</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>상위 10~30%</td>
+<td>Erangel Yasnaya Polyana, Dam Power Plant</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>상위 30~60%</td>
+<td>Erangel Rozhok, Spaceport Container Storage</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>하위 40%</td>
+<td>Erangel 농가, Blue Gate Standard Passage</td>
+</tr>
+</tbody>
+</table>
+<p>기획자는 탐지된 거점 목록과 등급을 확인만 한다. 등급이 부정확하면 슬라이더(도심 밀도)로 건물 분포를 조정하여 간접적으로 등급을 변경할 수 있다.</p>
+<h4>초크 포인트(병목) 정의 및 탐지</h4>
+<p><strong>초크 포인트</strong>란 해당 경로를 차단하면 맵의 일부 영역이 <strong>고립</strong>되거나 이동 비용이 급증하는 지점이다. BR-3(병목 우회로), BR-7(수축 형평성), EX-6(회전 경로) 체크리스트가 초크 포인트 탐지에 의존한다.</p>
+<table>
+<thead>
+<tr>
+<th>유형</th>
+<th>정의</th>
+<th>탐지 방법</th>
+<th>레퍼런스 예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>교량 병목</strong></td>
+<td>수역·절벽 위 다리가 유일한 연결 경로</td>
+<td>도로 그래프에서 <strong>bridge edge</strong> 탐지 — 해당 간선 제거 시 그래프 단절 (Tarjan 알고리즘)</td>
+<td>Erangel 동·서 다리, Customs 4개 다리</td>
+</tr>
+<tr>
+<td><strong>협곡/능선 병목</strong></td>
+<td>지형 고저차가 통행을 강제하는 좁은 통로</td>
+<td>heightmap에서 <strong>경사도 &gt; 45°</strong> 구간으로 둘러싸인 폭 &lt; 50m 통로 탐색</td>
+<td>Miramar 협곡, Vikendi 산맥 사이 도로</td>
+</tr>
+<tr>
+<td><strong>도로 폭 병목</strong></td>
+<td>건물·장애물로 인해 도로 유효 폭이 극단적으로 좁은 구간</td>
+<td>도로 폴리곤 폭 &lt; 6m 이고 양쪽에 건물/지형 벽이 있는 구간</td>
+<td>Streets of Tarkov 메인도로 횡단, Dam 벽 통로</td>
+</tr>
+<tr>
+<td><strong>구조적 병목</strong></td>
+<td>섬·반도 등 지형 형태상 진출입로가 제한된 구역</td>
+<td>거점(DBSCAN 클러스터) 진입 간선이 <strong>2개 이하</strong></td>
+<td>Erangel Military Island (2개 다리), Miramar Prison 섬</td>
+</tr>
+</tbody>
+</table>
+<p><strong>탐지 우선순위</strong>: 교량 → 구조적 → 도로 폭 → 협곡/능선 순서로 검사한다. 교량·구조적 병목은 그래프 연산만으로 탐지되어 비용이 낮고, 도로 폭·협곡 병목은 공간 데이터 분석이 필요하여 비용이 높다.</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>BR-3 체크리스트는 탐지된 초크 포인트마다 <strong>우회로 존재 여부</strong>를 검증한다. 우회로 = 해당 간선을 제거해도 출발·도착 거점 간 <strong>대체 경로가 존재</strong>하되, 대체 경로 비용이 원래 경로의 3배 이내여야 한다. 3배 초과 시 실질적 고립으로 판단하여 Warning 처리.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>수역 횡단 경로 인식</h4>
+<p>체크리스트의 경로 분석(BR-3, BR-7, EX-6)에서 <strong>수역(강, 호수)은 조건부 횡단 가능 경로</strong>로 취급한다. <code>water.json</code>의 water body 데이터를 활용한다.</p>
+<table>
+<thead>
+<tr>
+<th>수역 조건</th>
+<th>횡단 가능 여부</th>
+<th>경로 가중치</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>폭 ≤ 30m (하천·개울)</td>
+<td>✅ 도보 횡단</td>
+<td>도로의 3배</td>
+<td>PUBG/Tarkov: 얕은 하천 수영 가능</td>
+</tr>
+<tr>
+<td>폭 30~100m (중형 강)</td>
+<td>⚠️ 수영 가능 (느림)</td>
+<td>도로의 6배</td>
+<td>지연·노출 위험 존재</td>
+</tr>
+<tr>
+<td>폭 &gt; 100m (대형 호수·바다)</td>
+<td>❌ 차단 (교량 필요)</td>
+<td>∞</td>
+<td>보트 없이 불가</td>
+</tr>
+</tbody>
+</table>
+<p>경로 그래프 구성 시:
+1. <code>water.json</code>에서 각 water body의 폴리곤을 로드
+2. 폴리곤을 가로지르는 두 지점 간 최단 횡단 폭을 계산
+3. 횡단 폭 기준으로 경로 가중치를 부여하여 그래프 엣지에 추가
+4. 도로 엣지(가중치 1.0)와 수역 엣지(가중치 3.0/6.0)를 통합한 그래프로 경로 분석</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>수역 횡단을 "경로 있음"으로 인정하더라도 높은 가중치로 인해 체크리스트는 <strong>도로/다리 경로를 우선 권장</strong>한다. 수역만으로 연결된 경로는 Warning으로 표시.
+</ac:rich-text-body></ac:structured-macro></p>
+<h3>3.5 제안 카드 형식</h3>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "check_id": "BR-3",
+  "result": "fail",
+  "problem": "서쪽 다리를 차단하면 Military Base 영역이 고립됩니다",
+  "suggested_fix": {
+    "type": "road_add",
+    "area": { "type": "path", "points_ue5": [[...], [...]] },
+    "params": { "road_type": "minor", "width_m": 4 },
+    "label": "[제안] Military Base 우회 도로"
+  },
+  "reference": "Erangel: 동·서 다리 + 하부 캣워크로 병목 우회 보장"
+}
+]]></ac:plain-text-body></ac:structured-macro></p>
+<ul>
+<li>각 제안 카드에 <strong>레퍼런스 근거</strong> 표시</li>
+<li>[수락] → Edit Layer로 추가 (created_by: "ai_suggest")</li>
+<li>기획자가 나중에 토글/삭제/수정 가능</li>
+</ul>
+<h4>제안 카드 좌표 생성 알고리즘</h4>
+<p>제안 카드의 <code>area.points_ue5</code> 좌표는 체크리스트 진단 결과에서 <strong>문제 지점을 자동 특정</strong>하여 산출한다.</p>
+<table>
+<thead>
+<tr>
+<th>체크 유형</th>
+<th>좌표 생성 방법</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>도로 추가</strong> (BR-3, EX-1, EX-6)</td>
+<td>도로 그래프에서 단절 간선(bridge edge) 양쪽 노드를 시작·끝점으로 설정 → 두 노드 사이 <strong>지형 경사가 가장 낮은 경로</strong>를 Landscape 높이맵 기반 A* 탐색 (3~5개 웨이포인트)</td>
+<td>다리 단절 → 강 하류 300m 지점 낮은 지형으로 우회 경로</td>
+</tr>
+<tr>
+<td><strong>건물 제거</strong> (BR-4, EX-5)</td>
+<td>유효 맵 상태에서 밀도 과다 셀의 중심 좌표 → 해당 셀 내 <strong>바닥면적 최소</strong> 건물의 <code>actor_ref</code></td>
+<td>밀집 셀의 가장 작은 건물 제거</td>
+</tr>
+<tr>
+<td><strong>건물 추가</strong> (EX-4, EX-7)</td>
+<td>노출 구간(200m+ 연속 건물 없음)의 <strong>중간 지점</strong> ±50m에 <code>point</code> 좌표 생성</td>
+<td>300m 노출 → 150m 지점에 엄폐 건물</td>
+</tr>
+<tr>
+<td><strong>능선/지형</strong> (BR-5, EX-3)</td>
+<td>거점 주변 <strong>가장 평탄한 200m 구간</strong>의 중심을 시작점, 해당 구간 양 끝을 path 포인트로 설정</td>
+<td>평탄지에 능선 추가</td>
+</tr>
+<tr>
+<td><strong>마커 부여</strong> (BR-10, EX-8~10)</td>
+<td>대상 거점 클러스터의 <strong>무게 중심 좌표</strong> (건물 면적 가중 평균)</td>
+<td>S등급 거점 중심에 잠금 마커</td>
+</tr>
+</tbody>
+</table>
+<p>도로 추가 경로 상세 — A* 기반 웨이포인트 생성:</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[입력: 단절 노드 A, B (UE5 좌표)
+1. A-B 직선을 샘플링 간격으로 샘플링 (맵 규모별 아래 참조)
+2. 각 샘플 지점에서 Landscape 높이 + 건물 AABB 충돌 검사
+3. 충돌 지점을 회피하도록 좌우 50m 이내 대체 지점 탐색
+4. 경사도 = |높이 차 / 수평 거리|, 경사도 최소 경로 선택
+5. 경유점 3~5개로 단순화 (Douglas-Peucker ε=10m)
+출력: path.points_ue5 = [[Ax,Ay], [W1x,W1y], ..., [Bx,By]]
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><strong>대형 맵 성능 스케일링</strong>: 5km 맵에서 10m 간격 시 A-B 거리 1km = 100 샘플 × 건물 충돌 검사. Spatial Hash 사용 시 O(1) 충돌이므로 문제없으나, 제안 카드 여러 개가 동시 생성될 때 병렬화가 필요하다.</p>
+<table>
+<thead>
+<tr>
+<th>맵 반경</th>
+<th>샘플 간격</th>
+<th>최대 A-B 거리</th>
+<th>최대 샘플 수</th>
+<th>단일 경로 비용</th>
+<th>성능 예산</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1km</td>
+<td>10m</td>
+<td>~500m</td>
+<td>50</td>
+<td>&lt; 5ms</td>
+<td>&lt; 50ms (10경로)</td>
+</tr>
+<tr>
+<td>3km</td>
+<td>20m</td>
+<td>~1.5km</td>
+<td>75</td>
+<td>&lt; 8ms</td>
+<td>&lt; 80ms (10경로)</td>
+</tr>
+<tr>
+<td>5km</td>
+<td>30m</td>
+<td>~3km</td>
+<td>100</td>
+<td>&lt; 12ms</td>
+<td>&lt; 120ms (10경로)</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>샘플 간격을 맵 반경에 비례하여 조정(<code>interval = max(10, 맵반경_m / 100)</code>)하면 샘플 수를 ~100으로 제한. Douglas-Peucker의 ε도 비례 조정(<code>ε = interval</code>). 전체 제안 카드(최대 10건)의 도로 경로 생성은 <strong>&lt; 200ms</strong> 목표.
+</ac:rich-text-body></ac:structured-macro>
+<ac:structured-macro ac:name="info"><ac:rich-text-body>모든 좌표는 <strong>유효 맵 상태</strong> 기준으로 산출. 이미 제거된 건물 위치는 빈 공간으로 처리, 이미 추가된 건물은 충돌 대상에 포함.
+</ac:rich-text-body></ac:structured-macro></p>
+<h3>3.6 진단 결과 시각화 — 히트맵</h3>
+<p>체크 결과를 맵 탑뷰에 색상 오버레이로 표시.</p>
+<table>
+<thead>
+<tr>
+<th>표시 모드</th>
+<th>색상</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>건물 밀도</td>
+<td>빨강(과밀)~초록(적정)</td>
+<td>BR-4, EX-4</td>
+</tr>
+<tr>
+<td>도로 연결성</td>
+<td>빨강(단절)~초록(2+경로)</td>
+<td>BR-3, BR-5, EX-1, EX-6</td>
+</tr>
+<tr>
+<td>거점 분포</td>
+<td>마커 위치 + 반경 표시</td>
+<td>BR-1, BR-2, EX-2</td>
+</tr>
+<tr>
+<td>고저차</td>
+<td>등고선 오버레이</td>
+<td>EX-3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>구현</strong>: 분석 결과를 <code>UTexture2D::CreateTransient</code>로 RGBA 텍스처 생성 → <code>ADecalActor</code>로 투영. (기존 LevelTool heightmap 프리뷰 패턴 재사용)</p>
+<h3>3.7 진단 데이터 수집 — 간이 분석 (v1.1 대비 축소)</h3>
+<p>v1.1에서 셀당 108회 Raycast를 계획했으나, <strong>과도</strong>하다고 판단. 간이 방식으로 축소.</p>
+<table>
+<thead>
+<tr>
+<th>분석 항목</th>
+<th>방법</th>
+<th>비용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>건물 밀도</td>
+<td>맵을 50m 격자로 분할 → 각 셀에 겹치는 건물 수 카운트</td>
+<td>buildings.json 파싱만, Raycast 없음</td>
+</tr>
+<tr>
+<td>도로 연결성</td>
+<td>roads.json의 도로 그래프에서 BFS/DFS</td>
+<td>JSON 그래프 탐색, O(V+E)</td>
+</tr>
+<tr>
+<td>거점 거리</td>
+<td>거점 마커 간 유클리드 거리</td>
+<td>단순 계산</td>
+</tr>
+<tr>
+<td>고저차</td>
+<td>heightmap에서 거점 위치 높이 샘플링</td>
+<td>이미지 픽셀 읽기</td>
+</tr>
+<tr>
+<td>가시선 (간이)</td>
+<td>거점 간 직선 위에 건물 존재 여부 확인</td>
+<td>건물 footprint 교차 검사</td>
+</tr>
+</tbody>
+</table>
+<p><strong>전체 분석 시간 목표</strong>: 모든 맵 크기에서 <strong>&lt; 3초</strong>. Raycast 없이 JSON 데이터 분석만으로 수행.</p>
+<h3>3.8 맵 적합도 대시보드</h3>
+<p>슬라이더·프리셋·제안 카드 조작 시, 기획자가 <strong>"지금 어떤 상태인지"</strong>와 <strong>"바꾸면 어떻게 되는지"</strong>를 한눈에 파악할 수 있는 상시 표시 패널.</p>
+<h4>대시보드 구성 — 2종 지표</h4>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>질문</th>
+<th>산출 방식</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>① 설계 기준 적합도</strong></td>
+<td>"이 맵이 BR/EX로서 제대로 동작하는가?"</td>
+<td>체크리스트 항목별 <strong>가중 합산</strong> (레퍼런스 빈도 기반)</td>
+</tr>
+<tr>
+<td><strong>② 레퍼런스 유사도</strong></td>
+<td>"이 맵이 어떤 게임 느낌인가?"</td>
+<td>슬라이더 5값을 레퍼런스 프리셋 값과 <strong>유클리드 거리 비교</strong></td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>이 두 지표는 역할이 다르다. ①은 "문제점 발견 → 수정 가이드", ②는 "방향성 확인 → 의도 이탈 감지". 단순 점수 매기기가 아니라 <strong>기획 의사결정 지원 대시보드</strong>이다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>① 설계 기준 적합도 — 가중 합산</h4>
+<p>체크리스트 각 항목에 <strong>"몇 개의 레퍼런스 맵에서 공통으로 나타나는가"</strong>를 가중치로 부여.</p>
+<p><strong>BR 체크리스트 가중치 (6맵 기준)</strong></p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>공통 맵 수</th>
+<th>가중치</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BR-1 거점 분산</td>
+<td>6/6</td>
+<td>15</td>
+<td>Erangel~Verdansk 전부 S~C 등급 이격 설계</td>
+</tr>
+<tr>
+<td>BR-2 루트 그래디언트</td>
+<td>6/6</td>
+<td>15</td>
+<td>전부 중앙=위험=고루트</td>
+</tr>
+<tr>
+<td>BR-3 병목 우회로</td>
+<td>6/6</td>
+<td>15</td>
+<td>전부 병목+대안 경로 쌍</td>
+</tr>
+<tr>
+<td>BR-4 개방/폐쇄 혼합</td>
+<td>6/6</td>
+<td>12</td>
+<td>전부 교전 거리 다양화</td>
+</tr>
+<tr>
+<td>BR-5 엄폐물 테마</td>
+<td>6/6</td>
+<td>8</td>
+<td>전부 테마별 엄폐물 존재</td>
+</tr>
+<tr>
+<td>BR-6 차량 이동 경로</td>
+<td>5/6</td>
+<td>8</td>
+<td>Sanhok 제외 (도보 가능)</td>
+</tr>
+<tr>
+<td>BR-7 수축 형평성</td>
+<td>6/6</td>
+<td>10</td>
+<td>전부 완전 차단 금지</td>
+</tr>
+<tr>
+<td>BR-8 크기별 밀도</td>
+<td>6/6</td>
+<td>7</td>
+<td>전부 크기-밀도 비례</td>
+</tr>
+<tr>
+<td>BR-9 수직 전투</td>
+<td>3/6</td>
+<td>5</td>
+<td>Verdansk, Miramar, Taego</td>
+</tr>
+<tr>
+<td>BR-10 탐험 리워드</td>
+<td>4/6</td>
+<td>5</td>
+<td>Erangel, Taego, Vikendi, Verdansk</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td><strong>합계 100</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>채점</strong>: Pass=가중치 × 1.0, Warning=가중치 × 0.5, Fail=0</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body><strong>적합도 100점의 의미</strong>: 적합도 100은 "완벽한 맵"이 아니라, <strong>"체크리스트 전 항목이 Pass"</strong>임을 뜻한다. 체크리스트는 레퍼런스 맵에서 공통으로 관찰되는 <strong>최소 설계 기준</strong>을 검증하므로, 100점 = "기본기가 갖춰진 맵". 기획자의 독창적 판단(예: 의도적 병목, 극단적 밀도)은 체크리스트 점수 밖의 영역이며, 대시보드는 이를 방해하지 않고 <strong>왜 감점인지 사유만 제시</strong>한다. 점수가 낮아도 의도된 설계라면 무시해도 좋다.
+</ac:rich-text-body></ac:structured-macro>
+<strong>EX 체크리스트 가중치 (9맵 기준)</strong></p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>공통 맵 수</th>
+<th>가중치</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EX-1 탈출 루트 복수성</td>
+<td>9/9</td>
+<td>15</td>
+<td>전부 추출 경로 2개+</td>
+</tr>
+<tr>
+<td>EX-2 위험=보상 비례</td>
+<td>9/9</td>
+<td>15</td>
+<td>전부 고루트=고위험</td>
+</tr>
+<tr>
+<td>EX-3 수직 전투</td>
+<td>8/9</td>
+<td>10</td>
+<td>Hunt 제외 (평면적)</td>
+</tr>
+<tr>
+<td>EX-4 은신 루트</td>
+<td>9/9</td>
+<td>12</td>
+<td>전부 은신/우회 경로 존재</td>
+</tr>
+<tr>
+<td>EX-5 추출 긴장감</td>
+<td>7/9</td>
+<td>8</td>
+<td>ARC 5맵 + Tarkov 부분</td>
+</tr>
+<tr>
+<td>EX-6 회전 경로</td>
+<td>9/9</td>
+<td>10</td>
+<td>전부 거점 간 다중 경로</td>
+</tr>
+<tr>
+<td>EX-7 솔로/스쿼드 분리</td>
+<td>7/9</td>
+<td>8</td>
+<td>대부분 외곽 솔로 루트</td>
+</tr>
+<tr>
+<td>EX-8 잠금 루트</td>
+<td>7/9</td>
+<td>7</td>
+<td>Hunt 제외 (바운티 구조)</td>
+</tr>
+<tr>
+<td>EX-9 소음 트리거</td>
+<td>5/9</td>
+<td>8</td>
+<td>Hunt(극도), Tarkov 3맵, ARC 일부</td>
+</tr>
+<tr>
+<td>EX-10 AI/PvE 구역</td>
+<td>6/9</td>
+<td>7</td>
+<td>Hunt, Tarkov 3맵, ARC 2맵</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td><strong>합계 100</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4>② 레퍼런스 유사도 — 프리셋 거리</h4>
+<p>현재 맵의 슬라이더 5값과 각 레퍼런스 프리셋 값 사이의 <strong>정규화 유클리드 거리</strong>를 산출.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[distance = √( Σ ((현재값ᵢ - 프리셋값ᵢ) / 100)² )    (i = 5개 슬라이더)
+similarity = max(0, (1 - distance / √5)) × 100%
+]]></ac:plain-text-body></ac:structured-macro></p>
+<table>
+<thead>
+<tr>
+<th>예시</th>
+<th>현재 맵 (밀도,개방,동선,고저차,파괴)</th>
+<th>Erangel (40,60,50,40,10)</th>
+<th>거리</th>
+<th>유사도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>프리셋 직후</td>
+<td>(40,60,50,40,10)</td>
+<td>—</td>
+<td>0</td>
+<td><strong>100%</strong></td>
+</tr>
+<tr>
+<td>밀도 +15</td>
+<td>(55,60,50,40,10)</td>
+<td>—</td>
+<td>0.15</td>
+<td><strong>93%</strong></td>
+</tr>
+<tr>
+<td>밀도 +30, 개방 -20</td>
+<td>(70,40,50,40,10)</td>
+<td>—</td>
+<td>0.36</td>
+<td><strong>84%</strong></td>
+</tr>
+</tbody>
+</table>
+<p>표시: <strong>"가장 유사: Erangel (84%)"</strong> + 2순위 <strong>"Sanhok (71%)"</strong></p>
+<h4>대시보드 UI</h4>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[┌─── 맵 적합도 대시보드 ──────────────────────────┐
+│                                                  │
+│  BR 설계 기준 적합도:    72 / 100                 │
+│  [████████████████░░░░]                          │
+│                                                  │
+│  최대 감점:                                       │
+│  ❌ BR-3 병목 우회로    (-15)                     │
+│  ⚠️ BR-9 수직 전투      (-2.5)                    │
+│                                                  │
+│  ─────────────────────────                       │
+│                                                  │
+│  가장 유사한 레퍼런스:                             │
+│  1위 Erangel  84%  ████████░░                    │
+│  2위 Sanhok   71%  ███████░░░                    │
+│  3위 Verdansk 52%  █████░░░░░                    │
+│                                                  │
+│  ─────────────────────────                       │
+│  💡 밀도 53→70 적용 시 예상:                      │
+│     적합도: 72 → 78 (+6)                         │
+│     Erangel: 84% → 79% (-5)                     │
+│     Sanhok:  71% → 82% (+11) ← 방향 이동         │
+│                                                  │
+└──────────────────────────────────────────────────┘
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h4>대시보드 ↔ 뷰포트 인과 연결</h4>
+<p>대시보드에서 체크 항목을 클릭하면, 해당 항목의 <strong>원인 지점을 뷰포트에서 시각적으로 강조</strong>한다. 기획자가 "왜 점수가 떨어졌는지"를 공간적으로 즉시 파악할 수 있다.</p>
+<table>
+<thead>
+<tr>
+<th>대시보드 클릭 대상</th>
+<th>뷰포트 동작</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>감점 항목</strong> (예: ❌ BR-3)</td>
+<td>카메라를 문제 지점으로 <strong>자동 이동</strong> + 해당 영역 <strong>주황 원형 하이라이트</strong></td>
+<td>BR-3 클릭 → 단절 다리 위치로 카메라 이동, 단절 간선 양쪽 50m 원형 표시</td>
+</tr>
+<tr>
+<td><strong>제안 카드</strong></td>
+<td>제안 카드의 <code>area.points_ue5</code>를 뷰포트에 <strong>초록 점선으로 표시</strong> + 카메라 이동</td>
+<td>우회 도로 제안 → 도로 경로 점선 + 시작·끝점 마커</td>
+</tr>
+<tr>
+<td><strong>개선 항목</strong> (예: +6 밀도)</td>
+<td>변경으로 영향받는 <strong>건물 목록 하이라이트</strong> (추가=초록, 제거=빨강)</td>
+<td>밀도 +6 클릭 → 추가 예정 건물 15개 초록 하이라이트</td>
+</tr>
+<tr>
+<td><strong>레퍼런스 유사도 바</strong></td>
+<td>해당 레퍼런스 프리셋의 추천 좌표 위치를 미니맵에 <strong>핀 표시</strong></td>
+<td>Erangel 84% 클릭 → 미니맵에 상트페테르부르크 좌표 핀</td>
+</tr>
+</tbody>
+</table>
+<p>구현: 체크리스트 결과(<code>check_report.json</code>)의 각 항목에 <code>"focus_location_ue5": [x,y,z]</code>와 <code>"highlight_actors": ["Building_042", ...]</code> 필드를 포함시킨다. 대시보드 클릭 시 <code>FEditorViewportClient::SetViewLocation()</code> + <code>SetRenderCustomDepth</code> 호출.</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>"보기만 하는 대시보드"가 아닌 <strong>"클릭하면 문제 지점으로 안내하는 대시보드"</strong>. 이로써 수치(대시보드)→공간(뷰포트)→행동(슬라이더/프리셋) 흐름이 끊기지 않는다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>변경 전 프리뷰 (시뮬레이션)</h4>
+<p>슬라이더를 드래그하거나 프리셋 버튼에 마우스를 올릴 때, <strong>적용하지 않고</strong> 예상 결과를 표시.</p>
+<table>
+<thead>
+<tr>
+<th>시점</th>
+<th>동작</th>
+<th>비용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>슬라이더 드래그 중</strong></td>
+<td>슬라이더 값만으로 ② 유사도 즉시 계산 (5차원 거리)</td>
+<td>&lt; 1ms</td>
+</tr>
+<tr>
+<td><strong>슬라이더 릴리즈 전</strong></td>
+<td>변경될 Edit Layer를 JSON 레벨에서 시뮬레이션 → ① 적합도 예상</td>
+<td>&lt; 500ms</td>
+</tr>
+<tr>
+<td><strong>적용 후</strong></td>
+<td>실제 Actor 배치 후 체크리스트 실행 → ① 적합도 확정</td>
+<td>&lt; 3초</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body><strong>유사도는 슬라이더 값만으로 산출</strong>하므로 실시간 프리뷰 가능. <strong>적합도는 체크리스트 시뮬레이션</strong>이 필요하므로 릴리즈 시 또는 적용 후 갱신.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>오차 범위</h4>
+<p>예상 적합도와 확정 적합도 사이에 오차가 발생할 수 있다.</p>
+<table>
+<thead>
+<tr>
+<th>오차 원인</th>
+<th>영향</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>건물 배치 충돌 (일부 스킵)</td>
+<td>밀도·개방도 차이</td>
+<td>예상값에 "±5" 오차 범위 표시</td>
+</tr>
+<tr>
+<td>지형 간섭 (도로 경사)</td>
+<td>동선 복잡도 차이</td>
+<td>동일</td>
+</tr>
+<tr>
+<td>건물 제거 연쇄 효과</td>
+<td>시야 변경</td>
+<td>동일</td>
+</tr>
+</tbody>
+</table>
+<p>UI 표시: <strong>"적합도: ~78 (±5)"</strong> → 적용 후 <strong>"적합도: 75 (확정)"</strong></p>
+<h4>예측 오차 보정</h4>
+<p>반복 사용 시 예측 정확도를 높이기 위한 자동 보정:</p>
+<table>
+<thead>
+<tr>
+<th>메커니즘</th>
+<th>동작</th>
+<th>조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>이력 기반 보정</strong></td>
+<td>최근 5회 적용의 (예상-확정) 오차 평균을 다음 예측에 보정값으로 반영</td>
+<td><code>보정된 예상 = 예상값 + 평균_오차</code></td>
+</tr>
+<tr>
+<td><strong>충돌률 학습</strong></td>
+<td>슬라이더 적용 시 건물 배치 충돌 비율을 기록 → 다음 예측에서 "추가 예정 건물 수 × (1 - 충돌률)"로 보정</td>
+<td>밀도 증가 시에만</td>
+</tr>
+<tr>
+<td><strong>오차 범위 동적 조정</strong></td>
+<td>이력 오차의 표준편차를 기반으로 ±범위를 동적 조정 (최소 ±2, 최대 ±10)</td>
+<td>적용 5회 이상 후</td>
+</tr>
+</tbody>
+</table>
+<p>이력 저장: <code>map_meta.json</code>의 <code>"prediction_history": [{"predicted": 78, "actual": 75}, ...]</code></p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>보정은 <strong>같은 맵 내</strong>에서만 유효. 새 맵에서는 이력 초기화되어 기본 ±5에서 시작.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>v1.1 Gameplay Score와의 차이</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>v1.1 Gameplay Score (삭제)</th>
+<th>v3.7 맵 적합도 대시보드</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>산출 방식</td>
+<td>자체 수학 공식 (가중 합, 정규화)</td>
+<td><strong>기존 체크리스트 결과 집계</strong></td>
+</tr>
+<tr>
+<td>새 알고리즘</td>
+<td>필요</td>
+<td><strong>불필요</strong> (체크리스트 재사용)</td>
+</tr>
+<tr>
+<td>기준 근거</td>
+<td>자체 정의</td>
+<td><strong>레퍼런스 15종에서 도출</strong></td>
+</tr>
+<tr>
+<td>역할</td>
+<td>"점수로 맵 품질 판정"</td>
+<td>"기획 의사결정 지원 대시보드"</td>
+</tr>
+<tr>
+<td>기획자 행동</td>
+<td>점수를 올리는 것이 목표</td>
+<td>정보 확인 후 <strong>기획자가 판단</strong></td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2>공통 사항</h2>
+<h3>내부 메커니즘 — Edit Layer Stack</h3>
+<p>기획자가 직접 다루지 않지만, 슬라이더·프리셋·제안 카드 조작 시 내부적으로 생성되는 비파괴 레이어 시스템.</p>
+<h4>레이어 스키마 (<code>layers.json</code>)</h4>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "version": "3.0",
+  "map_id": "종로_base_20260319",
+  "layers": [
+    {
+      "layer_id": "uuid-...",
+      "type": "terrain_modify | building_add | building_remove | building_height | road_block | road_add | road_width | destruction_state | marker",
+      "area": {
+        "type": "polygon | circle | point | path | actor_ref",
+        "data": {}
+      },
+      "params": {},
+      "label": "자동 생성 이름 (예: [슬라이더] 밀도 70→40 건물제거 #3)",
+      "locked": false,
+      "visible": true,
+      "created_by": "slider | preset | reference_preset | ai_suggest"
+    }
+  ]
+}
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h4><code>area.data</code> 하위 스키마</h4>
+<table>
+<thead>
+<tr>
+<th>area.type</th>
+<th>data 포맷</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>polygon</code></td>
+<td><code>{ "points_ue5": [[x,y], [x,y], ...] }</code></td>
+<td>영역 선택 (광장 개방 등)</td>
+</tr>
+<tr>
+<td><code>circle</code></td>
+<td><code>{ "center_ue5": [x,y], "radius_cm": 10000 }</code></td>
+<td>반경 선택 (슬라이더 지형 수정)</td>
+</tr>
+<tr>
+<td><code>point</code></td>
+<td><code>{ "location_ue5": [x,y,z] }</code></td>
+<td>건물 추가 위치</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td><code>{ "points_ue5": [[x,y], [x,y], ...], "width_cm": 600 }</code></td>
+<td>도로 추가/능선 경로</td>
+</tr>
+<tr>
+<td><code>actor_ref</code></td>
+<td><code>{ "actor_id": "Building_042" }</code></td>
+<td>기존 건물/도로 참조</td>
+</tr>
+</tbody>
+</table>
+<h4>type별 params 정의</h4>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>params</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>terrain_modify</code></td>
+<td><code>{ "operation": "offset\|flatten\|ridge", "height_delta_cm": 500, "falloff": "smooth", "strength": 0.8 }</code></td>
+<td>지형 고도 변경</td>
+</tr>
+<tr>
+<td><code>building_add</code></td>
+<td><code>{ "type_key": "Residential_Mid", "height_m": 15, "rotation_deg": 45, "destruction_state": "intact" }</code></td>
+<td>건물 생성</td>
+</tr>
+<tr>
+<td><code>building_remove</code></td>
+<td><code>{ "keep_foundation": false }</code></td>
+<td>건물 제거</td>
+</tr>
+<tr>
+<td><code>building_height</code></td>
+<td><code>{ "scale_factor": 1.5 }</code></td>
+<td>건물 Z 스케일</td>
+</tr>
+<tr>
+<td><code>destruction_state</code></td>
+<td><code>{ "new_state": "partial\|destroyed" }</code></td>
+<td>파괴 상태 변경</td>
+</tr>
+<tr>
+<td><code>road_block</code></td>
+<td><code>{ "obstacle_type": "barricade\|rubble\|vehicle", "passable_on_foot": true }</code></td>
+<td>도로 장애물</td>
+</tr>
+<tr>
+<td><code>road_add</code></td>
+<td><code>{ "road_type": "major\|minor\|path", "width_m": 6 }</code></td>
+<td>도로 생성</td>
+</tr>
+<tr>
+<td><code>road_width</code></td>
+<td><code>{ "width_delta_m": -2, "min_width_m": 2 }</code></td>
+<td>도로 폭 변경</td>
+</tr>
+<tr>
+<td><code>marker</code></td>
+<td><code>{ "marker_type": "...", ... }</code> (아래 마커 상세 참조)</td>
+<td>메타데이터 마커</td>
+</tr>
+</tbody>
+</table>
+<h4>마커(Marker) 레이어 — 게임플레이 메타데이터</h4>
+<p>마커는 지형·건물·도로를 물리적으로 변경하지 않는 <strong>메타데이터 태그</strong>이다. EX 체크리스트(EX-5, EX-8~10)와 BR 체크리스트(BR-10)가 마커 존재를 기준으로 진단한다.</p>
+<table>
+<thead>
+<tr>
+<th>marker_type</th>
+<th>params</th>
+<th>용도</th>
+<th>관련 체크</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>extraction_point</code></td>
+<td><code>{ "marker_type": "extraction_point", "label": "북쪽 추출" }</code></td>
+<td>추출/탈출 지점</td>
+<td>EX-1, EX-5</td>
+</tr>
+<tr>
+<td><code>lock_marker</code></td>
+<td><code>{ "marker_type": "lock_marker", "lock_type": "key\|fuel\|code", "target_actor": "Building_034" }</code></td>
+<td>열쇠/잠금 필요 지점</td>
+<td>EX-8, BR-10</td>
+</tr>
+<tr>
+<td><code>noise_trigger</code></td>
+<td><code>{ "marker_type": "noise_trigger", "noise_type": "glass\|birds\|metal_floor\|water_splash", "radius_m": 20 }</code></td>
+<td>소음 발생 지점</td>
+<td>EX-9</td>
+</tr>
+<tr>
+<td><code>ai_zone</code></td>
+<td><code>{ "marker_type": "ai_zone", "ai_type": "patrol\|boss\|ambient", "threat_level": "low\|mid\|high" }</code></td>
+<td>AI 위협 구역</td>
+<td>EX-10</td>
+</tr>
+<tr>
+<td><code>exploration_reward</code></td>
+<td><code>{ "marker_type": "exploration_reward", "reward_type": "secret_room\|loot_cache\|quest_item" }</code></td>
+<td>탐험 리워드</td>
+<td>BR-10</td>
+</tr>
+</tbody>
+</table>
+<p>마커의 <code>area</code>는 항상 <code>point</code> 또는 <code>actor_ref</code> 타입이다.</p>
+<p>뷰포트 표시: 마커는 <code>ABillboardComponent</code> + 아이콘으로 표시한다.</p>
+<table>
+<thead>
+<tr>
+<th>marker_type</th>
+<th>아이콘 색상</th>
+<th>기호</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>extraction_point</code></td>
+<td>초록</td>
+<td>▲</td>
+</tr>
+<tr>
+<td><code>lock_marker</code></td>
+<td>노랑</td>
+<td>🔒</td>
+</tr>
+<tr>
+<td><code>noise_trigger</code></td>
+<td>주황</td>
+<td>♪</td>
+</tr>
+<tr>
+<td><code>ai_zone</code></td>
+<td>빨강</td>
+<td>☠</td>
+</tr>
+<tr>
+<td><code>exploration_reward</code></td>
+<td>보라</td>
+<td>★</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>마커는 에디터 전용이며 게임 런타임에 직접 영향을 주지 않는다. 게임 로직 연동이 필요하면 마커 좌표를 별도 JSON(<code>markers.json</code>)으로 내보내서 게임 시스템이 참조하도록 한다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>지형 스냅샷 복원</h4>
+<p>Landscape Heightmap 수정은 본질적으로 파괴적이므로, <code>terrain_modify</code> 레이어 적용 시 <strong>스냅샷</strong>을 저장하여 비파괴성을 보장한다.</p>
+<table>
+<thead>
+<tr>
+<th>시점</th>
+<th>동작</th>
+<th>데이터</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>적용 <strong>전</strong></td>
+<td>영향 영역 Heightmap 텍셀 복사</td>
+<td><code>snapshot_before</code>: 영역 좌표 + uint16 높이값 배열</td>
+</tr>
+<tr>
+<td>적용 <strong>후</strong></td>
+<td>Landscape에 반영</td>
+<td><code>snapshot_after</code>: 수정된 높이값 배열</td>
+</tr>
+<tr>
+<td>레이어 <strong>숨김</strong></td>
+<td><code>snapshot_before</code>로 Heightmap 복원</td>
+<td>—</td>
+</tr>
+<tr>
+<td>레이어 <strong>보이기</strong></td>
+<td><code>snapshot_after</code>로 재적용</td>
+<td>—</td>
+</tr>
+<tr>
+<td>레이어 <strong>삭제</strong></td>
+<td><code>snapshot_before</code>로 복원 후 스냅샷 삭제</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>저장 경로: <code>{ProjectDir}/Saved/LevelTool/EditLayers/{map_id}/snapshots/{layer_id}.bin</code><br />
+포맷: 바이너리 (영역 바운드 + uint16 배열). 50m 반경 기준 약 10~50 KB.</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>지형 레이어가 여러 개 겹칠 경우, 토글 시 <strong>전체 지형 레이어를 아래→위 순서로 재적용</strong>한다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>지형-건물/도로 Z 동기화</h4>
+<p><code>terrain_modify</code> 레이어 적용 시, 영향 영역 내 건물·도로 Actor의 Z 좌표가 지형 변화에 맞지 않으면 공중 부유 또는 매몰이 발생한다.</p>
+<p><strong>동기화 규칙</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>대상</th>
+<th>동기화 방법</th>
+<th>시점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>기존 건물</strong> (1단계)</td>
+<td>건물 pivot의 XY 좌표에서 <code>ALandscapeProxy::GetHeightAtLocation()</code> → 건물 Z 좌표 갱신</td>
+<td><code>terrain_modify</code> 적용 직후</td>
+</tr>
+<tr>
+<td><strong>추가 건물</strong> (2단계)</td>
+<td>배치 시점에 이미 수정된 지형 기준으로 Z 산출 → 추가 동기화 불필요</td>
+<td><code>building_add</code> 적용 시</td>
+</tr>
+<tr>
+<td><strong>도로</strong></td>
+<td><code>ProceduralMeshComponent</code> 버텍스의 Z를 Landscape 높이에 재스냅 (Spline 기반: 컨트롤 포인트 Z 갱신 → 메쉬 리빌드)</td>
+<td><code>terrain_modify</code> 적용 직후</td>
+</tr>
+<tr>
+<td><strong>terrain_modify 숨김/삭제</strong></td>
+<td>스냅샷 복원 후, 영향 영역 건물·도로 Z를 <strong>원래 높이로 복원</strong></td>
+<td>토글/삭제 시</td>
+</tr>
+</tbody>
+</table>
+<p>구현: <code>terrain_modify</code> 레이어에 <code>affected_actors[]</code> 배열을 런타임으로 관리. 적용 시 영향 영역 내 Actor를 수집하고, 복원 시 원래 Z를 되돌린다.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[// terrain_modify 적용 후
+for actor in GetActorsInArea(layer.area):
+    actor.original_z = actor.GetActorLocation().Z
+    new_z = Landscape->GetHeightAtLocation(actor.XY)
+    actor.SetActorLocation(FVector(actor.X, actor.Y, new_z))
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h4>파괴 상태 시각 표현</h4>
+<p><code>destruction_state</code> 변경 시 건물의 시각적 외관이 달라져야 한다.</p>
+<table>
+<thead>
+<tr>
+<th>상태</th>
+<th>메쉬 처리</th>
+<th>추가 요소</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>intact</code></td>
+<td>원본 <code>FBuildingMeshEntry</code> 메쉬 그대로</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>partial</code></td>
+<td>원본 메쉬 유지 + <strong>스케일 Z×0.85</strong> (상층부 손상 표현) + 상단에 <strong>잔해 데칼</strong> 적용</td>
+<td>건물 기저에 <code>SM_Rubble_Small</code> 1~2개 스폰</td>
+</tr>
+<tr>
+<td><code>destroyed</code></td>
+<td>원본 메쉬를 <strong>SM_Foundation</strong> (바닥 기초)로 교체 + 잔해 더미 <strong>SM_Rubble_Large</strong> 배치</td>
+<td><code>keep_foundation=true</code>면 기초 유지, <code>false</code>면 완전 제거</td>
+</tr>
+</tbody>
+</table>
+<p>잔해 메쉬 매핑 (<code>ULevelToolBuildingPool</code> 확장):</p>
+<table>
+<thead>
+<tr>
+<th>메쉬 ID</th>
+<th>용도</th>
+<th>크기</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SM_Foundation</code></td>
+<td>파괴 건물 바닥 기초</td>
+<td>원본 footprint 동일</td>
+</tr>
+<tr>
+<td><code>SM_Rubble_Small</code></td>
+<td>부분 파괴 잔해</td>
+<td>2m × 2m × 1m</td>
+</tr>
+<tr>
+<td><code>SM_Rubble_Large</code></td>
+<td>완전 파괴 잔해 더미</td>
+<td>원본 footprint × 0.5, 높이 2~3m</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>잔해 메쉬는 <strong>엄폐물 역할</strong>을 하므로 게임플레이에 영향. BR/EX 체크리스트의 "엄폐물 테마 적합성" 항목에서 잔해도 엄폐물로 카운트한다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>Undo/Redo</h4>
+<p>모든 레이어 조작은 <code>FScopedTransaction</code>으로 감싸서 Ctrl+Z/Y 지원.</p>
+<p><strong>Transaction 그룹핑 단위</strong>: 하나의 기획자 행동 = 하나의 Undo 단위.</p>
+<table>
+<thead>
+<tr>
+<th>기획자 행동</th>
+<th>생성 레이어 수</th>
+<th>Ctrl+Z 1회 결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>슬라이더 드래그→릴리즈</td>
+<td>N개 (건물 제거/추가)</td>
+<td>N개 레이어 <strong>전체 취소</strong></td>
+</tr>
+<tr>
+<td>프리셋 버튼 클릭</td>
+<td>3~5개 (세트)</td>
+<td>프리셋 세트 <strong>전체 취소</strong></td>
+</tr>
+<tr>
+<td>레퍼런스 프리셋 적용</td>
+<td>5개 (슬라이더 5종)</td>
+<td>5개 레이어 <strong>전체 취소</strong></td>
+</tr>
+<tr>
+<td>제안 카드 [수락] (개별)</td>
+<td>1개</td>
+<td>해당 레이어 취소</td>
+</tr>
+<tr>
+<td>제안 카드 <strong>일괄 수락</strong> (EX 마커 등)</td>
+<td>N개</td>
+<td>N개 레이어 <strong>전체 취소</strong></td>
+</tr>
+<tr>
+<td>레이어 보기/숨기기 토글</td>
+<td>0 (상태 변경)</td>
+<td>토글 상태 복원</td>
+</tr>
+<tr>
+<td>단건 편집 (우클릭 메뉴)</td>
+<td>1개</td>
+<td>해당 레이어 취소</td>
+</tr>
+</tbody>
+</table>
+<p><strong>일괄 수락 규칙</strong>: EX 2단계 진단에서 마커 제안이 여러 개 동시에 표시될 때, 기획자가 <strong>[모두 수락]</strong> 버튼을 사용하면 전체 마커 제안을 <strong>1 Transaction</strong>으로 묶는다. 개별 [수락] 버튼은 각각 별도 Transaction.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[┌─── 마커 제안 (6건) ───────────────────────┐
+│ ✅ extraction_point — 남쪽 관리동    [수락] │
+│ ✅ extraction_point — 북쪽 탈출로    [수락] │
+│ ✅ noise_trigger — 발전소 입구       [수락] │
+│ ✅ noise_trigger — 댐 벽 통로        [수락] │
+│ ✅ lock_marker — 산장               [수락] │
+│ ✅ ai_zone — 발전소 지하             [수락] │
+│                                            │
+│         [모두 수락]    [모두 거절]           │
+└────────────────────────────────────────────┘
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p>구현: <code>FScopedTransaction</code> 1개를 기획자 행동 시작 시 생성하고, 해당 행동에서 생성되는 모든 레이어를 같은 Transaction 안에 포함시킨다.</p>
+<h4>유효 맵 상태 (Effective Map State) 재구성</h4>
+<p>2~3단계의 모든 분석(슬라이더 초기값 산출, 체크리스트 진단, 히트맵 생성, 대시보드 산출)은 <strong>1단계 원본 데이터가 아니라 Edit Layer가 반영된 유효 상태</strong>를 기준으로 수행해야 한다.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[[1단계 원본]          [Edit Layer Stack]          [유효 맵 상태]
+buildings.json   +   building_add/remove/height   →  effective_buildings[]
+roads.json       +   road_add/block/width         →  effective_roads (graph)
+heightmap.png    +   terrain_modify snapshots      →  effective_heightmap
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><strong>재구성 절차</strong> (<code>UEditLayerManager::RebuildEffectiveState</code>)</p>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>동작</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>buildings.json</code> 로드 → 전체 건물 목록 생성</td>
+<td><code>TArray&lt;FEffectiveBuilding&gt;</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>visible=true</code>인 레이어를 아래→위 순서로 순회</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3-a</td>
+<td><code>building_remove</code> → 대상 건물을 목록에서 제거 (또는 <code>keep_foundation</code> 시 상태만 변경)</td>
+<td>건물 감소</td>
+</tr>
+<tr>
+<td>3-b</td>
+<td><code>building_add</code> → 새 건물을 목록에 추가</td>
+<td>건물 증가</td>
+</tr>
+<tr>
+<td>3-c</td>
+<td><code>building_height</code> → 대상 건물의 높이 스케일 갱신</td>
+<td>높이 변경</td>
+</tr>
+<tr>
+<td>3-d</td>
+<td><code>destruction_state</code> → 대상 건물의 파괴 상태 갱신</td>
+<td>상태 변경</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>roads.json</code> 로드 → 도로 그래프 생성</td>
+<td><code>FEffectiveRoadGraph</code></td>
+</tr>
+<tr>
+<td>5-a</td>
+<td><code>road_block</code> → 해당 간선의 <code>passable</code> 속성 변경 (foot-only 또는 완전 차단)</td>
+<td>간선 수정</td>
+</tr>
+<tr>
+<td>5-b</td>
+<td><code>road_add</code> → 새 노드+간선 추가</td>
+<td>그래프 확장</td>
+</tr>
+<tr>
+<td>5-c</td>
+<td><code>road_width</code> → 해당 간선의 폭 속성 변경</td>
+<td>속성 수정</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Landscape Heightmap은 이미 스냅샷으로 실시간 반영 → 추가 재구성 불필요</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>호출 시점</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>이벤트</th>
+<th>재구성 대상</th>
+<th>사유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>슬라이더 초기값 산출</td>
+<td>buildings + roads</td>
+<td>현재 상태 기준 0~100 환산</td>
+</tr>
+<tr>
+<td>체크리스트 진단 실행</td>
+<td>buildings + roads</td>
+<td>유효 건물·도로 기준 분석</td>
+</tr>
+<tr>
+<td>히트맵 생성</td>
+<td>buildings + roads</td>
+<td>유효 데이터 기준 시각화</td>
+</tr>
+<tr>
+<td>대시보드 적합도 확정</td>
+<td>buildings + roads</td>
+<td>유효 데이터 기준 채점</td>
+</tr>
+<tr>
+<td>대시보드 적합도 <strong>시뮬레이션</strong></td>
+<td>buildings + roads (가상)</td>
+<td>레이어 적용 전 가상 재구성</td>
+</tr>
+</tbody>
+</table>
+<p><strong>성능</strong>: 건물 500개 + 도로 3000 엣지 기준 재구성 &lt; 100ms. JSON 파싱이 아닌 메모리 내 <code>TArray</code> 순회이므로 캐싱 불필요. 레이어 변경 시마다 즉시 재구성.</p>
+<p><strong>캐싱 전략</strong>: 레이어 변경이 없으면 이전 결과를 재사용. <code>layers.json</code>의 해시(레이어 수 + 마지막 layer_id)를 캐시 키로 사용.</p>
+<h4>레이어 누적/병합 정책</h4>
+<p>슬라이더를 반복 조정하면 "제거 → 추가 → 다시 제거" 레이어가 누적된다. 관리 복잡도를 제한하기 위한 정책:</p>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>정책</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>동일 슬라이더 재조정</strong></td>
+<td>이전 슬라이더 레이어를 <strong>교체</strong> (삭제 후 새로 생성)</td>
+<td>밀도 82→40 레이어 삭제 → 밀도 82→55 레이어 새로 생성</td>
+</tr>
+<tr>
+<td><strong>다른 슬라이더 조정</strong></td>
+<td>별도 레이어 <strong>추가</strong> (독립 관계)</td>
+<td>밀도 레이어 + 개방도 레이어 공존</td>
+</tr>
+<tr>
+<td><strong>프리셋 재적용</strong></td>
+<td>이전 프리셋 레이어 세트를 <strong>교체</strong></td>
+<td>"저격 포인트 #1,#2,#3" 삭제 → 새 세트 생성</td>
+</tr>
+<tr>
+<td><strong>제안 카드 수락</strong></td>
+<td>항상 <strong>추가</strong> (독립 레이어)</td>
+<td>기존 레이어에 영향 없음</td>
+</tr>
+</tbody>
+</table>
+<p>교체 시 <code>label</code>의 <code>created_by</code> + 슬라이더 ID 조합으로 이전 레이어를 식별한다.</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "created_by": "slider",
+  "source_id": "urban_density",
+  "generation": 2
+}
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><code>source_id</code>가 같은 레이어가 이미 존재하면 교체. <code>generation</code>은 교체 횟수를 추적한다.</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>이 정책으로 슬라이더 5종 × 1레이어 세트 + 프리셋 N개 + 제안 카드 M개 = <strong>최대 5+N+M개</strong>로 레이어 수가 제한된다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>배치 레이어 — 동일 타입 레이어 일괄화</h4>
+<p>밀도 슬라이더 1회 조정으로 <code>building_add</code> 200개+ 레이어가 생성될 수 있다. 개별 레이어는 건물별 보기/숨기기가 가능하지만, <code>layers.json</code> 크기와 직렬화 성능에 부담이 된다. 이를 해소하기 위한 <strong>배치 레이어(Batch Layer)</strong> 옵션:</p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "layer_id": "uuid-batch-...",
+  "type": "building_add_batch",
+  "batch_items": [
+    { "location_ue5": [x1,y1,z1], "type_key": "Residential_Mid", "height_m": 12, "rotation_deg": 30 },
+    { "location_ue5": [x2,y2,z2], "type_key": "Industrial", "height_m": 8, "rotation_deg": 90 },
+    ...
+  ],
+  "label": "[슬라이더] 밀도 10→40 건물추가 (261건)",
+  "created_by": "slider",
+  "source_id": "urban_density"
+}
+]]></ac:plain-text-body></ac:structured-macro></p>
+<table>
+<thead>
+<tr>
+<th>모드</th>
+<th>레이어 수</th>
+<th>개별 제어</th>
+<th>JSON 크기</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>개별 모드</strong> (기본)</td>
+<td>건물당 1개</td>
+<td>✅ 건물별 보기/숨기기·삭제</td>
+<td>큼 (261 레이어)</td>
+<td>세밀한 조정이 필요할 때</td>
+</tr>
+<tr>
+<td><strong>배치 모드</strong></td>
+<td>슬라이더당 1개</td>
+<td>❌ 전체 일괄 ON/OFF만</td>
+<td>작음 (1 레이어)</td>
+<td>빠른 프로토타이핑, 대형 맵</td>
+</tr>
+</tbody>
+</table>
+<p>전환: 레이어 그룹 헤더의 <code>[일괄화]</code> 버튼 → 그룹 내 동일 타입 레이어를 1개 배치 레이어로 병합. 역방향 <code>[개별화]</code> 버튼으로 복원 가능.</p>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>배치 레이어는 직렬화 시 JSON 크기를 ~1/10로 줄인다 (261 오브젝트 × 200byte → 1 오브젝트 × ~52KB). 대형 맵(5km)에서는 배치 모드를 기본으로 권장.
+</ac:rich-text-body></ac:structured-macro></p>
+<h4>저장 경로</h4>
+<p><code>{ProjectDir}/Saved/LevelTool/EditLayers/{map_id}/layers.json</code></p>
+<hr/>
+<h3>데이터 포맷</h3>
+<table>
+<thead>
+<tr>
+<th>파일</th>
+<th>생성 주체</th>
+<th>용도</th>
+<th>포맷</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layers.json</code></td>
+<td>2단계 프리셋·슬라이더 / 3단계 제안</td>
+<td>Edit Layer Stack</td>
+<td>JSON</td>
+</tr>
+<tr>
+<td><code>heightmap.png</code></td>
+<td>1단계 (기존)</td>
+<td>UE5 Landscape</td>
+<td>16bit PNG</td>
+</tr>
+<tr>
+<td><code>buildings.json</code></td>
+<td>1단계 (기존)</td>
+<td>건물 배치</td>
+<td>JSON (기존 호환)</td>
+</tr>
+<tr>
+<td><code>roads.json</code></td>
+<td>1단계 (기존)</td>
+<td>도로 생성</td>
+<td>JSON (기존 호환)</td>
+</tr>
+<tr>
+<td><code>water.json</code></td>
+<td>1단계 (기존)</td>
+<td>수역 생성</td>
+<td>JSON (기존 호환)</td>
+</tr>
+<tr>
+<td><code>check_report.json</code></td>
+<td>3단계 진단</td>
+<td>체크 결과 + 제안 카드</td>
+<td>JSON</td>
+</tr>
+</tbody>
+</table>
+<h3>맵 규모별 파라미터 스케일링</h3>
+<p>LevelTool이 생성하는 맵 반경(1~5km)에 따라, 슬라이더 알고리즘·체크리스트 기준·DBSCAN 파라미터를 자동 조정한다.</p>
+<table>
+<thead>
+<tr>
+<th>파라미터</th>
+<th>반경 1km (소형/EX)</th>
+<th>반경 2~3km (중형)</th>
+<th>반경 5km (대형/BR)</th>
+<th>스케일링 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>슬라이더 그리드 셀 크기</td>
+<td>100m</td>
+<td>200m</td>
+<td>400m</td>
+<td>셀 수 고정(~225셀) → 분석 시간 일정</td>
+</tr>
+<tr>
+<td>도심 밀도 기준 밀도 (건물/km²)</td>
+<td>80</td>
+<td>50</td>
+<td>30</td>
+<td>Hunt(1km²)=고밀도, Erangel(64km²)=저밀도</td>
+</tr>
+<tr>
+<td>시야 분석 사거리</td>
+<td>100m</td>
+<td>200m</td>
+<td>400m</td>
+<td>셀 크기와 동일</td>
+</tr>
+<tr>
+<td>DBSCAN <code>eps</code></td>
+<td>80m</td>
+<td>150m</td>
+<td>300m</td>
+<td>건물 간격 비례 (소형맵=밀집)</td>
+</tr>
+<tr>
+<td>DBSCAN <code>min_samples</code></td>
+<td>3</td>
+<td>5</td>
+<td>8</td>
+<td>맵 크기에 비례한 최소 클러스터 크기</td>
+</tr>
+<tr>
+<td>BR-1 거점 최소 이격</td>
+<td>맵크기×0.3 (300m)</td>
+<td>맵크기×0.2 (500m)</td>
+<td>맵크기×0.2 (1km)</td>
+<td>Erangel 기준 2km/8km = 0.25</td>
+</tr>
+<tr>
+<td>EX-4 노출 한계</td>
+<td>100m</td>
+<td>200m</td>
+<td>300m</td>
+<td>맵 크기 비례</td>
+</tr>
+<tr>
+<td>고저차 max_delta</td>
+<td>(고도범위×0.05)</td>
+<td>(고도범위×0.05)</td>
+<td>(고도범위×0.05)</td>
+<td>맵 실제 고도 범위 비례 (2.1 슬라이더 참조)</td>
+</tr>
+</tbody>
+</table>
+<p>스케일링 공식: <code>value = base_value × (맵반경_km / 2.0)</code><br />
+예외: DBSCAN <code>min_samples</code>는 <code>max(3, floor(맵반경_km × 2.5))</code></p>
+<p><strong>맵 반경 감지 소스</strong>: 맵 반경은 다음 우선순위로 결정한다.</p>
+<table>
+<thead>
+<tr>
+<th>우선순위</th>
+<th>소스</th>
+<th>시점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1단계 생성 시 기획자가 입력한 <code>radius_km</code> 파라미터</td>
+<td><code>ULevelToolSubsystem::GenerateMap()</code> 호출 시 저장</td>
+</tr>
+<tr>
+<td>2</td>
+<td>레퍼런스 프리셋의 <code>recommended_coords.radius_km</code></td>
+<td>프리셋 적용 시</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Landscape Actor의 실제 크기에서 역산 (<code>LandscapeSizeX × ScaleX / 100 / 2</code>)</td>
+<td>폴백: 위 두 값이 없을 때</td>
+</tr>
+</tbody>
+</table>
+<p>저장: <code>{ProjectDir}/Saved/LevelTool/EditLayers/{map_id}/map_meta.json</code>에 <code>"radius_km": 3.0</code> 필드로 기록. 2단계 진입 시 자동 로드.</p>
+<h3>성능 예산</h3>
+<table>
+<thead>
+<tr>
+<th>작업</th>
+<th>목표 시간</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2단계: 프리셋 적용 (3~5 레이어)</td>
+<td>&lt; 3초</td>
+</tr>
+<tr>
+<td>2단계: 슬라이더 일괄 수정</td>
+<td>&lt; 5초</td>
+</tr>
+<tr>
+<td>3단계: 체크리스트 진단</td>
+<td>&lt; 3초</td>
+</tr>
+<tr>
+<td>3단계: 히트맵 텍스처 생성</td>
+<td>&lt; 500ms</td>
+</tr>
+<tr>
+<td>대시보드: 레퍼런스 유사도 (슬라이더 드래그 중)</td>
+<td>&lt; 1ms</td>
+</tr>
+<tr>
+<td>대시보드: 적합도 시뮬레이션 (슬라이더 릴리즈)</td>
+<td>&lt; 500ms</td>
+</tr>
+<tr>
+<td>대시보드: 적합도 확정 (적용 후)</td>
+<td>&lt; 3초 (체크리스트와 동일)</td>
+</tr>
+</tbody>
+</table>
+<h3>UE5 에디터 통합</h3>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[LevelTool (기존 플러그인)
+├── ULevelToolSubsystem (기존 — 1단계 실사 생성)
+├── SLevelToolPanel (기존 — 실사 생성 UI)
+│
+├── [신규] UDesignerIntentSubsystem (2~3단계 통합 관리)
+├── [신규] UEditLayerManager (Edit Layer CRUD, 직렬화 — 내부 메커니즘)
+│
+└── [신규] SDesignerIntentPanel (Slate UI)
+    ├── Tab: 의도 수정 (2단계)
+    │   ├── 슬라이더 패널 (밀도, 개방도, 동선, 고저차, 파괴도)
+    │   ├── 프리셋 버튼 목록
+    │   ├── 레퍼런스 맵 프리셋 목록
+    │   └── 생성된 Edit Layer 목록 (보기/숨기기·삭제)
+    └── Tab: 룰셋 옵션 (3단계)
+        ├── 룰셋 선택 (BR / Extraction)
+        ├── 체크리스트 결과 (Pass/Fail/Warning)
+        ├── 제안 카드 목록 ([수락]/[거절])
+        └── 히트맵 모드 전환
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h3>UI 와이어프레임 — SDesignerIntentPanel</h3>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[┌─────────────────────────────────────────────────────────────┐
+│  LevelTool — Designer Intent                          [×]   │
+├─────────────────────────────────────────────────────────────┤
+│  [Tab: 의도 수정]    [Tab: 룰셋 옵션]                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─── 레퍼런스 프리셋 ─────────────────────────────┐        │
+│  │ [Erangel] [Miramar] [Sanhok] [Vikendi]          │        │
+│  │ [Verdansk] [Dam] [Customs] [Shoreline] [Bayou]  │        │
+│  │ [Spaceport] [Buried City]                        │        │
+│  └──────────────────────────────────────────────────┘        │
+│                                                             │
+│  ┌─── 슬라이더 ────────────────────────────────────┐        │
+│  │ 도심 밀도    [■■■■■□□□□□] 53     ◄ 초기값: 53   │        │
+│  │ 개방도       [■■■■■■□□□□] 60     ◄ 초기값: 60   │        │
+│  │ 동선 복잡도  [■■■■■■□□□□] 60     ◄ 초기값: 60   │        │
+│  │ 고저차       [■■□□□□□□□□] 20     ◄ 초기값: 20   │        │
+│  │ 파괴도       [■□□□□□□□□□] 10     ◄ 초기값: 10   │        │
+│  └──────────────────────────────────────────────────┘        │
+│                                                             │
+│  ┌─── 프리셋 (대상 선택 후 적용) ──────────────────┐        │
+│  │ 선택 모드: ○건물 ○영역 ○도로 ●없음              │        │
+│  │                                                  │        │
+│  │ [저격 포인트 강조]  [중앙 광장 개방]              │        │
+│  │ [진입로 좁히기]     [병목+우회로 세트]            │        │
+│  │ [수직 전투 강조]                                  │        │
+│  └──────────────────────────────────────────────────┘        │
+│                                                             │
+│  ┌─── 생성된 Edit Layer 목록 ──── [총 12개] ───────┐        │
+│  │ 필터: [전체▾] [슬라이더] [프리셋] [제안] [마커]  │        │
+│  │                                                  │        │
+│  │ ▼ Erangel 프리셋 (5)            [그룹 숨기기]    │        │
+│  │   👁 🔓 #1 고저차 96→65                          │        │
+│  │   👁 🔓 #2 파괴도 0→25                           │        │
+│  │   👁 🔓 #3 밀도 82→55 (gen:2)                    │        │
+│  │   👁 🔓 #4 개방도 22→60                          │        │
+│  │   👁 🔓 #5 동선 78→50                            │        │
+│  │ ▶ 병목+우회로 #1 (3)            [그룹 숨기기]    │        │
+│  │ ▼ 제안 카드 (2)                                  │        │
+│  │   👁 🔓 #12 BR-3 우회도로                        │        │
+│  │   🚫 🔓 #13 BR-10 탐험 마커                      │        │
+│  │                                                  │        │
+│  │ (👁=보임 🚫=숨김 🔒=잠금 🔓=편집가능)            │        │
+│  │ (▼=펼침 ▶=접힘)                                  │        │
+│  │                        [커스텀 프리셋으로 저장]   │        │
+│  └──────────────────────────────────────────────────┘        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+]]></ac:plain-text-body></ac:structured-macro></p>
+<p><ac:structured-macro ac:name="code"><ac:parameter ac:name="language"></ac:parameter><ac:plain-text-body><![CDATA[┌─────────────────────────────────────────────────────────────┐
+│  LevelTool — Designer Intent                          [×]   │
+├─────────────────────────────────────────────────────────────┤
+│  [Tab: 의도 수정]    [Tab: 룰셋 옵션]  ◄ 현재 탭            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─── 룰셋 선택 ──────────────────────────────────┐         │
+│  │ ● Battle Royale    ○ Extraction                 │         │
+│  │                              [체크 실행]         │         │
+│  └─────────────────────────────────────────────────┘         │
+│                                                             │
+│  ┌─── 체크리스트 결과 ─────────────────────────────┐         │
+│  │ ✅ BR-1  거점 분산              Pass             │         │
+│  │ ✅ BR-2  루트 등급 그래디언트    Pass             │         │
+│  │ ❌ BR-3  병목 우회로             Fail             │         │
+│  │ ⚠️ BR-4  개방/폐쇄 혼합         Warning          │         │
+│  │ ✅ BR-5  엄폐물 테마 적합성      Pass             │         │
+│  │ ...                                              │         │
+│  └─────────────────────────────────────────────────┘         │
+│                                                             │
+│  ┌─── 제안 카드 (Fail 항목) ───────────────────────┐         │
+│  │ ┌────────────────────────────────────────────┐   │         │
+│  │ │ BR-3: 서쪽 다리 차단 시 Military 영역 고립 │   │         │
+│  │ │                                            │   │         │
+│  │ │ 제안: 우회 도로 추가 (minor, 4m)           │   │         │
+│  │ │ 근거: Erangel 다리+캣워크 설계 원칙        │   │         │
+│  │ │                                            │   │         │
+│  │ │ [수락 → Edit Layer 생성]    [거절]          │   │         │
+│  │ └────────────────────────────────────────────┘   │         │
+│  └─────────────────────────────────────────────────┘         │
+│                                                             │
+│  ┌─── 맵 적합도 대시보드 ───────────────────────────┐         │
+│  │ BR 설계 기준 적합도:   72/100 [████████░░]       │         │
+│  │ 최대 감점: ❌ BR-3 병목우회로 (-15)               │         │
+│  │                                                  │         │
+│  │ 가장 유사: Erangel 84% > Sanhok 71% > ...        │         │
+│  │                                                  │         │
+│  │ 💡 밀도+10 시 예상: 적합도 72→78, Erangel 84→79% │         │
+│  └──────────────────────────────────────────────────┘         │
+│                                                             │
+│  ┌─── 히트맵 오버레이 ─────────────────────────────┐         │
+│  │ ○건물밀도  ○도로연결성  ○거점분포  ○고저차       │         │
+│  └─────────────────────────────────────────────────┘         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+]]></ac:plain-text-body></ac:structured-macro></p>
+<h3>레이어 목록 그룹핑 규칙</h3>
+<p>레이어가 20개 이상 누적될 수 있으므로, UI에서 자동 그룹핑 + 필터링을 제공한다.</p>
+<p><strong>자동 그룹 기준</strong>: 같은 <code>FScopedTransaction</code> 내에서 생성된 레이어는 하나의 그룹으로 묶는다.</p>
+<table>
+<thead>
+<tr>
+<th>그룹 이름 규칙</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>레퍼런스 프리셋: <code>"{프리셋명} (N)"</code></td>
+<td>"Erangel 프리셋 (5)"</td>
+</tr>
+<tr>
+<td>편집 프리셋: <code>"{프리셋명} #{번호} (N)"</code></td>
+<td>"병목+우회로 #1 (3)"</td>
+</tr>
+<tr>
+<td>슬라이더: <code>"슬라이더: {이름} (N)"</code></td>
+<td>"슬라이더: 밀도 82→55 (1)"</td>
+</tr>
+<tr>
+<td>제안 카드: <code>"제안 카드 (N)"</code></td>
+<td>"제안 카드 (5)"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>그룹 조작</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>조작</th>
+<th>동작</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>▶/▼ 클릭</td>
+<td>접기/펼치기 (기본: 접힘)</td>
+</tr>
+<tr>
+<td>그룹 <code>[숨기기]</code></td>
+<td>그룹 내 전체 레이어 <code>visible=false</code></td>
+</tr>
+<tr>
+<td>그룹 <code>[삭제]</code></td>
+<td>그룹 내 전체 레이어 삭제 (확인 다이얼로그)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>필터 버튼</strong>: <code>created_by</code> 기준으로 필터. 복수 선택 가능.</p>
+<table>
+<thead>
+<tr>
+<th>필터</th>
+<th>표시 대상</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[전체]</code></td>
+<td>모든 레이어</td>
+</tr>
+<tr>
+<td><code>[슬라이더]</code></td>
+<td><code>created_by: "slider"</code></td>
+</tr>
+<tr>
+<td><code>[프리셋]</code></td>
+<td><code>created_by: "preset" \| "reference_preset"</code></td>
+</tr>
+<tr>
+<td><code>[제안]</code></td>
+<td><code>created_by: "ai_suggest"</code></td>
+</tr>
+<tr>
+<td><code>[마커]</code></td>
+<td><code>type: "marker"</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>상단 요약</strong>: <code>"총 24개 (프리셋 17, 제안 5, 마커 8)"</code> 형태로 카운트 표시.</p>
+<h3>Phase 전제조건</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>내용</th>
+<th>선행 조건</th>
+<th>기존 코드 활용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td>Edit Layer Stack 내부 엔진 + 2단계 슬라이더·프리셋</td>
+<td>기존 LevelTool 완료 (✅)</td>
+<td><code>PlaceBuildingsFromJson</code>, <code>SpawnRoadActors</code>, <code>ClearGeneratedActors</code>, <code>FScopedTransaction</code>, <code>FBuildingMeshEntry</code>, <code>FSpatialHash2D</code></td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>3단계 룰셋 체크리스트 + 히트맵</td>
+<td>Phase A 완료</td>
+<td><code>UTexture2D::CreateTransient</code> (히트맵), <code>OnProgress</code>/<code>OnLog</code> (진단 진행률)</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>Phase A 즉시 착수 가능. Phase B는 A 완료 후 진행.
+</ac:rich-text-body></ac:structured-macro></p>
+<h3>레퍼런스 확장 절차</h3>
+<p>신규 게임/맵 레퍼런스를 추가할 때의 갱신 체크리스트.</p>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. 데이터 수집</td>
+<td>맵 크기, 플레이어 수, POI 목록, 추출/수축 시스템, 고유 메카닉</td>
+<td>기본 스펙 테이블</td>
+</tr>
+<tr>
+<td>2. 거점 분석</td>
+<td>S~C 등급 분류, 거점별 루트 등급·위험도·전투 특성</td>
+<td>POI 구조 + 상세 거점 테이블</td>
+</tr>
+<tr>
+<td>3. 설계 원칙 도출</td>
+<td>해당 맵 고유 원칙 5~8항</td>
+<td>설계 특징 테이블</td>
+</tr>
+<tr>
+<td>4. 비교 테이블 갱신</td>
+<td>BR 또는 EX 비교 요약 테이블에 열 추가</td>
+<td>비교 요약 업데이트</td>
+</tr>
+<tr>
+<td>5. 공통 원칙 검증</td>
+<td>기존 공통 원칙(BR 10항/EX 12항)에 신규 근거 추가 또는 신규 원칙 제안</td>
+<td>공통 원칙 갱신</td>
+</tr>
+<tr>
+<td>6. 프리셋 추가</td>
+<td>슬라이더 5값 + 추천 좌표 + 룰셋</td>
+<td>프리셋 JSON + 테이블 행</td>
+</tr>
+<tr>
+<td>7. 체크리스트 검토</td>
+<td>신규 원칙이 기존 체크항목으로 커버되는지 확인. 미커버 시 항목 추가</td>
+<td>체크리스트 갱신</td>
+</tr>
+<tr>
+<td>8. 번호 부여</td>
+<td>BR: B{N+1}, EX: E{N+1} 순차</td>
+<td>섹션 헤더</td>
+</tr>
+<tr>
+<td>9. 문서 버전 업</td>
+<td>변경 사유·변경 내역·목차 갱신</td>
+<td>버전 업데이트</td>
+</tr>
+</tbody>
+</table>
+<p><ac:structured-macro ac:name="info"><ac:rich-text-body>레퍼런스 추가는 <strong>분석 데이터가 기획(프리셋·체크리스트)에 연결되어야</strong> 의미가 있다. 분석만 하고 기획에 반영하지 않는 "고아 레퍼런스"를 방지한다.
+</ac:rich-text-body></ac:structured-macro></p>
+<h3>에러 핸들링</h3>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>layers.json</code> 파싱 실패</td>
+<td><code>OnLog(Error)</code> 출력 + 빈 Layer Stack으로 초기화. 손상 파일을 <code>.bak</code> 으로 백업</td>
+</tr>
+<tr>
+<td>지형 스냅샷 파일 누락 (<code>.bin</code>)</td>
+<td>해당 terrain 레이어를 <strong>비활성(visible=false)</strong> 처리 + Warning 토스트. 재생성 불가이므로 레이어 삭제 유도</td>
+</tr>
+<tr>
+<td>슬라이더 적용 중 건물 배치 실패 (충돌/영역 초과)</td>
+<td>해당 건물 스킵 + <code>OnLog(Warning)</code> + 제안 카드에 "배치 실패 N건" 표시</td>
+</tr>
+<tr>
+<td>체크리스트 진단 중 <code>buildings.json</code> 미존재</td>
+<td>건물 관련 항목을 "N/A (데이터 없음)"으로 표시. 나머지 항목은 정상 진단</td>
+</tr>
+<tr>
+<td>Edit Layer 적용 시 대상 Actor 미존재</td>
+<td>레이어를 Orphan 상태로 표시 (UI에 ⚠ 아이콘) + 적용 스킵</td>
+</tr>
+<tr>
+<td>프리셋 JSON 스키마 불일치</td>
+<td><code>FJsonObjectConverter</code> 실패 시 기본값 폴백 + Warning 로그</td>
+</tr>
+</tbody>
+</table>
+<h3>테스트 기준</h3>
+<h4>Phase A 완료 기준 (2단계: Edit Layer + 슬라이더·프리셋)</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>테스트</th>
+<th>합격 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A-1</td>
+<td>Edit Layer 직렬화 왕복</td>
+<td>저장 → 에디터 재시작 → 로드 → 모든 레이어 재적용 결과 동일</td>
+</tr>
+<tr>
+<td>A-2</td>
+<td>슬라이더 왕복</td>
+<td>밀도 50→20→50 → 생성된 레이어 모두 삭제 시 원본 복원</td>
+</tr>
+<tr>
+<td>A-3</td>
+<td>프리셋 적용</td>
+<td>"저격 포인트 강조" 프리셋 → 3개 레이어 생성 확인</td>
+</tr>
+<tr>
+<td>A-4</td>
+<td>레퍼런스 프리셋</td>
+<td>"Erangel 스타일" 적용 → 슬라이더 5개 자동 설정 + BR 룰셋 선택 확인</td>
+</tr>
+<tr>
+<td>A-5</td>
+<td>레이어 보기/숨기기</td>
+<td>visible 토글 시 Actor 생성/삭제 반복 5회 → 누수 없음</td>
+</tr>
+<tr>
+<td>A-6</td>
+<td>슬라이더 성능</td>
+<td>3km 맵 기준 슬라이더 적용 &lt; 5초</td>
+</tr>
+<tr>
+<td>A-7</td>
+<td>대형 맵 프리셋</td>
+<td>100개+ 건물 환경에서 프리셋 적용 &lt; 3초</td>
+</tr>
+</tbody>
+</table>
+<h4>Phase B 완료 기준 (3단계: 룰셋 체크·히트맵)</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>테스트</th>
+<th>합격 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B-1</td>
+<td>BR 체크리스트</td>
+<td>알려진 "통과 맵"과 "실패 맵"에서 각각 Pass/Fail 정확도 80%+</td>
+</tr>
+<tr>
+<td>B-2</td>
+<td>제안 카드 수락</td>
+<td>"수락" 클릭 → Edit Layer 생성 + Layer Stack 반영</td>
+</tr>
+<tr>
+<td>B-3</td>
+<td>히트맵 렌더링</td>
+<td>건물밀도/고저차/도로접근성 3종 히트맵 생성 &lt; 500ms</td>
+</tr>
+<tr>
+<td>B-4</td>
+<td>진단 성능</td>
+<td>3km 맵 기준 전체 체크리스트 &lt; 3초</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2>v1.1 → v2.0 변경 내역</h2>
+<table>
+<thead>
+<tr>
+<th>삭제/축소 항목</th>
+<th>사유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer 2 Intent Build (무에서 맵 생성)</td>
+<td>기획의도는 "수정"이지 "생성"이 아님</td>
+</tr>
+<tr>
+<td>Voronoi + Perlin Noise heightmap 생성</td>
+<td>위와 동일</td>
+</tr>
+<tr>
+<td>A* 패스파인딩 도로 생성</td>
+<td>위와 동일</td>
+</tr>
+<tr>
+<td>POI 자동 배분 (Poisson Disk Sampling)</td>
+<td>위와 동일</td>
+</tr>
+<tr>
+<td>Erosion 시뮬레이션</td>
+<td>과도, UE5 Landscape 해상도에서 소실</td>
+</tr>
+<tr>
+<td>Restack 건물 적층</td>
+<td>과도, Scale + 별도 고층 메쉬로 대체</td>
+</tr>
+<tr>
+<td>Cover 분석 108회 Raycast/셀</td>
+<td>과도, JSON 기반 간이 분석으로 대체</td>
+</tr>
+<tr>
+<td>Gameplay Score 수학 공식</td>
+<td>과도, 체크리스트(Pass/Fail)로 대체</td>
+</tr>
+<tr>
+<td>Auto Tune (AI 자동 수정)</td>
+<td>기획의도는 "옵션 제시"이지 "자동 수정"이 아님</td>
+</tr>
+<tr>
+<td>Iterative 반복 조정</td>
+<td>위와 동일</td>
+</tr>
+<tr>
+<td>커스텀 룰셋 가중치</td>
+<td>삭제 확정 (v1.1)</td>
+</tr>
+<tr>
+<td>환경 스캐터 자동 생성</td>
+<td>삭제 확정 (v1.1)</td>
+</tr>
+<tr>
+<td>통로 게임 로직 태그</td>
+<td>에디터 도구 범위 초과, 메타데이터만 유지</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>신규 추가 항목</th>
+<th>사유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PUBG 4맵 레퍼런스 (Erangel, Miramar, Sanhok, Vikendi)</td>
+<td>BR 룰셋 옵션 기준 근거</td>
+</tr>
+<tr>
+<td>ARC Raiders 5맵 레퍼런스 (Dam, Spaceport, Buried City, Blue Gate, Stella Montis)</td>
+<td>EX 룰셋 옵션 기준 근거</td>
+</tr>
+<tr>
+<td>BR 체크리스트 8항목 (PUBG 4맵 기반)</td>
+<td>구체적 진단 기준</td>
+</tr>
+<tr>
+<td>Extraction 체크리스트 8항목 (ARC Raiders 5맵 기반)</td>
+<td>구체적 진단 기준</td>
+</tr>
+<tr>
+<td>제안 카드에 레퍼런스 근거 표시</td>
+<td>기획자가 "왜 이런 제안인지" 이해 가능</td>
+</tr>
+<tr>
+<td>3단계 의도 슬라이더 (밀도/개방도/동선/고저차/파괴도)</td>
+<td>기존 맵 위에 일괄 수정</td>
+</tr>
+<tr>
+<td>"병목 + 우회로 세트" 프리셋</td>
+<td>Erangel 다리 설계 원칙 적용</td>
+</tr>
+<tr>
+<td>"수직 전투 강조" 프리셋</td>
+<td>Dam 수직 레이어 원칙 적용</td>
+</tr>
+<tr>
+<td>레퍼런스 맵 프리셋 7종 (BR 4 + EX 3)</td>
+<td>추천 좌표 + 슬라이더 + 룰셋 원클릭 적용</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v2.1 → v2.2 보강 항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>지형 스냅샷 복원 메커니즘</td>
+<td>terrain_modify 레이어의 비파괴성 보장 — 적용 전/후 Heightmap 스냅샷 바이너리 저장</td>
+</tr>
+<tr>
+<td>슬라이더별 선별 알고리즘</td>
+<td>5개 슬라이더 각각의 증가/감소 방향별 건물·도로·지형 선별 기준과 계산식 구체화</td>
+</tr>
+<tr>
+<td>프리셋 슬라이더 값 도출 근거</td>
+<td>7종 프리셋의 슬라이더 수치가 어떤 레퍼런스 맵 특성에서 역산되었는지 근거 테이블 추가</td>
+</tr>
+<tr>
+<td>에러 핸들링</td>
+<td>JSON 파싱 실패, 스냅샷 누락, 배치 충돌, Actor 미존재 등 6개 케이스별 처리 정의</td>
+</tr>
+<tr>
+<td>테스트 기준</td>
+<td>Phase A/B별 합격 기준 11건 (기능·성능·일관성 검증)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v2.2 → v3.0 구조 변경</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>구 2단계 (개별 편집 도구) 삭제</td>
+<td>브러시 도구, 개별 건물/도로 편집 UI 제거. 기획자 옵션을 슬라이더·프리셋·제안 카드로 집중</td>
+</tr>
+<tr>
+<td>4단계 → 3단계 구조 재편</td>
+<td>1단계(실사 생성) → 2단계(슬라이더/프리셋) → 3단계(룰셋 체크+제안)</td>
+</tr>
+<tr>
+<td>Edit Layer Stack 내부화</td>
+<td>기획자가 직접 레이어를 만드는 것이 아니라, 슬라이더·프리셋·제안 카드 조작 시 자동 생성. 목록에서 보기/숨기기·삭제만 가능</td>
+</tr>
+<tr>
+<td>Phase 3→2 축소</td>
+<td>Phase A(편집도구) + B(슬라이더) → Phase A(슬라이더+프리셋). Phase C(룰셋) → Phase B(룰셋)</td>
+</tr>
+<tr>
+<td>UI Tab 3→2 축소</td>
+<td>편집 도구 Tab 삭제. "의도 수정" + "룰셋 옵션" 2-Tab 구조</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.0 → v3.1 보강 항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>내부 메커니즘 섹션 복원</td>
+<td>Edit Layer JSON 스키마(v3.0), area.data 하위 스키마 5종, type별 params 8종, 지형 스냅샷 복원 절차를 "공통 사항 &gt; 내부 메커니즘"으로 재배치</td>
+</tr>
+<tr>
+<td>프리셋 인터랙션 모델</td>
+<td>건물 클릭/영역 드래그/도로 클릭/선택 불필요 4종 선택기 정의. "편집 도구"가 아닌 "프리셋 대상 지정" 역할 명시</td>
+</tr>
+<tr>
+<td>DBSCAN 거점 탐지 파라미터</td>
+<td>eps=150m, min_samples=5 + S/A/B/C 등급 분류 임계값(상위 10%/30%/60%) 정의</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.1 → v3.2 보강 항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>슬라이더 초기값 산출 공식</td>
+<td>맵 로드 시 buildings.json + heightmap + roads.json 분석 → 5개 슬라이더 0~100 자동 환산. 공식·예시 포함</td>
+</tr>
+<tr>
+<td>기획자 워크플로우 시나리오</td>
+<td>BR 맵 10분 시나리오 + EX 맵 5분 시나리오. 시간대별 기획자 행동↔시스템 반응 매핑</td>
+</tr>
+<tr>
+<td>문서 목차</td>
+<td>1056줄+ 문서 탐색을 위한 7개 섹션 목차 추가</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.2 → v3.3 보강 항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R10. Tarkov Customs</td>
+<td>선형 맵, 기숙사 마크방, 다리 병목, 존버 메타, 스폰 밀집 교전</td>
+</tr>
+<tr>
+<td>R11. Tarkov Shoreline</td>
+<td>대형 개방 맵, 리조트 중앙 집중, 열쇠 경제, 솔로 외곽 루트</td>
+</tr>
+<tr>
+<td>R12. Tarkov Streets</td>
+<td>대형 시가전, 건물 내부 전면 구현, 보스 영역 거부, BTR 동적 요소</td>
+</tr>
+<tr>
+<td>Tarkov 3맵 비교 요약</td>
+<td>크기·인원·시간·전투 스타일·열쇠 의존도·보스·고유 메카닉 비교</td>
+</tr>
+<tr>
+<td>익스트랙션 설계 원칙 확장</td>
+<td>ARC 5맵 + Tarkov 3맵 → 10개 원칙으로 확장 (선형 vs 개방, 보스 영역 거부, AI 밀도 등 추가)</td>
+</tr>
+</tbody>
+</table>
+<p>| v3.3 → v3.4 보강 항목 | PUBG 4맵(에란겔/미라마/사녹/비켄디) 나무위키 상세 거점·원칙 추가, R5-1 태이고 신규 추가, PUBG 비교 테이블 4맵→5맵 확장 |
+| v3.4 → v3.5 보강 항목 | B6 Verdansk(BR), E9 Hunt: Showdown(EX) 신규 추가, EX 4종 비교 테이블 신설, BR 공통 원칙 8→10항, EX 공통 원칙 10→12항 확장 |</p>
+<table>
+<thead>
+<tr>
+<th>v3.5 → v3.6 보완 항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>프리셋 확장 7→11종</td>
+<td>BR +1(Verdansk), EX +3(Customs/Shoreline/Bayou) + 추천 좌표 4건 추가</td>
+</tr>
+<tr>
+<td>체크리스트 확장</td>
+<td>BR 8→10항(수직전투, 탐험리워드), EX 8→10항(소음트리거, AI/PvE구역)</td>
+</tr>
+<tr>
+<td>레퍼런스 번호 체계 정리</td>
+<td>R1~R13 → B1~B6(BR) + E1~E9(EX). BR/EX 순서 정렬</td>
+</tr>
+<tr>
+<td>UI 와이어프레임</td>
+<td>SDesignerIntentPanel 2-Tab(의도 수정/룰셋 옵션) ASCII 와이어프레임 추가</td>
+</tr>
+<tr>
+<td>맵 규모 스케일링</td>
+<td>반경 1/2~3/5km별 그리드·DBSCAN·체크기준 자동 조정 테이블</td>
+</tr>
+<tr>
+<td>레퍼런스 확장 절차</td>
+<td>신규 게임/맵 추가 시 9단계 갱신 체크리스트 정의</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.6 → v3.7 보완 항목 (시뮬레이션 검증)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>유효 맵 상태 재구성 (A-1)</strong></td>
+<td><code>RebuildEffectiveState</code> 절차 정의 — 체크리스트·히트맵·대시보드가 Edit Layer 반영 상태 기준 분석. 도로 그래프 동기화 포함</td>
+</tr>
+<tr>
+<td><strong>건물 추가 형상 규칙 (A-2)</strong></td>
+<td>TypeKey·Footprint·높이·회전·파괴상태 결정 방법 + TypeKey→메쉬 매핑 테이블 5종</td>
+</tr>
+<tr>
+<td><strong>슬라이더 동시 적용 충돌 해소 (A-3)</strong></td>
+<td>고정 적용 순서 (고저차→파괴도→밀도→개방도→동선) + 중복 대상 스킵 규칙 + 단계별 유효 상태 재구성</td>
+</tr>
+<tr>
+<td><strong>제안 카드 좌표 생성 (A-4)</strong></td>
+<td>체크 유형별(도로/건물/마커) 좌표 산출 알고리즘 + A* 기반 도로 경로 웨이포인트 생성</td>
+</tr>
+<tr>
+<td><strong>레이어 누적/병합 정책 (B-1)</strong></td>
+<td>동일 슬라이더=교체, 다른 슬라이더=추가, 프리셋=교체, 제안=추가. <code>source_id</code> 기반 식별</td>
+</tr>
+<tr>
+<td><strong>지형-건물/도로 Z 동기화 (B-3)</strong></td>
+<td><code>terrain_modify</code> 적용 시 영향 영역 건물·도로 Z좌표 자동 갱신. 숨김/삭제 시 원래 Z 복원</td>
+</tr>
+<tr>
+<td><strong>파괴 상태 시각 표현 (B-4)</strong></td>
+<td>intact/partial/destroyed 메쉬 처리 규칙 + 잔해 메쉬 3종(Foundation/Rubble_Small/Rubble_Large)</td>
+</tr>
+<tr>
+<td><strong>Undo 그룹핑 단위 (B-5)</strong></td>
+<td>1 기획자 행동 = 1 Transaction. 프리셋 3~5레이어도 Ctrl+Z 1회로 전체 취소</td>
+</tr>
+<tr>
+<td><strong>뷰포트 프리뷰 (C-1)</strong></td>
+<td>호버 시 제거=빨간 반투명, 추가=초록 와이어프레임 하이라이트. CustomDepth 스텐실 활용</td>
+</tr>
+<tr>
+<td><strong>2⇄3단계 전환 규칙 (C-2)</strong></td>
+<td>Tab 전환 자유. 3단계 진입 시 체크리스트 자동 재실행. 레퍼런스 프리셋은 2+3단계 원클릭 파이프라인</td>
+</tr>
+<tr>
+<td><strong>맵 반경 감지 소스 (C-3)</strong></td>
+<td>우선순위: 1단계 입력값 → 프리셋 값 → Landscape 역산. <code>map_meta.json</code> 저장</td>
+</tr>
+<tr>
+<td><strong>예측 오차 보정 (C-4)</strong></td>
+<td>최근 5회 이력 기반 보정값 + 충돌률 학습 + 오차 범위 동적 조정 (±2~±10)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.7 → v3.8 보완 항목 (EX 시뮬레이션 검증)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>마커(Marker) 레이어 타입 (D-1)</strong></td>
+<td>Edit Layer 스키마에 <code>marker</code> 타입 신규 추가. 5종(extraction_point, lock_marker, noise_trigger, ai_zone, exploration_reward) params·아이콘·뷰포트 표시 정의</td>
+</tr>
+<tr>
+<td><strong>EX 2단계 진단 전략 (D-2)</strong></td>
+<td>마커 의존 항목(EX-5,8,9,10) 분리 — 1차 구조 체크 → 마커 제안 → 2차 마커 체크. N/A 상태 도입</td>
+</tr>
+<tr>
+<td><strong>고저차 max_delta 동적 산출 (D-3)</strong></td>
+<td>고정값(3/5/8m) → <code>(맵 최고−최저) × 0.05</code> 비례식. 고도 범위 <code>map_meta.json</code> 저장</td>
+</tr>
+<tr>
+<td><strong>레이어 UI 그룹핑/폴딩 (D-4)</strong></td>
+<td>Transaction 기반 자동 그룹 + ▶/▼ 접기 + 그룹 숨기기/삭제 + <code>created_by</code> 필터 버튼</td>
+</tr>
+<tr>
+<td><strong>Pass/Warning/Fail 임계값 (D-5)</strong></td>
+<td>BR 10항 + EX 10항 전체에 3단계 판정 기준 명시</td>
+</tr>
+<tr>
+<td><strong>수역 횡단 경로 인식 (D-6)</strong></td>
+<td>경로 분석에 수역 폴리곤 포함 — 폭 기준 3단계(30m/100m) 횡단 가능 판정 + 가중치(×3/×6/∞)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.8 → v3.9 보완 항목 (평가 감점 해소)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>경량 시뮬레이션 모드 (E-1)</strong></td>
+<td>뷰포트 프리뷰 전용 경량 모드 — 20% 샘플링, 4배 거친 그리드, 도로/지형 스킵. 500건물 맵에서 &lt; 300ms</td>
+</tr>
+<tr>
+<td><strong>A* 도로 성능 스케일링 (E-2)</strong></td>
+<td>맵 반경별 샘플 간격 동적 조정(10~30m). 10경로 동시 생성 &lt; 200ms 목표</td>
+</tr>
+<tr>
+<td><strong>건물 배치 충돌 해소 (E-3)</strong></td>
+<td>AABB 최소 5m 이격 + 4방향×3회 재시도 + 도로 겹침 회피. 실패 시 스킵+Warning</td>
+</tr>
+<tr>
+<td><strong>대시보드↔뷰포트 인과 연결 (E-4)</strong></td>
+<td>감점 항목 클릭 → 카메라 자동 이동 + 영역 하이라이트. check_report.json에 focus_location 포함</td>
+</tr>
+<tr>
+<td><strong>커스텀 프리셋 상세 (E-5)</strong></td>
+<td>저장 포맷(JSON 스키마), 포함/제외 항목, 로드 시 4단계 검증, 팀 공유(VCS/내보내기/가져오기)</td>
+</tr>
+<tr>
+<td><strong>EX 통합 비교 테이블 확장 (E-6)</strong></td>
+<td>5열(대표 맵) → 9열(ARC 5맵 + Tarkov 3맵 + Hunt) 전체 포함</td>
+</tr>
+<tr>
+<td><strong>목차 갱신 (E-7)</strong></td>
+<td>v3.9 신규 항목(경량 프리뷰, 충돌 해소, 대시보드 연결, 프리셋 상세, 성능 스케일링) 반영 + 앵커 검증</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v3.9 → v4.0 보완 항목 (평가 최종 보완)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>슬라이더 달성률 UI (F-1)</strong></td>
+<td>밀도·개방도 슬라이더에 목표/달성 퍼센트 표시 + 사유(빈 공간 부족) + 색상 단계(95%/90% 기준)</td>
+</tr>
+<tr>
+<td><strong>배치 레이어 일괄화 (F-2)</strong></td>
+<td>동일 타입 레이어 N개를 1개 batch 레이어로 병합/복원 — JSON 크기 ~1/10, 대형 맵 권장</td>
+</tr>
+<tr>
+<td><strong>BR-5 면책 라벨 (F-3)</strong></td>
+<td>식생·바위 등 폴리지/스태틱메시 배치는 도구 범위 밖 → 제안 카드에 "수동 배치 권장" 라벨</td>
+</tr>
+<tr>
+<td><strong>사전 달성률 예측 (F-4)</strong></td>
+<td>밀도 슬라이더 드래그 중 경량 모드로 빈 셀 카운트 → "예상 배치 ~180/220 (82%)" 실시간 표시</td>
+</tr>
+<tr>
+<td><strong>적합도 100점 의미 명시 (F-5)</strong></td>
+<td>100점 = "체크리스트 전 항목 Pass = 최소 설계 기준 충족". 의도적 편차는 점수 밖 영역임을 안내</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v4.0 → v4.1 보완 항목 (평가 감점 해소)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>슬라이더 교차 대상 예시 (G-1)</strong></td>
+<td>Erangel 프리셋(밀도↓+개방도↑) 및 Sanhok 프리셋(밀도↑+개방도↓) 적용 시 건물 교차 처리 구체적 수치 시나리오</td>
+</tr>
+<tr>
+<td><strong>개별 건물 단건 편집 (G-2)</strong></td>
+<td>뷰포트 우클릭 컨텍스트 메뉴 → 건물 제거/높이/파괴/마커 단건 조작. <code>created_by: "manual"</code> 레이어. 도로 동일</td>
+</tr>
+<tr>
+<td><strong>초크 포인트 확정 사항 (G-3)</strong></td>
+<td>초크 포인트 4유형 탐지 + 개별 건물 단건 편집을 기획 확정 사항에 반영 + 변경 이력 추가</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v4.1 → v4.2 보완 항목 (시뮬레이션 검증)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>달성률 한계 안내 (S-1/S-2)</strong></td>
+<td>밀집 도심·산악·교외·해안 4유형별 달성률 상한선 테이블 + &lt; 70% 시 사유별 안내 문구 + 보완 슬라이더 힌트</td>
+</tr>
+<tr>
+<td><strong>BR-8 밀도 판정 기준 명확화 (S-3)</strong></td>
+<td>"유효 맵 상태(Edit Layer 반영 후) 건물 수 / 맵 면적" 기준임을 명시. 소형 80/중형 50/대형 30 per km²</td>
+</tr>
+<tr>
+<td><strong>마커 일괄 수락 Undo (S-5)</strong></td>
+<td>[모두 수락] 버튼 → N개 마커 제안을 1 Transaction으로 묶음. 개별 [수락]은 별도 Transaction. UI 와이어프레임 포함</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>v4.2 → v4.3 보완 항목 (3단계 목적 재정의)</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>3단계 핵심 목적 재정의 (H-1)</strong></td>
+<td>3단계 섹션 제목을 "룰셋 옵션"에서 <strong>"레퍼런스 게임의 재미를 위한 공간적 전제조건 진단"</strong>으로 변경. 기획의도 테이블에 목적 열 추가. 핵심 목적 인용 블록("좋은 무대 없이 좋은 공연은 불가능하다")과 "하는 것/하지 않는 것/보장하는 것" 구분 테이블 추가. 파이프라인 다이어그램에 "재미의 토대가 갖춰졌는가?" 반영</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<h2>기획 확정 사항</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>항목</th>
+<th>확정 방향</th>
+<th>버전</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Edit Layer <code>visible</code> 필드</td>
+<td>추가 — 레이어별 보기/숨기기</td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Edit Layer <code>created_by</code> 필드</td>
+<td>추가 — AI 제안 레이어 구분</td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>keep_foundation</code> 옵션</td>
+<td>포함 — 잔해 남김</td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>건물 높이 조정</td>
+<td>Scale만 (0.5~2.0). Restack 삭제</td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>커스텀 룰셋</td>
+<td>불포함 — BR/Extraction 2가지 고정</td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>6</td>
+<td>환경 스캐터</td>
+<td>제외 — 수동 배치</td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Subsystem 분리</td>
+<td>별도 <code>UDesignerIntentSubsystem</code></td>
+<td>v1.1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>개별 편집 도구 (구 2단계)</td>
+<td><strong>삭제</strong> — 슬라이더·프리셋·제안 카드로 대체</td>
+<td>v3.0</td>
+</tr>
+<tr>
+<td>9</td>
+<td>기획자 옵션 구조</td>
+<td>2-Tab UI: 의도 수정(슬라이더/프리셋) + 룰셋 옵션(체크/제안)</td>
+<td>v3.0</td>
+</tr>
+<tr>
+<td>10</td>
+<td>유효 맵 상태 재구성</td>
+<td>체크리스트·대시보드 등 모든 분석은 Edit Layer 반영 후 상태 기준</td>
+<td>v3.7</td>
+</tr>
+<tr>
+<td>11</td>
+<td>슬라이더 적용 순서</td>
+<td>고저차→파괴도→밀도→개방도→동선 고정 순서</td>
+<td>v3.7</td>
+</tr>
+<tr>
+<td>12</td>
+<td>레이어 누적 정책</td>
+<td>동일 슬라이더/프리셋=교체, 제안=추가</td>
+<td>v3.7</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Undo 그룹핑</td>
+<td>1 기획자 행동 = 1 Transaction</td>
+<td>v3.7</td>
+</tr>
+<tr>
+<td>14</td>
+<td>지형-건물 Z 동기화</td>
+<td>terrain_modify 시 영향 영역 Actor Z 자동 갱신</td>
+<td>v3.7</td>
+</tr>
+<tr>
+<td>15</td>
+<td>파괴 상태 메쉬</td>
+<td>partial=Z×0.85+잔해 데칼, destroyed=Foundation+Rubble</td>
+<td>v3.7</td>
+</tr>
+<tr>
+<td>16</td>
+<td>마커 레이어 타입</td>
+<td><code>marker</code> 타입 5종 — extraction_point, lock_marker, noise_trigger, ai_zone, exploration_reward</td>
+<td>v3.8</td>
+</tr>
+<tr>
+<td>17</td>
+<td>EX 2단계 진단</td>
+<td>1차 구조 → 마커 제안 → 2차 마커 체크. 마커 미배치 시 N/A 표시</td>
+<td>v3.8</td>
+</tr>
+<tr>
+<td>18</td>
+<td>max_delta 동적 산출</td>
+<td><code>(최고고도 - 최저고도) × 0.05</code> 맵 고도 범위 비례</td>
+<td>v3.8</td>
+</tr>
+<tr>
+<td>19</td>
+<td>레이어 UI 그룹핑</td>
+<td>Transaction 기반 자동 그룹 + 접기/펼치기 + 필터</td>
+<td>v3.8</td>
+</tr>
+<tr>
+<td>20</td>
+<td>체크 임계값 명시</td>
+<td>BR+EX 전 항목 Pass/Warning/Fail 3단계 기준 정의</td>
+<td>v3.8</td>
+</tr>
+<tr>
+<td>21</td>
+<td>수역 횡단 경로</td>
+<td>경로 분석에 수역 포함, 폭 30m/100m 기준 3단계 판정</td>
+<td>v3.8</td>
+</tr>
+<tr>
+<td>22</td>
+<td>경량 시뮬레이션 모드</td>
+<td>프리뷰용 20% 샘플링 + 4배 거친 그리드. 정규 모드와 분리</td>
+<td>v3.9</td>
+</tr>
+<tr>
+<td>23</td>
+<td>건물 배치 충돌 해소</td>
+<td>AABB 5m 이격 + 4방향×3회 재시도 + 도로 회피. 실패=스킵</td>
+<td>v3.9</td>
+</tr>
+<tr>
+<td>24</td>
+<td>대시보드↔뷰포트 연결</td>
+<td>감점 항목 클릭 → 카메라 이동 + 하이라이트. focus_location 필드</td>
+<td>v3.9</td>
+</tr>
+<tr>
+<td>25</td>
+<td>커스텀 프리셋 포맷</td>
+<td>JSON 스키마·검증·팀 공유(VCS/내보내기/가져오기) 정의</td>
+<td>v3.9</td>
+</tr>
+<tr>
+<td>26</td>
+<td>슬라이더 달성률 UI</td>
+<td>목표/달성 퍼센트 + 색상 3단계(95%/90%) + 사유 표시</td>
+<td>v4.0</td>
+</tr>
+<tr>
+<td>27</td>
+<td>배치 레이어 (Batch)</td>
+<td>동일 타입 레이어 일괄화/개별화 전환. 대형 맵 JSON 최적화</td>
+<td>v4.0</td>
+</tr>
+<tr>
+<td>28</td>
+<td>BR-5 범위 면책</td>
+<td>식생/바위 = 도구 범위 밖 → "수동 배치 권장" 라벨</td>
+<td>v4.0</td>
+</tr>
+<tr>
+<td>29</td>
+<td>적합도 100점 정의</td>
+<td>체크리스트 전 항목 Pass = 최소 기준 충족. 의도적 편차는 별도</td>
+<td>v4.0</td>
+</tr>
+<tr>
+<td>30</td>
+<td>초크 포인트 4유형 탐지</td>
+<td>교량/협곡/도로 폭/구조적 분류 + Tarjan bridge edge + 우회로 비용 3배 기준</td>
+<td>v4.1</td>
+</tr>
+<tr>
+<td>31</td>
+<td>개별 건물 단건 편집</td>
+<td>뷰포트 우클릭 → 컨텍스트 메뉴. <code>created_by: "manual"</code>. 슬라이더와 독립</td>
+<td>v4.1</td>
+</tr>
+<tr>
+<td>32</td>
+<td>달성률 한계 안내</td>
+<td>지형 4유형별 상한선 + &lt; 70% 안내 문구 + 보완 힌트</td>
+<td>v4.2</td>
+</tr>
+<tr>
+<td>33</td>
+<td>BR-8 유효 밀도 기준</td>
+<td>Edit Layer 반영 후 건물 수 / 면적. 소형80/중형50/대형30 per km²</td>
+<td>v4.2</td>
+</tr>
+<tr>
+<td>34</td>
+<td>마커 일괄 수락 Undo</td>
+<td>[모두 수락] = 1 Transaction, 개별 = 별도 Transaction</td>
+<td>v4.2</td>
+</tr>
+<tr>
+<td>35</td>
+<td>3단계 핵심 목적</td>
+<td><strong>"레퍼런스 게임의 재미가 성립하기 위한 공간적 전제조건을 진단하고, 미충족 시 해소 방안을 제안한다."</strong> 재미 자체(게임 시스템)가 아닌 공간적 토대를 검증</td>
+<td>v4.3</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<p>— 보완문서 끝 (v4.3) —</p>
+</body>
+</html>
