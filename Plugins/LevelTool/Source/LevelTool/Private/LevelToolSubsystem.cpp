@@ -1,5 +1,7 @@
 #include "LevelToolSubsystem.h"
 #include "LevelToolSettings.h"
+#include "EditLayerManager.h"
+#include "DesignerIntentSubsystem.h"
 
 #include "Async/Async.h"
 #include "Misc/FileHelper.h"
@@ -17,6 +19,7 @@
 #include "Dom/JsonValue.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 #include "IPythonScriptPlugin.h"
 
@@ -30,6 +33,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogLevelTool, Log, All);
 void ULevelToolSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    EditLayerManager = NewObject<UEditLayerManager>(this);
     UE_LOG(LogLevelTool, Log, TEXT("LevelTool subsystem initialized"));
 }
 
@@ -132,7 +136,7 @@ void ULevelToolSubsystem::RunFullPipeline(
         }
 
         // ── Step 2: Import Landscape (game thread) ───────────────────────
-        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, WeakPool, Result, bSpawnRoads, Gen]() mutable
+        Async(EAsyncExecution::TaskGraphMainThread, [WeakThis, WeakPool, Result, bSpawnRoads, Gen, Preset, Lat, Lon, RadiusKm]() mutable
         {
             ULevelToolSubsystem* Self = WeakThis.Get();
             if (!Self || Self->JobGeneration != Gen) return;
@@ -196,6 +200,26 @@ void ULevelToolSubsystem::RunFullPipeline(
 
             Self->LastResult = Result;
             Self->SetProgress(TEXT("Done"), 1.0f);
+
+            // ── Step 6: Save map_meta.json + Initialize Edit Layer Manager ──
+            {
+                FString MapName = Preset.IsEmpty()
+                    ? FString::Printf(TEXT("custom_%.3f_%.3f"), Lat, Lon)
+                    : Preset;
+                FString DateStr = FDateTime::UtcNow().ToString(TEXT("%Y%m%d"));
+                FString MapId = FString::Printf(TEXT("%s_base_%s"), *MapName, *DateStr);
+                Self->SaveMapMeta(MapId, Lat, Lon, RadiusKm, Result);
+
+                if (Self->EditLayerManager)
+                {
+                    Self->EditLayerManager->Initialize(MapId);
+                }
+
+                if (auto* DIS = GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>())
+                {
+                    DIS->OnStage1Complete(MapId);
+                }
+            }
 
             if (PostWorld)
             {
@@ -817,6 +841,86 @@ void ULevelToolSubsystem::SetProgress(const FString& Stage, float Pct)
             if (ULevelToolSubsystem* Self = WeakThis.Get())
                 Self->OnProgress.Broadcast(Stage, Pct);
         });
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Map Meta: 1~3단계 공유 메타데이터 (stable_id 인프라 전제조건)
+// ─────────────────────────────────────────────────────────────────────────────
+
+FString ULevelToolSubsystem::GetEditLayerDir(const FString& MapId) const
+{
+    return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("LevelTool"), TEXT("EditLayers"), MapId);
+}
+
+void ULevelToolSubsystem::SaveMapMeta(
+    const FString& MapId, float Lat, float Lon, float RadiusKm,
+    const FLevelToolJobResult& Result)
+{
+    FString Dir = GetEditLayerDir(MapId);
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    PlatformFile.CreateDirectoryTree(*Dir);
+
+    FString MetaPath = FPaths::Combine(Dir, TEXT("map_meta.json"));
+
+    TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+    Root->SetStringField(TEXT("schema_version"), TEXT("1.0"));
+    Root->SetStringField(TEXT("map_id"), MapId);
+
+    FDateTime Now = FDateTime::UtcNow();
+    Root->SetStringField(TEXT("created_at"), Now.ToIso8601());
+    Root->SetStringField(TEXT("updated_at"), Now.ToIso8601());
+
+    // origin
+    TSharedRef<FJsonObject> Origin = MakeShared<FJsonObject>();
+    Origin->SetNumberField(TEXT("lat"), Lat);
+    Origin->SetNumberField(TEXT("lon"), Lon);
+    Origin->SetNumberField(TEXT("radius_km"), RadiusKm);
+    Origin->SetStringField(TEXT("source"), TEXT("osm"));
+    Root->SetObjectField(TEXT("origin"), Origin);
+
+    // terrain_profile
+    TSharedRef<FJsonObject> Terrain = MakeShared<FJsonObject>();
+    float ElevRange = Result.ElevationMaxM - Result.ElevationMinM;
+    FString TerrainType;
+    if (ElevRange < 100.f)
+        TerrainType = TEXT("urban_dense");
+    else if (ElevRange < 300.f)
+        TerrainType = TEXT("mixed");
+    else
+        TerrainType = TEXT("mountain");
+    Terrain->SetStringField(TEXT("type"), TerrainType);
+    Terrain->SetNumberField(TEXT("min_elevation_m"), Result.ElevationMinM);
+    Terrain->SetNumberField(TEXT("max_elevation_m"), Result.ElevationMaxM);
+    Root->SetObjectField(TEXT("terrain_profile"), Terrain);
+
+    // stage1_summary
+    TSharedRef<FJsonObject> Summary = MakeShared<FJsonObject>();
+    Summary->SetNumberField(TEXT("building_count"), Result.BuildingCount);
+    Summary->SetStringField(TEXT("generated_at"), Now.ToIso8601());
+    Root->SetObjectField(TEXT("stage1_summary"), Summary);
+
+    // slider_initial_values (2단계 진입 시 산출 — 여기서는 빈 오브젝트)
+    Root->SetObjectField(TEXT("slider_initial_values"), MakeShared<FJsonObject>());
+
+    // prediction_history (빈 배열)
+    TArray<TSharedPtr<FJsonValue>> EmptyArr;
+    Root->SetArrayField(TEXT("prediction_history"), EmptyArr);
+
+    Root->SetStringField(TEXT("active_ruleset"), TEXT(""));
+
+    FString OutputStr;
+    TSharedRef<TJsonWriter<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>> Writer =
+        TJsonWriterFactory<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>::Create(&OutputStr);
+    FJsonSerializer::Serialize(Root, Writer);
+
+    if (FFileHelper::SaveStringToFile(OutputStr, *MetaPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
+    {
+        Log(FString::Printf(TEXT("  ✔ map_meta.json saved: %s"), *MetaPath));
+    }
+    else
+    {
+        Log(FString::Printf(TEXT("  ⚠ Failed to save map_meta.json: %s"), *MetaPath));
     }
 }
 

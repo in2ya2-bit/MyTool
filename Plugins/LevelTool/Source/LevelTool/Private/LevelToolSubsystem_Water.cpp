@@ -145,6 +145,9 @@ void ULevelToolSubsystem::SpawnWaterBodies(const FString& JsonPath, const FBox& 
 
             int64 LakeId = (int64)LakeObj->GetNumberField(TEXT("id"));
             LakeActor->SetActorLabel(FString::Printf(TEXT("Lake_%lld"), LakeId));
+            LakeActor->Tags.Add(FName(TEXT("LevelTool_StableID")));
+            LakeActor->Tags.Add(*FString::Printf(TEXT("water_lake_%lld"), LakeId));
+            LakeActor->Tags.Add(FName(TEXT("LevelTool_Generated")));
             LakeActor->SetFolderPath(*Folder);
             LakeCount++;
         }
@@ -242,6 +245,9 @@ void ULevelToolSubsystem::SpawnWaterBodies(const FString& JsonPath, const FBox& 
 
             int64 RiverId = (int64)RiverObj->GetNumberField(TEXT("id"));
             RiverActor->SetActorLabel(FString::Printf(TEXT("River_%lld"), RiverId));
+            RiverActor->Tags.Add(FName(TEXT("LevelTool_StableID")));
+            RiverActor->Tags.Add(*FString::Printf(TEXT("water_river_%lld"), RiverId));
+            RiverActor->Tags.Add(FName(TEXT("LevelTool_Generated")));
             RiverActor->SetFolderPath(*Folder);
             RiverCount++;
         }

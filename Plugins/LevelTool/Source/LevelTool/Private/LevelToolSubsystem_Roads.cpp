@@ -61,12 +61,19 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
     int32 TotalSegs = 0;
     int32 Skipped   = 0;
 
+    // 도로별 OSM ID 추적 (타입별 그룹) — 2단계 도로 그래프 변환 시 사용
+    TMap<FString, TArray<int64>> RoadOsmIds;
+    RoadOsmIds.Add(TEXT("major"), {});
+    RoadOsmIds.Add(TEXT("minor"), {});
+    RoadOsmIds.Add(TEXT("path"),  {});
+
     for (const TSharedPtr<FJsonValue>& Val : JsonArray)
     {
         const TSharedPtr<FJsonObject>& Obj = Val->AsObject();
         if (!Obj) continue;
 
         FString RoadType = Obj->GetStringField(TEXT("type"));
+        int64 RoadOsmId = (int64)Obj->GetNumberField(TEXT("id"));
         float RoadWidthM = (float)Obj->GetNumberField(TEXT("width_m"));
         const TArray<TSharedPtr<FJsonValue>>& PtsJson = Obj->GetArrayField(TEXT("points_ue5"));
         if (PtsJson.Num() < 2) { Skipped++; continue; }
@@ -130,6 +137,7 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
         }
 
         if (!Geoms.Contains(RoadType)) RoadType = TEXT("minor");
+        RoadOsmIds.FindOrAdd(RoadType).AddUnique(RoadOsmId);
         FRoadGeom&  G     = Geoms[RoadType];
         FRoadProps  Props = GetProps(RoadType);
 
@@ -208,6 +216,14 @@ void ULevelToolSubsystem::SpawnRoadActors(const FString& JsonPath, const FBox& L
 
         RoadActor->SetActorLabel(FString::Printf(TEXT("Roads_%s"), *KV.Key));
         RoadActor->Tags.Add(*KV.Key);
+        RoadActor->Tags.Add(FName(TEXT("LevelTool_StableID")));
+        RoadActor->Tags.Add(*FString::Printf(TEXT("roads_batch_%s"), *KV.Key));
+        RoadActor->Tags.Add(FName(TEXT("LevelTool_Generated")));
+
+        // 배치 Actor에 포함된 개별 도로 OSM ID 수를 기록
+        const TArray<int64>& Ids = RoadOsmIds.FindOrAdd(KV.Key);
+        RoadActor->Tags.Add(*FString::Printf(TEXT("road_count_%d"), Ids.Num()));
+
         RoadActor->SetFolderPath(TEXT("LevelTool/Roads"));
         SpawnedActors++;
     }

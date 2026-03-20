@@ -9,6 +9,7 @@
 #include "LevelToolSubsystem.generated.h"
 
 class ALandscape;
+class UEditLayerManager;
 
 // ---------------------------------------------------------------------------
 //  Progress event for Slate panel updates
@@ -61,6 +62,9 @@ public:
     bool IsRunning() const { return bJobRunning; }
     const FLevelToolJobResult& GetLastResult() const { return LastResult; }
     const TArray<FString>& GetLogLines() const { return LogLines; }
+
+    // ── Edit Layer Manager (S1 — 2~3단계 공유 비파괴 레이어 시스템) ───
+    UEditLayerManager* GetEditLayerManager() const { return EditLayerManager; }
 
     // ── Main API ─────────────────────────────────────────────────────────
 
@@ -124,6 +128,11 @@ private:
     // ── Splat map import ─────────────────────────────────────────────────
     void ImportSplatMapsAsTextures(const FString& HeightmapPngPath, ALandscape* Landscape);
 
+    // ── Map Meta (stable_id 인프라 + 2단계 공유 메타데이터) ─────────────
+    void SaveMapMeta(const FString& MapId, float Lat, float Lon, float RadiusKm,
+                     const FLevelToolJobResult& Result);
+    FString GetEditLayerDir(const FString& MapId) const;
+
     // ── Building internals ───────────────────────────────────────────────
     struct FBuildingEntry
     {
@@ -183,6 +192,10 @@ private:
 
     // Returns world-space Z (cm) at given world XY by reading cached heightmap data
     float GetTerrainZAtWorldXY(float WorldX, float WorldY) const;
+
+    // ── Edit Layer Manager ──────────────────────────────────────────────
+    UPROPERTY()
+    TObjectPtr<UEditLayerManager> EditLayerManager;
 
     // ── Procedural building material (window grid + type-based tint) ─────
     UPROPERTY()

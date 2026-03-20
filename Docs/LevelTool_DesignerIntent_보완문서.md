@@ -1,8 +1,13 @@
-# Designer Intent System — 기획 보완문서 v4.4
+# ~~Designer Intent System — 기획 보완문서 v4.4~~ (폐기)
 
-> **원본**: `LevelTool_DesignerIntent_기획문서.docx` v1.0  
-> **보완 버전**: v4.4 (구현 검증 — 13개 기술 스펙 보완)  
-> **변경 사유**: 구현 관점 기술 검증 결과 P0(필수) 3건 + P1(중요) 4건 + P2(권장) 6건 보완. Actor 참조 안정성, 도로 그래프 변환, 레이어→Actor 반영, 스냅샷 겹침, EX 임계값, 개방도 8방향, footprint 종횡비, 수역 배치 방지, 프리셋 전제조건, map_meta 통합 스키마, Subsystem API 등
+> **⛔ 이 문서는 폐기되었습니다.**  
+> **대체 문서**: [`LevelTool_ReferenceMapGen_기획문서.md`](./LevelTool_ReferenceMapGen_기획문서.md) v1.0  
+> **폐기 사유**: 2~3단계(슬라이더/프리셋/진단) 시스템을 레퍼런스 게임 맵 이미지 기반 직접 생성으로 전면 교체  
+> **폐기일**: 2026-03-20  
+>  
+> ~~**원본**: `LevelTool_DesignerIntent_기획문서.docx` v1.0~~  
+> ~~**보완 버전**: v4.4 (구현 검증 — 13개 기술 스펙 보완)~~  
+> ~~**변경 사유**: 구현 관점 기술 검증 결과 P0(필수) 3건 + P1(중요) 4건 + P2(권장) 6건 보완. Actor 참조 안정성, 도로 그래프 변환, 레이어→Actor 반영, 스냅샷 겹침, EX 임계값, 개방도 8방향, footprint 종횡비, 수역 배치 방지, 프리셋 전제조건, map_meta 통합 스키마, Subsystem API 등~~
 
 ---
 

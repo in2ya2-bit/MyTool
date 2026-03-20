@@ -468,6 +468,12 @@ AStaticMeshActor* ULevelToolSubsystem::SpawnBuildingActor(
     Actor->Tags.Add(*FString::Printf(TEXT("h_%dm"), FMath::RoundToInt(Building.HeightM)));
     Actor->Tags.Add(*FString::Printf(TEXT("osm_%lld"), Building.OsmId));
 
+    // stable_id 체계: 세션 독립적 Actor 식별 (2단계 Edit Layer 참조용)
+    FString StableId = FString::Printf(TEXT("bldg_osm_%lld"), Building.OsmId);
+    Actor->Tags.Add(FName(TEXT("LevelTool_StableID")));
+    Actor->Tags.Add(FName(*StableId));
+    Actor->Tags.Add(FName(TEXT("LevelTool_Generated")));
+
     bool bMaterialApplied = false;
 
     if (Pool)
