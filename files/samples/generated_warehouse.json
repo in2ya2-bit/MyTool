@@ -1,0 +1,182 @@
+{
+  "version": "1.0",
+  "building_name": "Generated_rectangle_40x25_1F",
+  "source": "parameter_generator",
+  "source_file": "",
+  "scale": {
+    "unit": "meter",
+    "pixels_per_meter": 0,
+    "origin": [
+      0.0,
+      0.0
+    ]
+  },
+  "floors": [
+    {
+      "floor_index": 0,
+      "label": "1F",
+      "elevation_m": 0.0,
+      "height_m": 3.5,
+      "walls": [
+        {
+          "wall_id": "w_001",
+          "start": [
+            0,
+            0
+          ],
+          "end": [
+            40.0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_001",
+              "type": "door",
+              "offset_m": 19.0,
+              "width_m": 2.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            }
+          ]
+        },
+        {
+          "wall_id": "w_002",
+          "start": [
+            40.0,
+            0
+          ],
+          "end": [
+            40.0,
+            25.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": []
+        },
+        {
+          "wall_id": "w_003",
+          "start": [
+            40.0,
+            25.0
+          ],
+          "end": [
+            0,
+            25.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": []
+        },
+        {
+          "wall_id": "w_004",
+          "start": [
+            0,
+            25.0
+          ],
+          "end": [
+            0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": []
+        },
+        {
+          "wall_id": "w_005",
+          "start": [
+            20.0,
+            0
+          ],
+          "end": [
+            20.0,
+            25.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": [
+            {
+              "opening_id": "op_002",
+              "type": "door",
+              "offset_m": 12.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            }
+          ]
+        }
+      ],
+      "rooms": [
+        {
+          "room_id": "r_001",
+          "label": "Room 1",
+          "polygon": [
+            [
+              0.0,
+              0
+            ],
+            [
+              20.0,
+              0
+            ],
+            [
+              20.0,
+              25.0
+            ],
+            [
+              0.0,
+              25.0
+            ]
+          ],
+          "area_m2": 500.0,
+          "usage": "other"
+        },
+        {
+          "room_id": "r_002",
+          "label": "Room 2",
+          "polygon": [
+            [
+              20.0,
+              0
+            ],
+            [
+              40.0,
+              0
+            ],
+            [
+              40.0,
+              25.0
+            ],
+            [
+              20.0,
+              25.0
+            ]
+          ],
+          "area_m2": 500.0,
+          "usage": "other"
+        }
+      ],
+      "stairs": [],
+      "columns": [],
+      "elevators": []
+    }
+  ],
+  "bridges": [],
+  "metadata": {
+    "author": "floorplan_generator.py",
+    "created": "2026-03-23T07:45:24Z",
+    "parameters": {
+      "building_width": 40.0,
+      "building_depth": 25.0,
+      "num_floors": 1,
+      "rooms_per_floor": 2,
+      "has_windows": false,
+      "door_placement": "every_room",
+      "corridor_type": "none",
+      "building_shape": "rectangle",
+      "stair_location": "end",
+      "seed": 0
+    }
+  }
+}

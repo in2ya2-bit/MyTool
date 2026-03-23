@@ -98,5 +98,4 @@ private:
 	UPROPERTY()
 	TObjectPtr<UEditLayerManager> LayerManager;
 
-	friend class UDesignerIntentSubsystem;
 };

@@ -1,13 +1,7 @@
 #include "LevelToolValidator.h"
-#include "DesignerIntentSubsystem.h"
 #include "EditLayerManager.h"
 #include "EditLayerApplicator.h"
 #include "EditLayerTypes.h"
-#include "ChecklistEngine.h"
-#include "ChecklistTypes.h"
-#include "PresetManager.h"
-#include "PresetTypes.h"
-#include "HeatmapGenerator.h"
 #include "LevelToolSubsystem.h"
 
 #include "Misc/FileHelper.h"
@@ -22,7 +16,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogLTValidator, Log, All);
 
 static FAutoConsoleCommand CmdValidate(
 	TEXT("LevelTool.Validate"),
-	TEXT("Run full LevelTool Stage 2/3 integration validation"),
+	TEXT("Run LevelTool integration validation"),
 	FConsoleCommandDelegate::CreateLambda([]
 	{
 		ULevelToolValidator::RunFullValidation();
@@ -62,9 +56,6 @@ ULevelToolValidator::FValidationResult ULevelToolValidator::RunFullValidation()
 	ValidateMapMeta(Out);
 	ValidateLayersJson(Out);
 	ValidateEditLayerManager(Out);
-	ValidateDesignerIntent(Out);
-	ValidateChecklistEngine(Out);
-	ValidatePresetManager(Out);
 	ValidateStableIds(Out);
 
 	UE_LOG(LogLTValidator, Log, TEXT("═══════════════════════════════════════════════════"));
@@ -79,20 +70,21 @@ ULevelToolValidator::FValidationResult ULevelToolValidator::RunFullValidation()
 // ─────────────────────────────────────────────────────────────────────────────
 void ULevelToolValidator::ValidateMapMeta(FValidationResult& Out)
 {
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	if (!DIS)
+	auto* LTS = GEditor ? GEditor->GetEditorSubsystem<ULevelToolSubsystem>() : nullptr;
+	auto* LM = LTS ? LTS->GetEditLayerManager() : nullptr;
+	if (!LM)
 	{
-		Warn(Out, TEXT("DesignerIntentSubsystem 없음 — 에디터 모드 확인 필요"));
+		Warn(Out, TEXT("EditLayerManager 없음 — 에디터 모드 확인 필요"));
 		return;
 	}
 
-	const FString MapId = DIS->GetActiveMapId();
+	const FString MapId = LM->GetMapId();
 	if (MapId.IsEmpty())
 	{
-		Warn(Out, TEXT("ActiveMapId 비어있음 — 1단계 미완료"));
+		Warn(Out, TEXT("MapId 비어있음 — 1단계 미완료"));
 		return;
 	}
-	Pass(Out, FString::Printf(TEXT("ActiveMapId: %s"), *MapId));
+	Pass(Out, FString::Printf(TEXT("MapId: %s"), *MapId));
 
 	const FString MetaPath = FPaths::ProjectSavedDir() / TEXT("LevelTool") / TEXT("EditLayers")
 		/ MapId / TEXT("map_meta.json");
@@ -124,9 +116,6 @@ void ULevelToolValidator::ValidateMapMeta(FValidationResult& Out)
 
 	if (Root->HasField(TEXT("terrain_profile")))    Pass(Out, TEXT("map_meta: terrain_profile 존재"));
 	else                                            Warn(Out, TEXT("map_meta: terrain_profile 누락"));
-
-	if (Root->HasField(TEXT("slider_initial_values"))) Pass(Out, TEXT("map_meta: slider_initial_values 존재"));
-	else                                                Warn(Out, TEXT("map_meta: slider_initial_values 미생성 — 슬라이더 초기값 미산출"));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,75 +155,6 @@ void ULevelToolValidator::ValidateEditLayerManager(FValidationResult& Out)
 		Pass(Out, TEXT("EditLayerApplicator 활성"));
 	else
 		Error(Out, TEXT("EditLayerApplicator nullptr"));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-void ULevelToolValidator::ValidateDesignerIntent(FValidationResult& Out)
-{
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	if (!DIS)
-	{
-		Warn(Out, TEXT("DesignerIntentSubsystem 없음"));
-		return;
-	}
-	Pass(Out, TEXT("DesignerIntentSubsystem 활성"));
-
-	const auto& States = DIS->GetAllSliderStates();
-	if (States.Num() == 5)
-		Pass(Out, TEXT("슬라이더 5종 등록 완료"));
-	else
-		Error(Out, FString::Printf(TEXT("슬라이더 %d종 (기대: 5)"), States.Num()));
-
-	for (const auto& KV : States)
-	{
-		if (KV.Value.CurrentValue < 0.f || KV.Value.CurrentValue > 100.f)
-			Warn(Out, FString::Printf(TEXT("슬라이더 %d 범위 초과: %.1f"), (int32)KV.Key, KV.Value.CurrentValue));
-	}
-
-	if (DIS->GetPresetManager())
-		Pass(Out, TEXT("PresetManager 활성"));
-	else
-		Error(Out, TEXT("PresetManager nullptr"));
-
-	if (DIS->GetChecklistEngine())
-		Pass(Out, TEXT("ChecklistEngine 활성"));
-	else
-		Error(Out, TEXT("ChecklistEngine nullptr"));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-void ULevelToolValidator::ValidateChecklistEngine(FValidationResult& Out)
-{
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	auto* Engine = DIS ? DIS->GetChecklistEngine() : nullptr;
-	if (!Engine) return;
-
-	if (Engine->GetHeatmapGenerator())
-		Pass(Out, TEXT("HeatmapGenerator 활성"));
-	else
-		Error(Out, TEXT("HeatmapGenerator nullptr"));
-
-	const FCheckReport& Report = Engine->GetLastReport();
-	if (Report.Results.Num() > 0)
-		Pass(Out, FString::Printf(TEXT("마지막 진단: %d 항목, 적합도 %.0f"),
-			Report.Results.Num(), Report.TotalScore));
-	else
-		Warn(Out, TEXT("진단 미실행 (체크리스트 비어있음)"));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-void ULevelToolValidator::ValidatePresetManager(FValidationResult& Out)
-{
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	auto* PM = DIS ? DIS->GetPresetManager() : nullptr;
-	if (!PM) return;
-
-	if (PM->GetReferencePresets().Num() == 11)
-		Pass(Out, TEXT("레퍼런스 프리셋 11종 로드"));
-	else
-		Error(Out, FString::Printf(TEXT("레퍼런스 프리셋 %d종 (기대: 11)"), PM->GetReferencePresets().Num()));
-
-	Pass(Out, FString::Printf(TEXT("커스텀 프리셋 %d종"), PM->GetCustomPresets().Num()));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

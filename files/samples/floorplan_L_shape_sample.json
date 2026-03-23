@@ -1,0 +1,129 @@
+{
+  "version": "1.0",
+  "building_name": "Hospital_C_L_Shape",
+  "source": "manual",
+  "source_file": "",
+  "scale": {
+    "unit": "meter",
+    "pixels_per_meter": 0,
+    "origin": [0.0, 0.0]
+  },
+  "floors": [
+    {
+      "floor_index": 0,
+      "label": "1F",
+      "elevation_m": 0.0,
+      "height_m": 3.5,
+      "walls": [
+        { "wall_id": "w_001", "start": [0.0, 0.0],   "end": [30.0, 0.0],  "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_001", "type": "door", "offset_m": 13.0, "width_m": 2.0, "height_m": 2.5, "sill_m": 0.0 },
+          { "opening_id": "op_002", "type": "window", "offset_m": 4.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 },
+          { "opening_id": "op_003", "type": "window", "offset_m": 22.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+        { "wall_id": "w_002", "start": [30.0, 0.0],  "end": [30.0, 12.0], "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_004", "type": "window", "offset_m": 4.0, "width_m": 1.5, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+        { "wall_id": "w_003", "start": [30.0, 12.0], "end": [18.0, 12.0], "thickness_m": 0.25, "type": "exterior", "openings": [] },
+        { "wall_id": "w_004", "start": [18.0, 12.0], "end": [18.0, 20.0], "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_005", "type": "window", "offset_m": 3.0, "width_m": 1.5, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+        { "wall_id": "w_005", "start": [18.0, 20.0], "end": [0.0, 20.0],  "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_006", "type": "door", "offset_m": 7.0, "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 },
+          { "opening_id": "op_007", "type": "window", "offset_m": 14.0, "width_m": 1.5, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+        { "wall_id": "w_006", "start": [0.0, 20.0],  "end": [0.0, 0.0],   "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_008", "type": "door", "offset_m": 8.0, "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 },
+          { "opening_id": "op_009", "type": "window", "offset_m": 15.0, "width_m": 1.5, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+
+        { "wall_id": "w_010", "start": [0.0, 3.0],   "end": [18.0, 3.0],  "thickness_m": 0.15, "type": "interior", "openings": [
+          { "opening_id": "op_010", "type": "door", "offset_m": 6.0,  "width_m": 1.0, "height_m": 2.1, "sill_m": 0.0 },
+          { "opening_id": "op_011", "type": "door", "offset_m": 13.0, "width_m": 1.0, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_011", "start": [18.0, 0.0],  "end": [18.0, 12.0], "thickness_m": 0.15, "type": "interior", "openings": [
+          { "opening_id": "op_012", "type": "door", "offset_m": 5.0, "width_m": 1.0, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_012", "start": [9.0, 3.0],   "end": [9.0, 12.0],  "thickness_m": 0.12, "type": "partition", "openings": [
+          { "opening_id": "op_013", "type": "door", "offset_m": 3.0, "width_m": 0.9, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_013", "start": [0.0, 12.0],  "end": [18.0, 12.0], "thickness_m": 0.15, "type": "interior", "openings": [
+          { "opening_id": "op_014", "type": "door", "offset_m": 4.0, "width_m": 1.0, "height_m": 2.1, "sill_m": 0.0 },
+          { "opening_id": "op_015", "type": "door", "offset_m": 12.0, "width_m": 1.0, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_014", "start": [9.0, 12.0],  "end": [9.0, 20.0],  "thickness_m": 0.12, "type": "partition", "openings": [] }
+      ],
+      "rooms": [
+        {
+          "room_id": "r_001",
+          "label": "1층 복도 (L자)",
+          "boundary_wall_ids": ["w_001", "w_011", "w_010", "w_006"],
+          "polygon": [[0,0], [18,0], [18,3], [0,3]],
+          "area_m2": 54.0,
+          "usage": "corridor"
+        },
+        {
+          "room_id": "r_002",
+          "label": "진료실 A",
+          "boundary_wall_ids": ["w_010", "w_012", "w_013", "w_006"],
+          "polygon": [[0,3], [9,3], [9,12], [0,12]],
+          "area_m2": 81.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_003",
+          "label": "진료실 B",
+          "boundary_wall_ids": ["w_012", "w_011", "w_003", "w_013"],
+          "polygon": [[9,3], [18,3], [18,12], [9,12]],
+          "area_m2": 81.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_004",
+          "label": "대기실",
+          "boundary_wall_ids": ["w_011", "w_002", "w_003"],
+          "polygon": [[18,0], [30,0], [30,12], [18,12]],
+          "area_m2": 144.0,
+          "usage": "lobby"
+        },
+        {
+          "room_id": "r_005",
+          "label": "병실 A",
+          "boundary_wall_ids": ["w_013", "w_014", "w_005", "w_006"],
+          "polygon": [[0,12], [9,12], [9,20], [0,20]],
+          "area_m2": 72.0,
+          "usage": "other"
+        },
+        {
+          "room_id": "r_006",
+          "label": "병실 B",
+          "boundary_wall_ids": ["w_014", "w_004", "w_005", "w_013"],
+          "polygon": [[9,12], [18,12], [18,20], [9,20]],
+          "area_m2": 72.0,
+          "usage": "other"
+        }
+      ],
+      "stairs": [
+        {
+          "stair_id": "st_001",
+          "location": [15.0, 1.5],
+          "size_m": [2.5, 3.0],
+          "type": "straight",
+          "connects_floors": [0, 1],
+          "direction_deg": 90
+        }
+      ],
+      "columns": [],
+      "elevators": []
+    }
+  ],
+  "bridges": [],
+  "metadata": {
+    "author": "LevelTool",
+    "created": "2026-03-20T12:00:00Z",
+    "notes": "L자형 병원 샘플 — 1층 30m×12m 주동 + 18m×8m 별동(위쪽). 외벽이 6개 세그먼트로 L자 형성. 진료실2+대기실+병실2+복도."
+  }
+}

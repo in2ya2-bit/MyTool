@@ -1,0 +1,1373 @@
+{
+  "version": "1.0",
+  "building_name": "Generated_rectangle_20x12_3F",
+  "source": "parameter_generator",
+  "source_file": "",
+  "scale": {
+    "unit": "meter",
+    "pixels_per_meter": 0,
+    "origin": [
+      0.0,
+      0.0
+    ]
+  },
+  "floors": [
+    {
+      "floor_index": 0,
+      "label": "1F",
+      "elevation_m": 0.0,
+      "height_m": 3.5,
+      "walls": [
+        {
+          "wall_id": "w_001",
+          "start": [
+            0,
+            0
+          ],
+          "end": [
+            20.0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_001",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_002",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_003",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_004",
+              "type": "window",
+              "offset_m": 10.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_005",
+              "type": "window",
+              "offset_m": 13.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_006",
+              "type": "window",
+              "offset_m": 16.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_019",
+              "type": "door",
+              "offset_m": 9.0,
+              "width_m": 2.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            }
+          ]
+        },
+        {
+          "wall_id": "w_002",
+          "start": [
+            20.0,
+            0
+          ],
+          "end": [
+            20.0,
+            12.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_007",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_008",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_009",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_003",
+          "start": [
+            20.0,
+            12.0
+          ],
+          "end": [
+            0,
+            12.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_010",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_011",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_012",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_013",
+              "type": "window",
+              "offset_m": 10.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_014",
+              "type": "window",
+              "offset_m": 13.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_015",
+              "type": "window",
+              "offset_m": 16.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_004",
+          "start": [
+            0,
+            12.0
+          ],
+          "end": [
+            0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_016",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_017",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_018",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_005",
+          "start": [
+            0,
+            3.0
+          ],
+          "end": [
+            20.0,
+            3.0
+          ],
+          "thickness_m": 0.15,
+          "type": "interior",
+          "openings": [
+            {
+              "opening_id": "op_020",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_021",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_022",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_023",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            }
+          ]
+        },
+        {
+          "wall_id": "w_007",
+          "start": [
+            5.0,
+            3.0
+          ],
+          "end": [
+            5.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        },
+        {
+          "wall_id": "w_009",
+          "start": [
+            10.0,
+            3.0
+          ],
+          "end": [
+            10.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        },
+        {
+          "wall_id": "w_011",
+          "start": [
+            15.0,
+            3.0
+          ],
+          "end": [
+            15.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        }
+      ],
+      "rooms": [
+        {
+          "room_id": "r_001",
+          "label": "Corridor",
+          "polygon": [
+            [
+              0,
+              0
+            ],
+            [
+              20.0,
+              0
+            ],
+            [
+              20.0,
+              3.0
+            ],
+            [
+              0,
+              3.0
+            ]
+          ],
+          "area_m2": 60.0,
+          "usage": "corridor"
+        },
+        {
+          "room_id": "r_002",
+          "label": "Room 1",
+          "polygon": [
+            [
+              0.0,
+              3.0
+            ],
+            [
+              5.0,
+              3.0
+            ],
+            [
+              5.0,
+              12.0
+            ],
+            [
+              0.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_003",
+          "label": "Room 2",
+          "polygon": [
+            [
+              5.0,
+              3.0
+            ],
+            [
+              10.0,
+              3.0
+            ],
+            [
+              10.0,
+              12.0
+            ],
+            [
+              5.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_004",
+          "label": "Room 3",
+          "polygon": [
+            [
+              10.0,
+              3.0
+            ],
+            [
+              15.0,
+              3.0
+            ],
+            [
+              15.0,
+              12.0
+            ],
+            [
+              10.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_005",
+          "label": "Stairwell 4",
+          "polygon": [
+            [
+              15.0,
+              3.0
+            ],
+            [
+              20.0,
+              3.0
+            ],
+            [
+              20.0,
+              12.0
+            ],
+            [
+              15.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "stairwell"
+        }
+      ],
+      "stairs": [
+        {
+          "stair_id": "st_001",
+          "location": [
+            17.5,
+            7.5
+          ],
+          "size_m": [
+            2.5,
+            3.0
+          ],
+          "type": "180_turn",
+          "connects_floors": [
+            0,
+            1
+          ],
+          "direction_deg": 90
+        }
+      ],
+      "columns": [],
+      "elevators": []
+    },
+    {
+      "floor_index": 1,
+      "label": "2F",
+      "elevation_m": 3.5,
+      "height_m": 3.5,
+      "walls": [
+        {
+          "wall_id": "w_013",
+          "start": [
+            0,
+            0
+          ],
+          "end": [
+            20.0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_024",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_025",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_026",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_027",
+              "type": "window",
+              "offset_m": 10.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_028",
+              "type": "window",
+              "offset_m": 13.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_029",
+              "type": "window",
+              "offset_m": 16.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_014",
+          "start": [
+            20.0,
+            0
+          ],
+          "end": [
+            20.0,
+            12.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_030",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_031",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_032",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_015",
+          "start": [
+            20.0,
+            12.0
+          ],
+          "end": [
+            0,
+            12.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_033",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_034",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_035",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_036",
+              "type": "window",
+              "offset_m": 10.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_037",
+              "type": "window",
+              "offset_m": 13.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_038",
+              "type": "window",
+              "offset_m": 16.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_016",
+          "start": [
+            0,
+            12.0
+          ],
+          "end": [
+            0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_039",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_040",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_041",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_017",
+          "start": [
+            0,
+            3.0
+          ],
+          "end": [
+            20.0,
+            3.0
+          ],
+          "thickness_m": 0.15,
+          "type": "interior",
+          "openings": [
+            {
+              "opening_id": "op_042",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_043",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_044",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_045",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            }
+          ]
+        },
+        {
+          "wall_id": "w_019",
+          "start": [
+            5.0,
+            3.0
+          ],
+          "end": [
+            5.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        },
+        {
+          "wall_id": "w_021",
+          "start": [
+            10.0,
+            3.0
+          ],
+          "end": [
+            10.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        },
+        {
+          "wall_id": "w_023",
+          "start": [
+            15.0,
+            3.0
+          ],
+          "end": [
+            15.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        }
+      ],
+      "rooms": [
+        {
+          "room_id": "r_006",
+          "label": "Corridor",
+          "polygon": [
+            [
+              0,
+              0
+            ],
+            [
+              20.0,
+              0
+            ],
+            [
+              20.0,
+              3.0
+            ],
+            [
+              0,
+              3.0
+            ]
+          ],
+          "area_m2": 60.0,
+          "usage": "corridor"
+        },
+        {
+          "room_id": "r_007",
+          "label": "Room 1",
+          "polygon": [
+            [
+              0.0,
+              3.0
+            ],
+            [
+              5.0,
+              3.0
+            ],
+            [
+              5.0,
+              12.0
+            ],
+            [
+              0.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_008",
+          "label": "Room 2",
+          "polygon": [
+            [
+              5.0,
+              3.0
+            ],
+            [
+              10.0,
+              3.0
+            ],
+            [
+              10.0,
+              12.0
+            ],
+            [
+              5.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_009",
+          "label": "Room 3",
+          "polygon": [
+            [
+              10.0,
+              3.0
+            ],
+            [
+              15.0,
+              3.0
+            ],
+            [
+              15.0,
+              12.0
+            ],
+            [
+              10.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_010",
+          "label": "Stairwell 4",
+          "polygon": [
+            [
+              15.0,
+              3.0
+            ],
+            [
+              20.0,
+              3.0
+            ],
+            [
+              20.0,
+              12.0
+            ],
+            [
+              15.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "stairwell"
+        }
+      ],
+      "stairs": [
+        {
+          "stair_id": "st_002",
+          "location": [
+            17.5,
+            7.5
+          ],
+          "size_m": [
+            2.5,
+            3.0
+          ],
+          "type": "180_turn",
+          "connects_floors": [
+            1,
+            2
+          ],
+          "direction_deg": 90
+        }
+      ],
+      "columns": [],
+      "elevators": []
+    },
+    {
+      "floor_index": 2,
+      "label": "3F",
+      "elevation_m": 7.0,
+      "height_m": 3.5,
+      "walls": [
+        {
+          "wall_id": "w_025",
+          "start": [
+            0,
+            0
+          ],
+          "end": [
+            20.0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_046",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_047",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_048",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_049",
+              "type": "window",
+              "offset_m": 10.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_050",
+              "type": "window",
+              "offset_m": 13.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_051",
+              "type": "window",
+              "offset_m": 16.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_026",
+          "start": [
+            20.0,
+            0
+          ],
+          "end": [
+            20.0,
+            12.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_052",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_053",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_054",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_027",
+          "start": [
+            20.0,
+            12.0
+          ],
+          "end": [
+            0,
+            12.0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_055",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_056",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_057",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_058",
+              "type": "window",
+              "offset_m": 10.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_059",
+              "type": "window",
+              "offset_m": 13.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_060",
+              "type": "window",
+              "offset_m": 16.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_028",
+          "start": [
+            0,
+            12.0
+          ],
+          "end": [
+            0,
+            0
+          ],
+          "thickness_m": 0.25,
+          "type": "exterior",
+          "openings": [
+            {
+              "opening_id": "op_061",
+              "type": "window",
+              "offset_m": 1.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_062",
+              "type": "window",
+              "offset_m": 4.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            },
+            {
+              "opening_id": "op_063",
+              "type": "window",
+              "offset_m": 7.0,
+              "width_m": 1.5,
+              "height_m": 1.5,
+              "sill_m": 0.9
+            }
+          ]
+        },
+        {
+          "wall_id": "w_029",
+          "start": [
+            0,
+            3.0
+          ],
+          "end": [
+            20.0,
+            3.0
+          ],
+          "thickness_m": 0.15,
+          "type": "interior",
+          "openings": [
+            {
+              "opening_id": "op_064",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_065",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_066",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            },
+            {
+              "opening_id": "op_067",
+              "type": "door",
+              "offset_m": 2.0,
+              "width_m": 1.0,
+              "height_m": 2.1,
+              "sill_m": 0.0
+            }
+          ]
+        },
+        {
+          "wall_id": "w_031",
+          "start": [
+            5.0,
+            3.0
+          ],
+          "end": [
+            5.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        },
+        {
+          "wall_id": "w_033",
+          "start": [
+            10.0,
+            3.0
+          ],
+          "end": [
+            10.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        },
+        {
+          "wall_id": "w_035",
+          "start": [
+            15.0,
+            3.0
+          ],
+          "end": [
+            15.0,
+            12.0
+          ],
+          "thickness_m": 0.12,
+          "type": "partition",
+          "openings": []
+        }
+      ],
+      "rooms": [
+        {
+          "room_id": "r_011",
+          "label": "Corridor",
+          "polygon": [
+            [
+              0,
+              0
+            ],
+            [
+              20.0,
+              0
+            ],
+            [
+              20.0,
+              3.0
+            ],
+            [
+              0,
+              3.0
+            ]
+          ],
+          "area_m2": 60.0,
+          "usage": "corridor"
+        },
+        {
+          "room_id": "r_012",
+          "label": "Room 1",
+          "polygon": [
+            [
+              0.0,
+              3.0
+            ],
+            [
+              5.0,
+              3.0
+            ],
+            [
+              5.0,
+              12.0
+            ],
+            [
+              0.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_013",
+          "label": "Room 2",
+          "polygon": [
+            [
+              5.0,
+              3.0
+            ],
+            [
+              10.0,
+              3.0
+            ],
+            [
+              10.0,
+              12.0
+            ],
+            [
+              5.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_014",
+          "label": "Room 3",
+          "polygon": [
+            [
+              10.0,
+              3.0
+            ],
+            [
+              15.0,
+              3.0
+            ],
+            [
+              15.0,
+              12.0
+            ],
+            [
+              10.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_015",
+          "label": "Stairwell 4",
+          "polygon": [
+            [
+              15.0,
+              3.0
+            ],
+            [
+              20.0,
+              3.0
+            ],
+            [
+              20.0,
+              12.0
+            ],
+            [
+              15.0,
+              12.0
+            ]
+          ],
+          "area_m2": 45.0,
+          "usage": "stairwell"
+        }
+      ],
+      "stairs": [
+        {
+          "stair_id": "st_003",
+          "location": [
+            17.5,
+            7.5
+          ],
+          "size_m": [
+            2.5,
+            3.0
+          ],
+          "type": "180_turn",
+          "connects_floors": [
+            1,
+            2
+          ],
+          "direction_deg": 90
+        }
+      ],
+      "columns": [],
+      "elevators": []
+    }
+  ],
+  "bridges": [],
+  "metadata": {
+    "author": "floorplan_generator.py",
+    "created": "2026-03-23T07:44:33Z",
+    "parameters": {
+      "building_width": 20.0,
+      "building_depth": 12.0,
+      "num_floors": 3,
+      "rooms_per_floor": 4,
+      "has_windows": true,
+      "door_placement": "every_room",
+      "corridor_type": "single",
+      "building_shape": "rectangle",
+      "stair_location": "end",
+      "seed": 0
+    }
+  }
+}

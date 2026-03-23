@@ -1,7 +1,6 @@
 #include "EditLayerApplicator.h"
 #include "EditLayerManager.h"
 #include "LevelToolSubsystem.h"
-#include "DesignerIntentSubsystem.h"
 
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
@@ -203,10 +202,11 @@ void UEditLayerApplicator::SaveTerrainBaseToDisk()
 {
 	if (TerrainBaseHeightmap.Num() == 0) return;
 
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	if (!DIS) return;
+	auto* LTS = GEditor ? GEditor->GetEditorSubsystem<ULevelToolSubsystem>() : nullptr;
+	auto* LM = LTS ? LTS->GetEditLayerManager() : nullptr;
+	if (!LM || LM->GetMapId().IsEmpty()) return;
 
-	FString Dir = FPaths::GetPath(DIS->GetMapMetaPath());
+	FString Dir = FPaths::ProjectSavedDir() / TEXT("LevelTool") / TEXT("EditLayers") / LM->GetMapId();
 	FString FilePath = Dir / TEXT("heightmap_base.bin");
 
 	TArray<uint8> Header;
@@ -227,10 +227,11 @@ void UEditLayerApplicator::SaveTerrainBaseToDisk()
 
 bool UEditLayerApplicator::LoadTerrainBaseFromDisk()
 {
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	if (!DIS) return false;
+	auto* LTS = GEditor ? GEditor->GetEditorSubsystem<ULevelToolSubsystem>() : nullptr;
+	auto* LM = LTS ? LTS->GetEditLayerManager() : nullptr;
+	if (!LM || LM->GetMapId().IsEmpty()) return false;
 
-	FString Dir = FPaths::GetPath(DIS->GetMapMetaPath());
+	FString Dir = FPaths::ProjectSavedDir() / TEXT("LevelTool") / TEXT("EditLayers") / LM->GetMapId();
 	FString FilePath = Dir / TEXT("heightmap_base.bin");
 
 	TArray<uint8> Data;
@@ -434,60 +435,10 @@ void UEditLayerApplicator::ApplyBuildingAdd(FEditLayer& Layer)
 	float   FootprintM2 = Layer.Params->GetNumberField(TEXT("footprint_m2"));
 	float   Aspect      = FMath::Max(1.f, (float)Layer.Params->GetNumberField(TEXT("aspect_ratio")));
 
-	// P0-3: 인접 건물 형상 분석 — TypeKey/footprint/aspect 자동 도출
 	if (TypeKey.IsEmpty() || TypeKey == TEXT("auto"))
 	{
-		auto* LTS = GEditor->GetEditorSubsystem<ULevelToolSubsystem>();
-		auto* DIS = GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>();
-		if (DIS && DIS->GetCachedBuildings().Num() > 0)
-		{
-			const FVector2D Loc2D(Layer.Area.Point.LocationUE5.X, Layer.Area.Point.LocationUE5.Y);
-			const float SearchRadius = 30000.f; // 300m
-
-			TMap<FString, int32> TypeCounts;
-			TArray<float> NearFootprints;
-			TArray<float> NearAspects;
-
-			for (const auto& B : DIS->GetCachedBuildings())
-			{
-				if (FVector2D::Distance(B.CentroidUE5, Loc2D) < SearchRadius)
-				{
-					TypeCounts.FindOrAdd(B.TypeKey)++;
-					NearFootprints.Add(B.AreaM2);
-					if (B.AreaM2 > 0.f && B.HeightM > 0.f)
-					{
-						float Side = FMath::Sqrt(B.AreaM2);
-						NearAspects.Add(FMath::Max(1.f, B.HeightM * 3.f / Side));
-					}
-				}
-			}
-
-			if (TypeCounts.Num() > 0)
-			{
-				FString BestType;
-				int32 BestCount = 0;
-				for (const auto& KV : TypeCounts)
-				{
-					if (KV.Value > BestCount) { BestCount = KV.Value; BestType = KV.Key; }
-				}
-				TypeKey = BestType;
-				Layer.Params->SetStringField(TEXT("type_key"), TypeKey);
-			}
-
-			if (NearFootprints.Num() > 0)
-			{
-				NearFootprints.Sort();
-				FootprintM2 = NearFootprints[NearFootprints.Num() / 2];
-				Layer.Params->SetNumberField(TEXT("footprint_m2"), FootprintM2);
-			}
-
-			if (NearAspects.Num() > 0)
-			{
-				NearAspects.Sort();
-				Aspect = NearAspects[NearAspects.Num() / 2];
-				Layer.Params->SetNumberField(TEXT("aspect_ratio"), Aspect);
-			}
-		}
+		TypeKey = TEXT("residential");
+		Layer.Params->SetStringField(TEXT("type_key"), TypeKey);
 	}
 
 	// P0-4: 배치 충돌 해소
@@ -811,9 +762,8 @@ void UEditLayerApplicator::ApplyRoadWidth(FEditLayer& Layer)
 		return;
 	}
 
-	// Find the source RoadAdd layer to get path points
-	auto* DIS = GEditor ? GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>() : nullptr;
-	auto* LM = DIS ? DIS->GetLayerManager() : nullptr;
+	auto* LTS = GEditor ? GEditor->GetEditorSubsystem<ULevelToolSubsystem>() : nullptr;
+	auto* LM = LTS ? LTS->GetEditLayerManager() : nullptr;
 	if (!LM) return;
 
 	const TArray<FVector2D>* PathPts = nullptr;

@@ -63,7 +63,7 @@ public:
     const FLevelToolJobResult& GetLastResult() const { return LastResult; }
     const TArray<FString>& GetLogLines() const { return LogLines; }
 
-    // ── Edit Layer Manager (S1 — 2~3단계 공유 비파괴 레이어 시스템) ───
+    // ── Edit Layer Manager (비파괴 레이어 시스템) ────────────────────
     UEditLayerManager* GetEditLayerManager() const { return EditLayerManager; }
 
     // ── Main API ─────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ private:
     // ── Splat map import ─────────────────────────────────────────────────
     void ImportSplatMapsAsTextures(const FString& HeightmapPngPath, ALandscape* Landscape);
 
-    // ── Map Meta (stable_id 인프라 + 2단계 공유 메타데이터) ─────────────
+    // ── Map Meta ──────────────────────────────────────────────────────
     void SaveMapMeta(const FString& MapId, float Lat, float Lon, float RadiusKm,
                      const FLevelToolJobResult& Result);
     FString GetEditLayerDir(const FString& MapId) const;

@@ -10,12 +10,10 @@ public:
     virtual void StartupModule()  override;
     virtual void ShutdownModule() override;
 
-    static const FName TabId;
-    static const FName DesignerIntentTabId;
+	static const FName TabId;
 
 private:
-    TSharedRef<SDockTab> OnSpawnTab(const FSpawnTabArgs& Args);
-    TSharedRef<SDockTab> OnSpawnDesignerIntentTab(const FSpawnTabArgs& Args);
-    void RegisterMenuEntry();
-    void RegisterSettings();
+	TSharedRef<SDockTab> OnSpawnTab(const FSpawnTabArgs& Args);
+	void RegisterMenuEntry();
+	void RegisterSettings();
 };

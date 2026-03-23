@@ -1,7 +1,6 @@
 #include "LevelToolSubsystem.h"
 #include "LevelToolSettings.h"
 #include "EditLayerManager.h"
-#include "DesignerIntentSubsystem.h"
 
 #include "Async/Async.h"
 #include "Misc/FileHelper.h"
@@ -215,10 +214,7 @@ void ULevelToolSubsystem::RunFullPipeline(
                     Self->EditLayerManager->Initialize(MapId);
                 }
 
-                if (auto* DIS = GEditor->GetEditorSubsystem<UDesignerIntentSubsystem>())
-                {
-                    DIS->OnStage1Complete(MapId);
-                }
+                // TODO(S1): Reference Map Generation hook will be added here
             }
 
             if (PostWorld)

@@ -1,0 +1,187 @@
+{
+  "version": "1.0",
+  "building_name": "Factory_A",
+  "source": "manual",
+  "source_file": "",
+  "scale": {
+    "unit": "meter",
+    "pixels_per_meter": 0,
+    "origin": [0.0, 0.0]
+  },
+  "floors": [
+    {
+      "floor_index": 0,
+      "label": "1F",
+      "elevation_m": 0.0,
+      "height_m": 6.0,
+      "walls": [
+        { "wall_id": "w_001", "start": [0.0, 0.0],   "end": [60.0, 0.0],  "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_001", "type": "shutter", "offset_m": 5.0,  "width_m": 5.0, "height_m": 4.5, "sill_m": 0.0 },
+          { "opening_id": "op_002", "type": "shutter", "offset_m": 25.0, "width_m": 5.0, "height_m": 4.5, "sill_m": 0.0 },
+          { "opening_id": "op_003", "type": "door",    "offset_m": 50.0, "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+        { "wall_id": "w_002", "start": [60.0, 0.0],  "end": [60.0, 40.0], "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_004", "type": "window", "offset_m": 10.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 1.0 },
+          { "opening_id": "op_005", "type": "window", "offset_m": 25.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 1.0 }
+        ]},
+        { "wall_id": "w_003", "start": [60.0, 40.0], "end": [0.0, 40.0],  "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_006", "type": "door",   "offset_m": 28.0, "width_m": 1.5, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+        { "wall_id": "w_004", "start": [0.0, 40.0],  "end": [0.0, 0.0],   "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_007", "type": "door",   "offset_m": 18.0, "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_005", "start": [40.0, 0.0],  "end": [40.0, 30.0], "thickness_m": 0.15, "type": "interior", "openings": [
+          { "opening_id": "op_008", "type": "door", "offset_m": 12.0, "width_m": 1.5, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+        { "wall_id": "w_006", "start": [40.0, 30.0], "end": [0.0, 30.0],  "thickness_m": 0.15, "type": "interior", "openings": [
+          { "opening_id": "op_009", "type": "door", "offset_m": 5.0,  "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 },
+          { "opening_id": "op_010", "type": "door", "offset_m": 20.0, "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_007", "start": [40.0, 30.0], "end": [60.0, 30.0], "thickness_m": 0.15, "type": "interior", "openings": [
+          { "opening_id": "op_011", "type": "door", "offset_m": 8.0, "width_m": 1.2, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_008", "start": [15.0, 30.0], "end": [15.0, 40.0], "thickness_m": 0.12, "type": "partition", "openings": [
+          { "opening_id": "op_012", "type": "door", "offset_m": 4.0, "width_m": 0.9, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+
+        { "wall_id": "w_009", "start": [30.0, 30.0], "end": [30.0, 40.0], "thickness_m": 0.12, "type": "partition", "openings": [
+          { "opening_id": "op_013", "type": "door", "offset_m": 4.0, "width_m": 0.9, "height_m": 2.1, "sill_m": 0.0 }
+        ]}
+      ],
+      "rooms": [
+        {
+          "room_id": "r_001",
+          "label": "생산 라인",
+          "boundary_wall_ids": ["w_001", "w_005", "w_006", "w_004"],
+          "polygon": [[0,0], [40,0], [40,30], [0,30]],
+          "area_m2": 1200.0,
+          "usage": "production"
+        },
+        {
+          "room_id": "r_002",
+          "label": "창고",
+          "boundary_wall_ids": ["w_001", "w_002", "w_007", "w_005"],
+          "polygon": [[40,0], [60,0], [60,30], [40,30]],
+          "area_m2": 600.0,
+          "usage": "storage"
+        },
+        {
+          "room_id": "r_003",
+          "label": "사무실",
+          "boundary_wall_ids": ["w_006", "w_008", "w_003", "w_004"],
+          "polygon": [[0,30], [15,30], [15,40], [0,40]],
+          "area_m2": 150.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_004",
+          "label": "제어실",
+          "boundary_wall_ids": ["w_008", "w_009", "w_003", "w_006"],
+          "polygon": [[15,30], [30,30], [30,40], [15,40]],
+          "area_m2": 150.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_005",
+          "label": "계단실/로딩 도크",
+          "boundary_wall_ids": ["w_009", "w_007", "w_003", "w_002"],
+          "polygon": [[30,30], [60,30], [60,40], [30,40]],
+          "area_m2": 300.0,
+          "usage": "utility"
+        }
+      ],
+      "stairs": [
+        {
+          "stair_id": "st_001",
+          "location": [55.0, 35.0],
+          "size_m": [3.0, 5.0],
+          "type": "180_turn",
+          "connects_floors": [0, 1],
+          "direction_deg": 90
+        }
+      ],
+      "columns": [
+        { "column_id": "col_001", "center": [10.0, 10.0], "size_m": [0.4, 0.4], "shape": "square" },
+        { "column_id": "col_002", "center": [20.0, 10.0], "size_m": [0.4, 0.4], "shape": "square" },
+        { "column_id": "col_003", "center": [30.0, 10.0], "size_m": [0.4, 0.4], "shape": "square" },
+        { "column_id": "col_004", "center": [10.0, 20.0], "size_m": [0.4, 0.4], "shape": "square" },
+        { "column_id": "col_005", "center": [20.0, 20.0], "size_m": [0.4, 0.4], "shape": "square" },
+        { "column_id": "col_006", "center": [30.0, 20.0], "size_m": [0.4, 0.4], "shape": "square" }
+      ],
+      "elevators": []
+    },
+    {
+      "floor_index": 1,
+      "label": "2F",
+      "elevation_m": 6.0,
+      "height_m": 4.0,
+      "walls": [
+        { "wall_id": "w_101", "start": [0.0, 30.0],  "end": [60.0, 30.0], "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_101", "type": "window", "offset_m": 8.0,  "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 },
+          { "opening_id": "op_102", "type": "window", "offset_m": 20.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 },
+          { "opening_id": "op_103", "type": "window", "offset_m": 38.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+        { "wall_id": "w_102", "start": [60.0, 30.0], "end": [60.0, 40.0], "thickness_m": 0.25, "type": "exterior", "openings": [] },
+        { "wall_id": "w_103", "start": [60.0, 40.0], "end": [0.0, 40.0],  "thickness_m": 0.25, "type": "exterior", "openings": [
+          { "opening_id": "op_104", "type": "window", "offset_m": 15.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 },
+          { "opening_id": "op_105", "type": "window", "offset_m": 40.0, "width_m": 2.0, "height_m": 1.5, "sill_m": 0.9 }
+        ]},
+        { "wall_id": "w_104", "start": [0.0, 40.0],  "end": [0.0, 30.0],  "thickness_m": 0.25, "type": "exterior", "openings": [] },
+
+        { "wall_id": "w_105", "start": [20.0, 30.0], "end": [20.0, 40.0], "thickness_m": 0.12, "type": "partition", "openings": [
+          { "opening_id": "op_106", "type": "door", "offset_m": 4.0, "width_m": 0.9, "height_m": 2.1, "sill_m": 0.0 }
+        ]},
+        { "wall_id": "w_106", "start": [40.0, 30.0], "end": [40.0, 40.0], "thickness_m": 0.12, "type": "partition", "openings": [
+          { "opening_id": "op_107", "type": "door", "offset_m": 4.0, "width_m": 0.9, "height_m": 2.1, "sill_m": 0.0 }
+        ]}
+      ],
+      "rooms": [
+        {
+          "room_id": "r_101",
+          "label": "관리 사무실",
+          "boundary_wall_ids": ["w_101", "w_105", "w_103", "w_104"],
+          "polygon": [[0,30], [20,30], [20,40], [0,40]],
+          "area_m2": 200.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_102",
+          "label": "회의실",
+          "boundary_wall_ids": ["w_105", "w_106", "w_103", "w_101"],
+          "polygon": [[20,30], [40,30], [40,40], [20,40]],
+          "area_m2": 200.0,
+          "usage": "office"
+        },
+        {
+          "room_id": "r_103",
+          "label": "2층 계단실/복도",
+          "boundary_wall_ids": ["w_106", "w_102", "w_103", "w_101"],
+          "polygon": [[40,30], [60,30], [60,40], [40,40]],
+          "area_m2": 200.0,
+          "usage": "corridor"
+        }
+      ],
+      "stairs": [
+        {
+          "stair_id": "st_101",
+          "location": [55.0, 35.0],
+          "size_m": [3.0, 5.0],
+          "type": "180_turn",
+          "connects_floors": [0, 1],
+          "direction_deg": 90
+        }
+      ],
+      "columns": [],
+      "elevators": []
+    }
+  ],
+  "bridges": [],
+  "metadata": {
+    "author": "LevelTool",
+    "created": "2026-03-20T12:00:00Z",
+    "notes": "공장 샘플 — 1층 생산라인+창고+사무실, 2층 관리 사무실. 60m×40m footprint."
+  }
+}

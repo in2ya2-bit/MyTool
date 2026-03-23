@@ -1,0 +1,155 @@
+{
+  "version": "1.0",
+  "building_name": "",
+  "source": "manual",
+  "source_file": "",
+  "scale": {
+    "unit": "meter",
+    "pixels_per_meter": 0,
+    "origin": [0.0, 0.0]
+  },
+  "floors": [],
+  "bridges": [
+    {
+      "bridge_id": "br_001",
+      "label": "Main Highway Bridge",
+      "type": "beam",
+      "path": [
+        [0.0, 0.0, 12.0],
+        [40.0, 0.0, 12.0],
+        [80.0, 0.0, 12.5],
+        [120.0, 0.0, 13.0],
+        [160.0, 0.0, 12.5],
+        [200.0, 0.0, 12.0]
+      ],
+      "deck": {
+        "width_m": 14.0,
+        "thickness_m": 1.2,
+        "lanes": 4,
+        "sidewalk_width_m": 1.5,
+        "sidewalk_height_offset_m": 0.15
+      },
+      "piers": [
+        {
+          "pier_id": "p_001",
+          "station_m": 40.0,
+          "width_m": 3.0,
+          "depth_m": 2.0,
+          "top_z": 10.8,
+          "bottom_z": 0.0
+        },
+        {
+          "pier_id": "p_002",
+          "station_m": 80.0,
+          "width_m": 3.0,
+          "depth_m": 2.0,
+          "top_z": 11.3,
+          "bottom_z": 0.0
+        },
+        {
+          "pier_id": "p_003",
+          "station_m": 120.0,
+          "width_m": 3.0,
+          "depth_m": 2.0,
+          "top_z": 11.8,
+          "bottom_z": 0.0
+        },
+        {
+          "pier_id": "p_004",
+          "station_m": 160.0,
+          "width_m": 3.0,
+          "depth_m": 2.0,
+          "top_z": 11.3,
+          "bottom_z": 0.0
+        }
+      ],
+      "abutments": [
+        {
+          "abutment_id": "ab_001",
+          "station_m": 0.0,
+          "width_m": 16.0,
+          "depth_m": 4.0,
+          "top_z": 12.0,
+          "bottom_z": 6.0
+        },
+        {
+          "abutment_id": "ab_002",
+          "station_m": 200.0,
+          "width_m": 16.0,
+          "depth_m": 4.0,
+          "top_z": 12.0,
+          "bottom_z": 6.0
+        }
+      ],
+      "railings": {
+        "height_m": 1.1,
+        "thickness_m": 0.15,
+        "post_spacing_m": 2.5
+      }
+    },
+    {
+      "bridge_id": "br_002",
+      "label": "Pedestrian Overpass",
+      "type": "beam",
+      "path": [
+        [0.0, 50.0, 5.0],
+        [15.0, 50.0, 6.5],
+        [30.0, 50.0, 6.5],
+        [45.0, 50.0, 5.0]
+      ],
+      "deck": {
+        "width_m": 3.0,
+        "thickness_m": 0.5,
+        "lanes": 0,
+        "sidewalk_width_m": 0.0,
+        "sidewalk_height_offset_m": 0.0
+      },
+      "piers": [
+        {
+          "pier_id": "p_010",
+          "station_m": 15.0,
+          "width_m": 1.0,
+          "depth_m": 1.0,
+          "top_z": 6.0,
+          "bottom_z": 0.0
+        },
+        {
+          "pier_id": "p_011",
+          "station_m": 30.0,
+          "width_m": 1.0,
+          "depth_m": 1.0,
+          "top_z": 6.0,
+          "bottom_z": 0.0
+        }
+      ],
+      "abutments": [
+        {
+          "abutment_id": "ab_010",
+          "station_m": 0.0,
+          "width_m": 4.0,
+          "depth_m": 2.0,
+          "top_z": 5.0,
+          "bottom_z": 0.0
+        },
+        {
+          "abutment_id": "ab_011",
+          "station_m": 45.0,
+          "width_m": 4.0,
+          "depth_m": 2.0,
+          "top_z": 5.0,
+          "bottom_z": 0.0
+        }
+      ],
+      "railings": {
+        "height_m": 1.2,
+        "thickness_m": 0.1,
+        "post_spacing_m": 2.0
+      }
+    }
+  ],
+  "metadata": {
+    "author": "LevelTool",
+    "created": "2026-03-20T12:00:00Z",
+    "notes": "교량 샘플 2종 — br_001: 200m 4차선 빔 교량 (교각 4개+교대 2개), br_002: 45m 보행자 육교."
+  }
+}

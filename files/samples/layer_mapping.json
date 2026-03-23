@@ -1,0 +1,22 @@
+{
+  "_comment": "DXF 레이어 이름 → floorplan.json 요소 매핑. floorplan_parser.py --layer-mapping 옵션으로 전달.",
+  "walls_exterior": ["A-WALL-EXT", "S-WALL", "벽-외벽", "WALL_EXTERIOR"],
+  "walls_interior": ["A-WALL-INT", "A-WALL", "벽-내벽", "WALL_INTERIOR"],
+  "walls_partition": ["A-WALL-PART", "A-PART", "벽-경량", "PARTITION"],
+  "doors": ["A-DOOR", "DOOR", "문", "A-FLOR-DOOR"],
+  "windows": ["A-GLAZ", "WINDOW", "WIN", "창문", "A-FLOR-WDOW"],
+  "stairs": ["A-STRS", "STAIR", "계단", "A-FLOR-STRS"],
+  "columns": ["S-COLS", "COLUMN", "COL", "기둥", "A-COLS"],
+  "elevators": ["A-ELEV", "ELEVATOR", "엘리베이터"],
+  "ignore": ["A-ANNO", "A-DIMS", "A-TEXT", "DEFPOINTS", "HATCH", "치수", "문자"],
+
+  "thickness_overrides": {
+    "A-WALL-EXT": 0.25,
+    "A-WALL-INT": 0.15,
+    "A-WALL-PART": 0.12,
+    "S-WALL": 0.30
+  },
+
+  "unit": "millimeter",
+  "scale_to_meter": 0.001
+}
