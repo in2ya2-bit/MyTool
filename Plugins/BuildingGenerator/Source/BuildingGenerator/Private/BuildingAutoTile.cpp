@@ -67,7 +67,10 @@ namespace BuildingAutoTile
                 if (!Tile.IsWallFamily())
                 {
                     Tile.WallVariant = EWallVariant::None;
-                    Tile.AutoRotationYaw = 0.f;
+                    if (!Tile.IsStairs())
+                    {
+                        Tile.AutoRotationYaw = 0.f;
+                    }
                     continue;
                 }
 

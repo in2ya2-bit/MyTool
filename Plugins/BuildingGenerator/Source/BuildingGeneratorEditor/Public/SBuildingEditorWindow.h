@@ -12,6 +12,8 @@ enum class EBuildingEditorTool : uint8
 {
     Paint,
     PlacePointLight,
+    ToggleCeiling,
+    ToggleFloor,
 };
 
 class SBuildingEditorWindow : public SCompoundWidget

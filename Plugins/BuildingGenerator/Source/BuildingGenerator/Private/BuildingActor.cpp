@@ -145,7 +145,14 @@ void ABuildingActor::AddTileInstance(
     UHierarchicalInstancedStaticMeshComponent* Comp = GetOrCreateBucket(MeshIdentity, Mesh);
 
     FVector Location = (BuildingData.TileToWorld(FloorIndex, X, Y) + ComputeTilePivot()) * S;
-    FRotator Rotation(0.f, Tile.AutoRotationYaw, 0.f);
+
+    float FinalYaw = Tile.GetFinalYaw();
+    if (Tile.IsWallFamily())
+    {
+        FinalYaw += BuildingData.WallMeshYawOffset;
+    }
+
+    FRotator Rotation(0.f, FinalYaw, 0.f);
     FVector Scale(MS * SXY * S, MS * SXY * S, MS * SZ * S);
     FTransform InstanceTransform(Rotation, Location, Scale);
 
@@ -263,7 +270,14 @@ void ABuildingActor::RestoreInstance(int32 FloorIndex, int32 X, int32 Y)
     const float SZ  = BuildingData.FloorHeight / BASE_FLOOR_HEIGHT;
 
     FVector Location = (BuildingData.TileToWorld(FloorIndex, X, Y) + ComputeTilePivot()) * S;
-    FRotator Rotation(0.f, Tile.AutoRotationYaw, 0.f);
+
+    float FinalYaw = Tile.GetFinalYaw();
+    if (Tile.IsWallFamily())
+    {
+        FinalYaw += BuildingData.WallMeshYawOffset;
+    }
+
+    FRotator Rotation(0.f, FinalYaw, 0.f);
     FVector Scale(MS * SXY * S, MS * SXY * S, MS * SZ * S);
     FTransform OriginalTransform(Rotation, Location, Scale);
 
@@ -282,6 +296,54 @@ void ABuildingActor::RepairHiddenInstances()
         if (Inst.bHidden)
         {
             RestoreInstance(Inst.FloorIndex, Inst.TileX, Inst.TileY);
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  Stair ceiling/floor auto-flags
+// ─────────────────────────────────────────────────────────────────────
+
+void ABuildingActor::AutoApplyStairFlags()
+{
+    for (int32 F = 0; F < BuildingData.Floors.Num(); ++F)
+    {
+        FFloorData& Floor = BuildingData.Floors[F];
+        for (int32 Y = 0; Y < Floor.Height; ++Y)
+        {
+            for (int32 X = 0; X < Floor.Width; ++X)
+            {
+                FTileData& Tile = Floor.GetTile(X, Y);
+
+                if (Tile.TileType == ETileType::Stairs_Up || Tile.TileType == ETileType::Stairs)
+                {
+                    Tile.bNoCeiling = true;
+
+                    int32 NextF = F + 1;
+                    if (BuildingData.Floors.IsValidIndex(NextF))
+                    {
+                        FFloorData& Above = BuildingData.Floors[NextF];
+                        if (Above.IsValidCoord(X, Y))
+                        {
+                            Above.GetTile(X, Y).bNoFloor = true;
+                        }
+                    }
+                }
+                else if (Tile.TileType == ETileType::Stairs_Down)
+                {
+                    Tile.bNoFloor = true;
+
+                    int32 PrevF = F - 1;
+                    if (BuildingData.Floors.IsValidIndex(PrevF))
+                    {
+                        FFloorData& Below = BuildingData.Floors[PrevF];
+                        if (Below.IsValidCoord(X, Y))
+                        {
+                            Below.GetTile(X, Y).bNoCeiling = true;
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -309,6 +371,8 @@ void ABuildingActor::RebuildHISM()
     BuildingAutoTile::ProcessBuilding(BuildingData);
     ComputeCachedMeshScale();
 
+    AutoApplyStairFlags();
+
     for (int32 F = 0; F < BuildingData.Floors.Num(); ++F)
     {
         const FFloorData& Floor = BuildingData.Floors[F];
@@ -319,12 +383,17 @@ void ABuildingActor::RebuildHISM()
                 const FTileData& Tile = Floor.GetTile(X, Y);
                 AddTileInstance(F, X, Y, Tile);
 
+                bool bSkipFloor = Tile.bNoFloor;
                 if (Tile.IsWallFamily() || Tile.IsStairs())
                 {
-                    AddBaseFloorInstance(F, X, Y);
+                    if (!bSkipFloor)
+                    {
+                        AddBaseFloorInstance(F, X, Y);
+                    }
                 }
 
-                if (!Tile.IsEmpty() && !Tile.IsStairs())
+                bool bSkipCeiling = Tile.bNoCeiling || Tile.IsStairs();
+                if (!Tile.IsEmpty() && !bSkipCeiling)
                 {
                     AddCeilingInstance(F, X, Y);
                 }

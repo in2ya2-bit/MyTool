@@ -97,6 +97,7 @@ private:
     void AddTileInstance(int32 FloorIndex, int32 X, int32 Y, const FTileData& Tile);
     void AddBaseFloorInstance(int32 FloorIndex, int32 X, int32 Y);
     void AddCeilingInstance(int32 FloorIndex, int32 X, int32 Y);
+    void AutoApplyStairFlags();
     void ClearAllBuckets();
     void DestroyAllEditProxies();
 

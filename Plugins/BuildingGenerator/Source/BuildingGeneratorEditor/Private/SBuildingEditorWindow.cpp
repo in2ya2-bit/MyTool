@@ -125,16 +125,88 @@ void SBuildingEditorWindow::OnTileClicked(int32 X, int32 Y, bool bCtrl)
     ABuildingActor* Actor = TargetActor.Get();
     if (!Actor) return;
 
-    if (bCtrl)
-    {
-        StatusText->SetText(LOCTEXT("CtrlClickInfo",
-            "Ctrl+Click: EditProxy mode (select tile in Details panel)"));
+    if (!Actor->BuildingData.Floors.IsValidIndex(CurrentFloorIndex))
         return;
-    }
 
     if (CurrentTool == EBuildingEditorTool::PlacePointLight)
     {
         SpawnPointLightAtTile(X, Y);
+        return;
+    }
+
+    if (CurrentTool == EBuildingEditorTool::ToggleCeiling || CurrentTool == EBuildingEditorTool::ToggleFloor)
+    {
+        FFloorData& TglFloor = Actor->BuildingData.Floors[CurrentFloorIndex];
+        if (!TglFloor.IsValidCoord(X, Y))
+            return;
+
+        FScopedTransaction Transaction(LOCTEXT("ToggleCeilFloor", "BuildingGenerator: Toggle Ceiling/Floor"));
+        Actor->Modify();
+
+        FTileData& Tile = TglFloor.GetTile(X, Y);
+        if (CurrentTool == EBuildingEditorTool::ToggleCeiling)
+        {
+            Tile.bNoCeiling = !Tile.bNoCeiling;
+            StatusText->SetText(FText::FromString(
+                FString::Printf(TEXT("(%d, %d) ceiling: %s"),
+                    X, Y, Tile.bNoCeiling ? TEXT("OFF") : TEXT("ON"))));
+        }
+        else
+        {
+            Tile.bNoFloor = !Tile.bNoFloor;
+            StatusText->SetText(FText::FromString(
+                FString::Printf(TEXT("(%d, %d) floor: %s"),
+                    X, Y, Tile.bNoFloor ? TEXT("OFF") : TEXT("ON"))));
+        }
+
+        Actor->RebuildHISM();
+        if (TilemapGrid.IsValid()) TilemapGrid->Invalidate(EInvalidateWidgetReason::Paint);
+        FocusViewportOnTile(X, Y);
+        return;
+    }
+
+    FFloorData& Floor = Actor->BuildingData.Floors[CurrentFloorIndex];
+    if (!Floor.IsValidCoord(X, Y))
+        return;
+
+    FTileData& ExistingTile = Floor.GetTile(X, Y);
+
+    auto RotateTile = [&]()
+    {
+        FScopedTransaction Transaction(LOCTEXT("RotateTile", "BuildingGenerator: Rotate Tile"));
+        Actor->Modify();
+
+        if (ExistingTile.IsStairs())
+        {
+            ExistingTile.AutoRotationYaw = FMath::Fmod(ExistingTile.AutoRotationYaw + 90.f, 360.f);
+        }
+        else
+        {
+            ExistingTile.ManualYawOffset = FMath::Fmod(ExistingTile.ManualYawOffset + 90.f, 360.f);
+        }
+
+        Actor->RebuildHISM();
+        if (TilemapGrid.IsValid()) TilemapGrid->Invalidate(EInvalidateWidgetReason::Paint);
+        FocusViewportOnTile(X, Y);
+
+        float DisplayYaw = ExistingTile.IsStairs()
+            ? ExistingTile.AutoRotationYaw
+            : ExistingTile.ManualYawOffset;
+
+        StatusText->SetText(FText::FromString(
+            FString::Printf(TEXT("Rotated (%d, %d) -> %.0f\u00B0"),
+                X, Y, DisplayYaw)));
+    };
+
+    if (bCtrl && !ExistingTile.IsEmpty())
+    {
+        RotateTile();
+        return;
+    }
+
+    if (ExistingTile.TileType == CurrentPaintType && !ExistingTile.IsEmpty())
+    {
+        RotateTile();
         return;
     }
 
@@ -210,9 +282,6 @@ void SBuildingEditorWindow::SpawnPointLightAtTile(int32 X, int32 Y)
         }
 
         Light->AttachToActor(Actor, FAttachmentTransformRules::KeepWorldTransform);
-
-        GEditor->SelectNone(false, true, false);
-        GEditor->SelectActor(Light, true, true);
     }
 
     FocusViewportOnTile(X, Y);
@@ -229,9 +298,14 @@ void SBuildingEditorWindow::SetToolMode(EBuildingEditorTool NewTool)
     CurrentTool = NewTool;
     if (ToolModeLabel.IsValid())
     {
-        FString ModeStr = (NewTool == EBuildingEditorTool::PlacePointLight)
-            ? TEXT("[Point Light]")
-            : TEXT("[Paint]");
+        FString ModeStr;
+        switch (NewTool)
+        {
+        case EBuildingEditorTool::PlacePointLight: ModeStr = TEXT("[Point Light]"); break;
+        case EBuildingEditorTool::ToggleCeiling:   ModeStr = TEXT("[Toggle Ceiling]"); break;
+        case EBuildingEditorTool::ToggleFloor:     ModeStr = TEXT("[Toggle Floor]"); break;
+        default:                                   ModeStr = TEXT("[Paint]"); break;
+        }
         ToolModeLabel->SetText(FText::FromString(ModeStr));
     }
 }
@@ -492,15 +566,15 @@ TSharedRef<SWidget> SBuildingEditorWindow::BuildTilePalette()
     struct FPaletteEntry { ETileType Type; FText Label; FLinearColor Color; };
 
     static const FPaletteEntry Entries[] = {
-        { ETileType::Empty,       LOCTEXT("PE", "Empty"),       FLinearColor(0.96f, 0.96f, 0.96f) },
-        { ETileType::Wall,        LOCTEXT("PW", "Wall"),        FLinearColor(0.29f, 0.29f, 0.29f) },
+        { ETileType::Empty,       LOCTEXT("PE", "Empty"),       FLinearColor(0.22f, 0.22f, 0.24f) },
+        { ETileType::Wall,        LOCTEXT("PW", "Wall"),        FLinearColor(0.45f, 0.45f, 0.48f) },
         { ETileType::Wall_Door,   LOCTEXT("PD", "Door"),        FLinearColor(1.00f, 0.84f, 0.00f) },
         { ETileType::Wall_Window, LOCTEXT("PWn", "Window"),     FLinearColor(0.53f, 0.81f, 0.92f) },
-        { ETileType::Floor,       LOCTEXT("PF", "Floor"),       FLinearColor(0.88f, 0.88f, 0.88f) },
+        { ETileType::Floor,       LOCTEXT("PF", "Floor"),       FLinearColor(0.82f, 0.75f, 0.62f) },
         { ETileType::Room_A,      LOCTEXT("PA", "Room A"),      FLinearColor(0.40f, 0.73f, 0.42f) },
         { ETileType::Room_B,      LOCTEXT("PB", "Room B"),      FLinearColor(0.67f, 0.28f, 0.74f) },
         { ETileType::Room_C,      LOCTEXT("PC", "Room C"),      FLinearColor(1.00f, 0.44f, 0.26f) },
-        { ETileType::Corridor,    LOCTEXT("PCo", "Corridor"),   FLinearColor(0.74f, 0.74f, 0.74f) },
+        { ETileType::Corridor,    LOCTEXT("PCo", "Corridor"),   FLinearColor(0.60f, 0.68f, 0.72f) },
         { ETileType::Stairs_Up,   LOCTEXT("PSU", "Stairs Up"),  FLinearColor(1.00f, 0.55f, 0.00f) },
         { ETileType::Stairs_Down, LOCTEXT("PSD", "Stairs Down"),FLinearColor(0.90f, 0.45f, 0.00f) },
     };
@@ -531,7 +605,8 @@ TSharedRef<SWidget> SBuildingEditorWindow::BuildTilePalette()
                 SNew(STextBlock)
                 .Text(E.Label)
                 .Justification(ETextJustify::Center)
-                .ColorAndOpacity(E.Type == ETileType::Wall
+                .ColorAndOpacity(
+                    (E.Type == ETileType::Wall || E.Type == ETileType::Empty)
                     ? FSlateColor(FLinearColor::White)
                     : FSlateColor(FLinearColor::Black))
             ]
@@ -557,6 +632,47 @@ TSharedRef<SWidget> SBuildingEditorWindow::BuildTilePalette()
         [
             SNew(STextBlock)
             .Text(LOCTEXT("PointLightBtn", "Point Light"))
+            .Justification(ETextJustify::Center)
+            .ColorAndOpacity(FSlateColor(FLinearColor::Black))
+        ]
+    ];
+
+    VBox->AddSlot().AutoHeight().Padding(0.f, 8.f)
+    [
+        SNew(STextBlock)
+        .Text(LOCTEXT("LayerTools", "Layer Tools"))
+        .Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
+    ];
+
+    VBox->AddSlot().AutoHeight().Padding(0.f, 2.f)
+    [
+        SNew(SButton)
+        .ButtonColorAndOpacity(FLinearColor(0.75f, 0.85f, 1.0f))
+        .OnClicked_Lambda([this]()
+        {
+            SetToolMode(EBuildingEditorTool::ToggleCeiling);
+            return FReply::Handled();
+        })
+        [
+            SNew(STextBlock)
+            .Text(LOCTEXT("ToggleCeilingBtn", "Toggle Ceiling"))
+            .Justification(ETextJustify::Center)
+            .ColorAndOpacity(FSlateColor(FLinearColor::Black))
+        ]
+    ];
+
+    VBox->AddSlot().AutoHeight().Padding(0.f, 2.f)
+    [
+        SNew(SButton)
+        .ButtonColorAndOpacity(FLinearColor(1.0f, 0.80f, 0.75f))
+        .OnClicked_Lambda([this]()
+        {
+            SetToolMode(EBuildingEditorTool::ToggleFloor);
+            return FReply::Handled();
+        })
+        [
+            SNew(STextBlock)
+            .Text(LOCTEXT("ToggleFloorBtn", "Toggle Floor"))
             .Justification(ETextJustify::Center)
             .ColorAndOpacity(FSlateColor(FLinearColor::Black))
         ]

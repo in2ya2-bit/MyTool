@@ -36,8 +36,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # ═══════════════════════════════════════════════════════
 TILE = 4.0
 HALF = TILE / 2          # 2.0
-WT   = 0.20              # wall thickness
-WHT  = WT / 2            # 0.10
+WT   = 0.40              # wall thickness (wider for better corner coverage)
+WHT  = WT / 2            # 0.20
 WH   = 3.0               # wall height
 FT   = 0.05              # floor slab thickness
 

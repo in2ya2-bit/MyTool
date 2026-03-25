@@ -80,6 +80,17 @@ struct BUILDINGGENERATOR_API FTileData
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AutoTile")
     float AutoRotationYaw = 0.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    float ManualYawOffset = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    bool bNoCeiling = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tile")
+    bool bNoFloor = false;
+
+    float GetFinalYaw() const { return AutoRotationYaw + ManualYawOffset; }
+
     bool IsWallFamily() const
     {
         return TileType == ETileType::Wall
@@ -228,6 +239,10 @@ struct BUILDINGGENERATOR_API FBuildingData
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building",
         meta = (ClampMin = "0.1", UIMin = "0.1", ClampMax = "10.0", UIMax = "10.0"))
     float BuildingScale = 1.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building",
+        meta = (ClampMin = "0.0", UIMin = "0.0", ClampMax = "270.0", UIMax = "270.0"))
+    float WallMeshYawOffset = 0.f;
 
     int32 GetFloorCount() const { return Floors.Num(); }
 

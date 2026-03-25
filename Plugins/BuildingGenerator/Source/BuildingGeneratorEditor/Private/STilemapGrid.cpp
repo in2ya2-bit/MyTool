@@ -48,9 +48,9 @@ FLinearColor STilemapGrid::GetTileColor(ETileType Type) const
 {
     switch (Type)
     {
-    case ETileType::Empty:       return FLinearColor(0.96f, 0.96f, 0.96f);
-    case ETileType::Floor:       return FLinearColor(0.88f, 0.88f, 0.88f);
-    case ETileType::Wall:        return FLinearColor(0.29f, 0.29f, 0.29f);
+    case ETileType::Empty:       return FLinearColor(0.22f, 0.22f, 0.24f);
+    case ETileType::Floor:       return FLinearColor(0.82f, 0.75f, 0.62f);
+    case ETileType::Wall:        return FLinearColor(0.45f, 0.45f, 0.48f);
     case ETileType::Wall_Door:   return FLinearColor(1.00f, 0.84f, 0.00f);
     case ETileType::Wall_Window: return FLinearColor(0.53f, 0.81f, 0.92f);
     case ETileType::Stairs:
@@ -59,7 +59,7 @@ FLinearColor STilemapGrid::GetTileColor(ETileType Type) const
     case ETileType::Room_A:      return FLinearColor(0.40f, 0.73f, 0.42f);
     case ETileType::Room_B:      return FLinearColor(0.67f, 0.28f, 0.74f);
     case ETileType::Room_C:      return FLinearColor(1.00f, 0.44f, 0.26f);
-    case ETileType::Corridor:    return FLinearColor(0.74f, 0.74f, 0.74f);
+    case ETileType::Corridor:    return FLinearColor(0.60f, 0.68f, 0.72f);
     default:                     return FLinearColor::White;
     }
 }
@@ -68,15 +68,76 @@ FString STilemapGrid::GetTileLabel(const FTileData& Tile) const
 {
     if (Tile.TileType == ETileType::Wall)
     {
+        const TCHAR* Base = TEXT("W");
         switch (Tile.WallVariant)
         {
-        case EWallVariant::Isolated:   return TEXT("\u25A1");
-        case EWallVariant::Straight:   return TEXT("\u2500");
-        case EWallVariant::Corner:     return TEXT("\u2510");
-        case EWallVariant::T_Junction: return TEXT("\u2524");
-        case EWallVariant::Cross:      return TEXT("\u253C");
-        case EWallVariant::End:        return TEXT("\u2574");
-        default:                       return TEXT("W");
+        case EWallVariant::Isolated:   Base = TEXT("\u25A1"); break;
+        case EWallVariant::Straight:   Base = TEXT("\u2500"); break;
+        case EWallVariant::Corner:     Base = TEXT("\u2510"); break;
+        case EWallVariant::T_Junction: Base = TEXT("\u2524"); break;
+        case EWallVariant::Cross:      Base = TEXT("\u253C"); break;
+        case EWallVariant::End:        Base = TEXT("\u2574"); break;
+        default: break;
+        }
+
+        if (Tile.ManualYawOffset != 0.f)
+        {
+            int32 Dir = FMath::RoundToInt32(FMath::Fmod(Tile.ManualYawOffset + 360.f, 360.f)) / 90;
+            const TCHAR* Rot = TEXT("");
+            switch (Dir % 4)
+            {
+            case 1: Rot = TEXT("\u21BB"); break;
+            case 2: Rot = TEXT("\u21C5"); break;
+            case 3: Rot = TEXT("\u21BA"); break;
+            default: break;
+            }
+            return FString::Printf(TEXT("%s%s"), Base, Rot);
+        }
+
+        return Base;
+    }
+
+    if (Tile.IsStairs())
+    {
+        int32 Dir = FMath::RoundToInt32(FMath::Fmod(Tile.AutoRotationYaw + 360.f, 360.f)) / 90;
+        bool bUp = (Tile.TileType == ETileType::Stairs_Up || Tile.TileType == ETileType::Stairs);
+        switch (Dir % 4)
+        {
+        case 0: return bUp ? TEXT("\u25B2") : TEXT("\u25BC");  // ▲ ▼
+        case 1: return bUp ? TEXT("\u25B6") : TEXT("\u25C0");  // ▶ ◀
+        case 2: return bUp ? TEXT("\u25BC") : TEXT("\u25B2");  // ▼ ▲
+        case 3: return bUp ? TEXT("\u25C0") : TEXT("\u25B6");  // ◀ ▶
+        default: return TEXT("S");
+        }
+    }
+
+    auto YawArrow = [](float Yaw) -> const TCHAR*
+    {
+        int32 Dir = FMath::RoundToInt32(FMath::Fmod(Yaw + 360.f, 360.f)) / 90;
+        switch (Dir % 4)
+        {
+        case 0: return TEXT("");
+        case 1: return TEXT("\u21BB");  // ↻ 90°
+        case 2: return TEXT("\u21C5");  // ⇅ 180°
+        case 3: return TEXT("\u21BA");  // ↺ 270°
+        default: return TEXT("");
+        }
+    };
+
+    if (Tile.ManualYawOffset != 0.f)
+    {
+        const TCHAR* Arrow = YawArrow(Tile.ManualYawOffset);
+        switch (Tile.TileType)
+        {
+        case ETileType::Wall:        return FString::Printf(TEXT("\u2593%s"), Arrow);
+        case ETileType::Wall_Door:   return FString::Printf(TEXT("D%s"), Arrow);
+        case ETileType::Wall_Window: return FString::Printf(TEXT("W%s"), Arrow);
+        case ETileType::Floor:       return FString::Printf(TEXT("%s"), Arrow);
+        case ETileType::Room_A:      return FString::Printf(TEXT("A%s"), Arrow);
+        case ETileType::Room_B:      return FString::Printf(TEXT("B%s"), Arrow);
+        case ETileType::Room_C:      return FString::Printf(TEXT("C%s"), Arrow);
+        case ETileType::Corridor:    return FString::Printf(TEXT("\u00B7%s"), Arrow);
+        default:                     return FString(Arrow);
         }
     }
 
@@ -88,9 +149,6 @@ FString STilemapGrid::GetTileLabel(const FTileData& Tile) const
     case ETileType::Room_B:      return TEXT("B");
     case ETileType::Room_C:      return TEXT("C");
     case ETileType::Corridor:    return TEXT("\u00B7");
-    case ETileType::Stairs_Up:   return TEXT("\u25B2");
-    case ETileType::Stairs_Down: return TEXT("\u25BC");
-    case ETileType::Stairs:      return TEXT("S");
     default:                     return TEXT("");
     }
 }
@@ -182,6 +240,37 @@ int32 STilemapGrid::OnPaint(
                 Brush, ESlateDrawEffect::None,
                 CellColor);
 
+            // Layer indicator overlay (top-right corner)
+            if (ZoomLevel >= 0.5f && (Tile.bNoCeiling || Tile.bNoFloor))
+            {
+                const FSlateFontInfo SmallFont = FCoreStyle::GetDefaultFontStyle(
+                    "Bold", FMath::Max(5, FMath::RoundToInt32(6 * ZoomLevel)));
+                TSharedRef<FSlateFontMeasure> SmFM =
+                    FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+
+                FString Indicator;
+                if (Tile.bNoCeiling && Tile.bNoFloor)
+                    Indicator = TEXT("\u2300");   // ⌀ both removed
+                else if (Tile.bNoCeiling)
+                    Indicator = TEXT("\u2191X");  // ↑X ceiling off
+                else
+                    Indicator = TEXT("\u2193X");  // ↓X floor off
+
+                FVector2D IndSize = SmFM->Measure(Indicator, SmallFont);
+                FGeometry IndGeo = AllottedGeometry.MakeChild(
+                    IndSize,
+                    FSlateLayoutTransform(FVector2D(
+                        CellX + CellSize - IndSize.X - 2.f,
+                        CellY + 1.f)));
+
+                FSlateDrawElement::MakeText(
+                    OutDrawElements, LayerId + 3,
+                    IndGeo.ToPaintGeometry(),
+                    Indicator, SmallFont,
+                    ESlateDrawEffect::None,
+                    FLinearColor(1.f, 0.3f, 0.3f));
+            }
+
             // Text label
             FString Label = GetTileLabel(Tile);
             if (!Label.IsEmpty() && ZoomLevel >= 0.5f)
@@ -196,7 +285,8 @@ int32 STilemapGrid::OnPaint(
                         CellX + (CellSize - TextSize.X) * 0.5,
                         CellY + (CellSize - TextSize.Y) * 0.5)));
 
-                FLinearColor TextColor = (Tile.TileType == ETileType::Wall)
+                FLinearColor TextColor =
+                    (Tile.TileType == ETileType::Wall || Tile.TileType == ETileType::Empty)
                     ? FLinearColor::White
                     : FLinearColor(0.15f, 0.15f, 0.15f);
 
@@ -210,7 +300,7 @@ int32 STilemapGrid::OnPaint(
         }
     }
 
-    return LayerId + 3;
+    return LayerId + 4;
 }
 
 // ─────────────────────────────────────────────────────────────────────
