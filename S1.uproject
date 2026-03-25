@@ -59,6 +59,10 @@
 		{
 			"Name": "Water",
 			"Enabled": true
+		},
+		{
+			"Name": "BuildingGenerator",
+			"Enabled": true
 		}
 	]
 }
