@@ -134,17 +134,59 @@ run_full_pipeline(
 
 ---
 
-## UE5 C++ 플러그인 설치
+## UE5 C++ 플러그인 설치 — Engine Plugin 모드 (권장)
 
-1. `ue5_plugin/LevelTool/` 폴더를 UE5 프로젝트의 `Plugins/` 에 복사
-2. `.uproject` 오른쪽 클릭 → Generate Visual Studio project files
-3. 빌드 후 에디터 실행
-4. `Edit → Plugins` 에서 "Level Tool" 활성화
-5. `Edit → Project Settings → Plugins → Level Tool` 에서 설정:
-   - Python Script Directory: `level_tool/` 폴더 경로
-   - Output Directory: 출력 폴더 경로
-   - API Keys (선택)
-6. `Tools → Level Tool` 으로 패널 열기
+이 플러그인은 엔진 설치본에 한 번만 깔아두면 **그 엔진을 쓰는 모든 UE5 프로젝트에서
+자동 enable** 되도록 설계돼 있습니다 (`LevelTool.uplugin` 에 `EnabledByDefault: true`).
+따라서 사용하려는 프로젝트의 `.uproject` / `Config` 를 **한 글자도 건드릴 필요가
+없어서** Perforce 관리 프로젝트에도 부담 없이 붙일 수 있습니다.
+
+### 설치
+
+리포 루트에서 PowerShell:
+
+```powershell
+# 이 리포가 엔진 루트 바로 밑에 있을 때 (예: E:\WorkUE5\MyTool)
+.\install_to_engine.ps1
+
+# 엔진 경로가 다르면 명시
+.\install_to_engine.ps1 -EnginePath "E:\UE5\UE_5.5"
+
+# 이전 설치본 덮어쓰기
+.\install_to_engine.ps1 -Force
+```
+
+스크립트가 하는 일:
+1. `Plugins\LevelTool\` 을 `<Engine>\Engine\Plugins\Marketplace\LevelTool\` 로 복사
+2. `files\` (Python 파이프라인 전체) 를 `<...>\LevelTool\files\` 로 복사
+3. 이후 `ULevelToolSubsystem` 이 `PluginBaseDir/files` 를 자동 탐지하므로
+   `Project Settings → Level Tool → Python Script Directory` 를 비워둬도 동작
+
+### 첫 사용
+
+1. 에디터가 열려 있다면 닫습니다.
+2. 사용하려는 `.uproject` 를 우클릭 → **Generate Visual Studio project files**
+3. 에디터를 열면 "Modules missing" 프롬프트가 뜨며 LevelTool 모듈 빌드가 한 번 수행됩니다.
+4. 이후부터는 메뉴 **Tools → Level Tool** 이 어떤 프로젝트에서든 노출됩니다.
+
+### API 키/출력 경로 설정 (선택)
+
+- `Edit → Project Settings → Plugins → Level Tool` 에서 지정
+- Python Script Directory: **비워두면** 자동 탐지됨 (엔진 설치본 내부의 files/)
+- Output Directory: 하이트맵/JSON 산출물을 둘 경로 (기본 `<Project>/Saved/LevelTool/` 사용)
+- API Keys: OpenTopography / Google Maps 쓸 때만
+
+### 제거
+
+```powershell
+.\uninstall_from_engine.ps1
+```
+
+### 프로젝트별 설치가 필요하다면
+
+위 스크립트 대신 `Plugins\LevelTool\` 폴더를 대상 프로젝트의 `Plugins\` 에
+직접 복사해도 됩니다. 이 경우는 `.uproject` 가 plugin entry 를 자동 기록하므로
+Perforce 에 올릴 때 diff 가 발생하는 점 주의.
 
 ### 패널 사용법
 
@@ -157,71 +199,63 @@ run_full_pipeline(
 
 ## Private 워크플로우 — 툴은 로컬, 맵만 Perforce 서밋
 
-MyTool 레포(이 플러그인 포함) 자체는 공유하지 않고 **최종 맵 에셋만** 본 프로젝트(Perforce
-관리)로 옮기고 싶을 때의 절차입니다. `Content Browser > Migrate` 가 한 방에 깨끗이
-통과하도록 패널에 **Migrate utilities** 섹션이 추가돼 있습니다.
+이 플러그인을 **엔진 설치본에 깔아두고** (위의 Engine Plugin 모드), Perforce 로 관리되는
+프로젝트 안에서 바로 맵을 만든 다음, `/Game/MapData/<MapName>/` 한 폴더만 서밋하면 되는
+절차입니다. 플러그인 소스/바이너리는 어디에도 add 되지 않습니다.
 
-### 엔진 전제
+### 사전 조건
 
-- MyTool `S1.uproject` 의 UE 버전과 타겟 프로젝트(예: TslGame)의 UE 버전이 **동일**해야 합니다.
-  사내 커스텀 엔진도 포함.
-- 타겟 프로젝트에 `Water`, `ProceduralMeshComponent` 같은 엔진 플러그인이 enable 돼 있으면
-  좋지만, 도로는 아래 Bake 과정을 거치면 PMC 없이도 동작합니다.
+- `install_to_engine.ps1` 로 엔진 설치 완료 상태
+- 타겟 프로젝트의 `.uproject` / `Config/DefaultEngine.ini` 등은 전혀 수정하지 않음
+  (`EnabledByDefault: true` 덕분에 따로 enable 할 필요 없음)
+- `Edit > Project Settings > Plugins > Level Tool` 에서 Output Directory / API Keys 만
+  프로젝트별로 지정해주면 됨 (이 `DefaultEditorPerProjectUserSettings.ini` 는 Perforce 에
+  안 올리는 파일이라 안전합니다)
 
 ### 0. 맵 생성
 
-평소처럼 `▶ Generate Map` 으로 Landscape/Buildings/Roads/Water 를 월드에 빌드합니다.
+**타겟 프로젝트 에디터** (예: TslGame) 를 열고 `Tools → Level Tool` 패널에서
+`▶ Generate Map`. Landscape / Buildings / Roads / Water 가 현재 월드에 바로 생성됩니다.
 
-### 1. Migrate utilities 섹션에서 맵 이름 입력
+### 1. Finalize for submit 섹션에서 맵 이름 입력
 
-예: `SeoulDemo`, `Erangel_v2`. 여기서 입력한 이름이 `/Game/MapData/<이름>/` 루트가 됩니다.
+예: `SeoulDemo`, `Erangel_v2`. `/Game/MapData/<이름>/` 루트가 됩니다.
 
 ### 2. `1. Bake Roads → StaticMesh`
 
-도로는 `UProceduralMeshComponent` 로 런타임 구성돼 있어서 migrate 후 다른 프로젝트에서
-복원이 불안정합니다. 이 버튼을 누르면:
+도로는 `UProceduralMeshComponent` 로 런타임 구성돼 있습니다. Perforce 에 그대로 올릴
+수는 있지만, 장기 보관/리빌드 안정성을 위해 `UStaticMesh` 에셋으로 구워두는 편이 안전:
 
-- 모든 `LevelTool/Roads` 폴더의 PMC 액터를 `UStaticMesh` 에셋으로 구워서
-  `/Game/MapData/<MapName>/Roads/SM_*` 아래 저장합니다.
-- 원본 PMC 액터는 `AStaticMeshActor` 로 교체됩니다 (머티리얼 유지).
+- 모든 `LevelTool/Roads` 폴더 PMC 액터를 `UStaticMesh` 로 굽고
+  `/Game/MapData/<MapName>/Roads/SM_*` 에 저장
+- 원본 PMC 액터는 `AStaticMeshActor` 로 교체 (머티리얼 유지)
 
 ### 3. `2. Cleanup for Migrate`
 
 - `LevelTool/Compass` 폴더의 기둥 + 라벨(N/S/E/W/CENTER) 제거
 - `LevelTool/` 하위의 디버그 `ATextRenderActor` 제거
 
-최종 맵에 불필요한 보조 액터가 남지 않도록 한 번 눌러주세요.
-
 ### 4. `3. Pack assets under /Game/MapData/<Name>/`
 
-런타임 생성 머티리얼/텍스처 (`/Game/LevelTool/M_LandscapeAuto`,
-`/Game/LevelTool/M_BuildingProcedural`, `/Game/LevelTool/SplatMaps/*`)를
-`/Game/MapData/<MapName>/FromLevelTool/` 아래로 **리네임**합니다. 레벨 안의 참조는
-AssetTools 가 자동으로 고쳐줍니다.
+런타임 생성 머티리얼/텍스처를 `/Game/MapData/<MapName>/FromLevelTool/` 로 리네임.
+레벨의 참조는 AssetTools 가 자동 fixup. 결과적으로 이 맵이 쓰는 에셋 전부가
+`/Game/MapData/<MapName>/` 한 폴더에 모입니다.
 
-> 결과적으로 이 맵이 쓰는 모든 에셋이 `/Game/MapData/<MapName>/` 한 폴더 밑에 모이므로
-> migrate 타겟 프로젝트가 깔끔하게 정리된 상태로 받아갑니다.
-
-### 5. 레벨 저장 + Migrate
+### 5. 레벨 저장 + Perforce 서밋
 
 1. `File > Save Current Level As...` → `/Game/MapData/<MapName>/<MapName>.umap`
-2. Content Browser 에서 방금 저장한 `.umap` 우클릭 → **Asset Actions > Migrate...**
-3. Target: 타겟 프로젝트의 `Content/` 폴더 선택 (예: `E:\Work\TslGame\Content\`)
-4. 의존성 트리가 `.umap` + `/Game/MapData/<MapName>/...` 에셋만 보여야 합니다. 만약
-   `/Game/LevelTool/...` 경로가 남아 있다면 4번 단계를 다시 돌리세요.
+2. Source Control 에서 Reconcile 또는 P4V 에서 **Reconcile Offline Work**
+3. 새 파일들이 `Content/MapData/<MapName>/...` 아래에만 몰려있는지 확인
+4. 체인지리스트 서밋
 
-### 6. 타겟 프로젝트에서 Perforce 반영
+> 플러그인 자체 (`Engine/Plugins/Marketplace/LevelTool/`) 는 엔진 설치본 안에 있어서
+> 프로젝트 Perforce 워크스페이스가 절대 touch 하지 않습니다. 자동으로 "로컬 전용" 이 됩니다.
 
-- TslGame(또는 대상 프로젝트) 에디터에서 맵을 열어 동작 확인
-- `Source Control > Submit Files` 혹은 P4V 에서 **Reconcile Offline Work** → 새 파일 add →
-  체인지리스트 서밋
+### 다른 프로젝트로 옮기고 싶다면 (선택)
 
-### 이 레포 자체를 타겟 프로젝트 Perforce 에 올리지 않으려면
-
-- MyTool 은 타겟 Perforce 워크스페이스 루트 **바깥**에 두는 것을 권장합니다.
-  (예: TslGame 이 `E:\Work\TslGame` 이면 MyTool 은 `E:\Work\MyTool`)
-- 어쩔 수 없이 같은 드라이브 안에 둬야 한다면 Perforce 클라이언트 스펙 View 에서
-  해당 경로를 제외하거나, `p4ignore.txt` 에 `MyTool/` 를 추가하세요.
+같은 엔진 버전이면 Content Browser `/Game/MapData/<MapName>/<MapName>.umap` 우클릭 →
+**Asset Actions > Migrate...** 로 타겟 프로젝트 Content 폴더에 통째로 이식 가능.
+Step 4 를 거쳤기 때문에 migrate 의존성 트리에 `/Game/LevelTool/` 잔재가 남지 않습니다.
 
 ---
 

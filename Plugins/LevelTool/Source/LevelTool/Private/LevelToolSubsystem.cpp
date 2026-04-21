@@ -19,9 +19,38 @@
 #include "Serialization/JsonSerializer.h"
 
 #include "IPythonScriptPlugin.h"
+#include "Interfaces/IPluginManager.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogLevelTool, Log, All);
+
+// Resolve a "Python scripts" folder:
+//   1) If ULevelToolSettings::PythonScriptDir is set and exists, use it.
+//   2) Otherwise fall back to <PluginBaseDir>/files   (engine-plugin install mode).
+//   3) Otherwise fall back to <PluginBaseDir>/../files (repo layout: Plugins/LevelTool is a
+//      sibling of the top-level files/ folder in the MyTool repo).
+static FString ResolvePythonScriptDir()
+{
+    const ULevelToolSettings* S = ULevelToolSettings::Get();
+    if (S && !S->PythonScriptDir.Path.IsEmpty() && FPaths::DirectoryExists(S->PythonScriptDir.Path))
+    {
+        return S->PythonScriptDir.Path;
+    }
+
+    TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("LevelTool"));
+    if (Plugin.IsValid())
+    {
+        const FString Base = Plugin->GetBaseDir();
+
+        const FString Inside  = FPaths::Combine(Base, TEXT("files"));
+        if (FPaths::DirectoryExists(Inside)) return Inside;
+
+        const FString Sibling = FPaths::Combine(Base, TEXT(".."), TEXT("..") , TEXT("files"));
+        if (FPaths::DirectoryExists(Sibling)) return FPaths::ConvertRelativePathToFull(Sibling);
+    }
+
+    return S ? S->PythonScriptDir.Path : FString();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Lifecycle
@@ -748,8 +777,7 @@ void ULevelToolSubsystem::ParsePythonOutput(
 
 FString ULevelToolSubsystem::GetPythonScriptPath(const FString& ScriptName) const
 {
-    const ULevelToolSettings* S = ULevelToolSettings::Get();
-    return FPaths::Combine(S->PythonScriptDir.Path, ScriptName);
+    return FPaths::Combine(ResolvePythonScriptDir(), ScriptName);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -760,10 +788,13 @@ bool ULevelToolSubsystem::ValidateSettings(TArray<FString>& OutErrors) const
 {
     const ULevelToolSettings* S = ULevelToolSettings::Get();
 
-    if (S->PythonScriptDir.Path.IsEmpty())
-        OutErrors.Add(TEXT("Python Script Directory is not set"));
-    else if (!FPaths::DirectoryExists(S->PythonScriptDir.Path))
-        OutErrors.Add(FString::Printf(TEXT("Python Script Directory not found: %s"), *S->PythonScriptDir.Path));
+    // Python scripts: accept either the explicit setting OR the auto-discovered
+    // fallback (plugin's own files/ folder, for engine-plugin install mode).
+    const FString ResolvedPyDir = ResolvePythonScriptDir();
+    if (ResolvedPyDir.IsEmpty())
+        OutErrors.Add(TEXT("Python Script Directory is not set and could not be auto-located (expected <PluginDir>/files)"));
+    else if (!FPaths::DirectoryExists(ResolvedPyDir))
+        OutErrors.Add(FString::Printf(TEXT("Python Script Directory not found: %s"), *ResolvedPyDir));
 
     FString MainPy = GetPythonScriptPath(TEXT("main.py"));
     if (!FPaths::FileExists(MainPy))

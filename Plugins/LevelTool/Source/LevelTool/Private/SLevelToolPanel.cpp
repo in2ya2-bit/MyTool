@@ -130,7 +130,7 @@ void SLevelToolPanel::Construct(const FArguments& InArgs)
             + SVerticalBox::Slot().AutoHeight()
             [ SNew(SSeparator).Thickness(0.5f).ColorAndOpacity(kAccentGray * 0.5f) ]
 
-            // ─── Migrate utilities ───────────────────────────────────
+            // ─── Finalize for submit ─────────────────────────────────
             + SVerticalBox::Slot().AutoHeight()
             [ BuildMigrateSection() ]
 
@@ -927,15 +927,17 @@ TSharedRef<SWidget> SLevelToolPanel::BuildMigrateSection()
     .Clipping(EWidgetClipping::ClipToBounds)
 
     + SVerticalBox::Slot().AutoHeight().Padding(kSectionPad)
-    [ MakeSectionHeader(LOCTEXT("MigrateHeader", "Migrate utilities")) ]
+    [ MakeSectionHeader(LOCTEXT("MigrateHeader", "Finalize for submit")) ]
 
     + SVerticalBox::Slot().AutoHeight().Padding(12.f, 2.f, 12.f, 2.f)
     [
         SNew(STextBlock)
         .Text(LOCTEXT("MigrateHelp",
-            "Prepare the generated level so that Content Browser > Migrate "
-            "lands cleanly in your Perforce-managed project. Run these after "
-            "the map looks right, in this order."))
+            "Run these AFTER the generated map looks right, in order. They "
+            "bake procedural geometry to static assets, strip debug actors, "
+            "and move generated content under /Game/MapData/<MapName>/ so "
+            "only a single self-contained folder needs to be added to "
+            "Perforce (or migrated to another project)."))
         .AutoWrapText(true)
         .ColorAndOpacity(kAccentGray)
     ]

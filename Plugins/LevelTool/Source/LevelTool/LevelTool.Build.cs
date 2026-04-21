@@ -13,6 +13,9 @@ public class LevelTool : ModuleRules
             "Engine",
             "Landscape",
             "LandscapeEditor",
+
+            // Plugin base-dir discovery for engine-plugin install mode
+            "Projects",
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
