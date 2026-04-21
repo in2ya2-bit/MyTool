@@ -13,6 +13,9 @@ public class LevelTool : ModuleRules
             "Engine",
             "Landscape",
             "LandscapeEditor",
+
+            // Plugin base-dir discovery for engine-plugin install mode
+            "Projects",
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
@@ -66,6 +69,10 @@ public class LevelTool : ModuleRules
 
             // Road geometry generation
             "ProceduralMeshComponent",
+
+            // Migrate utilities: bake PMC → StaticMesh
+            "MeshDescription",
+            "StaticMeshDescription",
         });
 
         // Allow access to private engine headers for landscape APIs

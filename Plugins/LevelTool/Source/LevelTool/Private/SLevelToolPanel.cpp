@@ -130,6 +130,13 @@ void SLevelToolPanel::Construct(const FArguments& InArgs)
             + SVerticalBox::Slot().AutoHeight()
             [ SNew(SSeparator).Thickness(0.5f).ColorAndOpacity(kAccentGray * 0.5f) ]
 
+            // ─── Finalize for submit ─────────────────────────────────
+            + SVerticalBox::Slot().AutoHeight()
+            [ BuildMigrateSection() ]
+
+            + SVerticalBox::Slot().AutoHeight()
+            [ SNew(SSeparator).Thickness(0.5f).ColorAndOpacity(kAccentGray * 0.5f) ]
+
             // ─── Log ─────────────────────────────────────────────────
             + SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f)
             [ BuildLogSection() ]
@@ -906,6 +913,145 @@ void SLevelToolPanel::OnLogLine(FString Line)
         LogListView->RequestListRefresh();
         ScrollLogToBottom();
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Section: Migrate utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+#include "Widgets/Input/SEditableTextBox.h"
+
+TSharedRef<SWidget> SLevelToolPanel::BuildMigrateSection()
+{
+    return SNew(SVerticalBox)
+    .Clipping(EWidgetClipping::ClipToBounds)
+
+    + SVerticalBox::Slot().AutoHeight().Padding(kSectionPad)
+    [ MakeSectionHeader(LOCTEXT("MigrateHeader", "Finalize for submit")) ]
+
+    + SVerticalBox::Slot().AutoHeight().Padding(12.f, 2.f, 12.f, 2.f)
+    [
+        SNew(STextBlock)
+        .Text(LOCTEXT("MigrateHelp",
+            "Run these AFTER the generated map looks right, in order. They "
+            "bake procedural geometry to static assets, strip debug actors, "
+            "and move generated content under /Game/MapData/<MapName>/ so "
+            "only a single self-contained folder needs to be added to "
+            "Perforce (or migrated to another project)."))
+        .AutoWrapText(true)
+        .ColorAndOpacity(kAccentGray)
+    ]
+
+    // Map name row
+    + SVerticalBox::Slot().AutoHeight().Padding(12.f, 6.f, 12.f, 2.f)
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
+        [
+            SNew(SBox).WidthOverride(kLabelWidth)
+            [
+                SNew(STextBlock).Text(LOCTEXT("MapNameLabel", "Map name"))
+            ]
+        ]
+        + SHorizontalBox::Slot().FillWidth(1.f)
+        [
+            SNew(SEditableTextBox)
+            .Text(this, &SLevelToolPanel::GetMapNameText)
+            .OnTextCommitted(this, &SLevelToolPanel::OnMapNameCommitted)
+            .HintText(LOCTEXT("MapNameHint",
+                "Folder under /Game/MapData/  (e.g. SeoulDemo, Erangel_v2)"))
+        ]
+    ]
+
+    // Step 1: Bake roads
+    + SVerticalBox::Slot().AutoHeight().Padding(12.f, 6.f, 12.f, 2.f)
+    [
+        SNew(SButton)
+        .HAlign(HAlign_Center).VAlign(VAlign_Center)
+        .IsEnabled(this, &SLevelToolPanel::IsMigrateActionEnabled)
+        .OnClicked(this, &SLevelToolPanel::OnBakeRoadsClicked)
+        .ToolTipText(LOCTEXT("BakeRoadsTip",
+            "Convert every ProceduralMesh road actor into a real UStaticMesh "
+            "asset under /Game/MapData/<MapName>/Roads/. Required for roads to "
+            "survive a Content Browser Migrate."))
+        [
+            SNew(STextBlock)
+            .Text(LOCTEXT("BakeRoadsBtn", "1.  Bake Roads → StaticMesh"))
+        ]
+    ]
+
+    // Step 2: Cleanup
+    + SVerticalBox::Slot().AutoHeight().Padding(12.f, 2.f, 12.f, 2.f)
+    [
+        SNew(SButton)
+        .HAlign(HAlign_Center).VAlign(VAlign_Center)
+        .IsEnabled(this, &SLevelToolPanel::IsMigrateActionEnabled)
+        .OnClicked(this, &SLevelToolPanel::OnCleanupForMigrateClicked)
+        .ToolTipText(LOCTEXT("CleanupTip",
+            "Remove compass pillars, debug TextRenderActors and other preview-"
+            "only items from the level so they don't end up in Perforce."))
+        [
+            SNew(STextBlock)
+            .Text(LOCTEXT("CleanupBtn", "2.  Cleanup for Migrate"))
+        ]
+    ]
+
+    // Step 3: Pack assets
+    + SVerticalBox::Slot().AutoHeight().Padding(12.f, 2.f, 12.f, 8.f)
+    [
+        SNew(SButton)
+        .HAlign(HAlign_Center).VAlign(VAlign_Center)
+        .IsEnabled(this, &SLevelToolPanel::IsMigrateActionEnabled)
+        .OnClicked(this, &SLevelToolPanel::OnPackAssetsClicked)
+        .ButtonColorAndOpacity(kAccentGreen * 0.6f)
+        .ToolTipText(LOCTEXT("PackTip",
+            "Move every asset currently under /Game/LevelTool/ into "
+            "/Game/MapData/<MapName>/FromLevelTool/. Save the level afterwards, "
+            "then right-click the .umap and choose Asset Actions > Migrate."))
+        [
+            SNew(STextBlock)
+            .Text(LOCTEXT("PackBtn", "3.  Pack assets under /Game/MapData/<Name>/"))
+            .ColorAndOpacity(FLinearColor::White)
+        ]
+    ];
+}
+
+FText SLevelToolPanel::GetMapNameText() const
+{
+    return FText::FromString(CurrentMapName);
+}
+
+void SLevelToolPanel::OnMapNameCommitted(const FText& NewText, ETextCommit::Type)
+{
+    CurrentMapName = NewText.ToString();
+    if (CurrentMapName.IsEmpty()) CurrentMapName = TEXT("GeneratedMap");
+}
+
+bool SLevelToolPanel::IsMigrateActionEnabled() const
+{
+    ULevelToolSubsystem* Sub = Subsystem.Get();
+    return Sub && !Sub->IsRunning();
+}
+
+FReply SLevelToolPanel::OnBakeRoadsClicked()
+{
+    if (ULevelToolSubsystem* Sub = Subsystem.Get())
+        Sub->BakeRoadsToStaticMesh(CurrentMapName);
+    return FReply::Handled();
+}
+
+FReply SLevelToolPanel::OnCleanupForMigrateClicked()
+{
+    if (ULevelToolSubsystem* Sub = Subsystem.Get())
+        Sub->CleanupForMigrate();
+    return FReply::Handled();
+}
+
+FReply SLevelToolPanel::OnPackAssetsClicked()
+{
+    if (ULevelToolSubsystem* Sub = Subsystem.Get())
+        Sub->PackAssetsUnderMapData(CurrentMapName);
+    return FReply::Handled();
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -81,6 +81,15 @@ private:
     bool                IsGenerateEnabled() const;
     bool                IsCancelEnabled()   const;
 
+    // ── Migrate utilities ────────────────────────────────────────────
+    TSharedRef<SWidget> BuildMigrateSection();
+    FReply              OnBakeRoadsClicked();
+    FReply              OnCleanupForMigrateClicked();
+    FReply              OnPackAssetsClicked();
+    bool                IsMigrateActionEnabled() const;
+    void                OnMapNameCommitted(const FText& NewText, ETextCommit::Type);
+    FText               GetMapNameText() const;
+
     // ── Progress bar ─────────────────────────────────────────────────
     TOptional<float>    GetProgressPercent()    const;
     FText               GetProgressStageText() const;
@@ -122,6 +131,9 @@ private:
     TArray<TSharedPtr<FString>>  ElevSourceItems;
     TSharedPtr<FString>          SelectedElevSource;
     TWeakObjectPtr<ULevelToolBuildingPool> BuildingPool;
+
+    // Migrate
+    FString CurrentMapName = TEXT("GeneratedMap");
 
     // Progress
     float  CurrentProgress    = 0.0f;

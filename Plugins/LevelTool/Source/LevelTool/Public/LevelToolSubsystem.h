@@ -86,6 +86,26 @@ public:
     void CancelJob();
     void ClearGeneratedActors();
 
+    // ── Migrate utilities ────────────────────────────────────────────────
+    // Bake all ProceduralMeshComponent-based road actors into real UStaticMesh
+    // assets under /Game/MapData/<MapName>/Roads/, then replace the PMC actors
+    // with AStaticMeshActor referencing those assets. This guarantees the road
+    // geometry survives a Content Browser Migrate into another project.
+    // Returns the number of road actors successfully baked.
+    int32 BakeRoadsToStaticMesh(const FString& MapName);
+
+    // Remove debug/preview actors that should not be carried into the target
+    // project (Compass pillars and labels, orphan TextRenderActors in LevelTool
+    // folders). Returns number of actors removed.
+    int32 CleanupForMigrate();
+
+    // Move every asset currently under /Game/LevelTool/ into a neat
+    // /Game/MapData/<MapName>/ namespace so the migrated output lands in a
+    // single self-contained folder in the target project. Uses AssetTools
+    // rename so existing references in the opened level are fixed up in-place.
+    // Returns number of assets relocated.
+    int32 PackAssetsUnderMapData(const FString& MapName);
+
     // ── Landscape Import ─────────────────────────────────────────────────
     // ElevationRangeM: actual terrain height range from Python output (0 = use settings default)
     bool ImportHeightmapAsLandscape(const FString& HeightmapPngPath, const FString& LandscapeName,
