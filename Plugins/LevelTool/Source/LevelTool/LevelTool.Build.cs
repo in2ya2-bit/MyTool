@@ -66,6 +66,10 @@ public class LevelTool : ModuleRules
 
             // Road geometry generation
             "ProceduralMeshComponent",
+
+            // Migrate utilities: bake PMC → StaticMesh
+            "MeshDescription",
+            "StaticMeshDescription",
         });
 
         // Allow access to private engine headers for landscape APIs

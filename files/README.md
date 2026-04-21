@@ -155,6 +155,76 @@ run_full_pipeline(
 
 ---
 
+## Private 워크플로우 — 툴은 로컬, 맵만 Perforce 서밋
+
+MyTool 레포(이 플러그인 포함) 자체는 공유하지 않고 **최종 맵 에셋만** 본 프로젝트(Perforce
+관리)로 옮기고 싶을 때의 절차입니다. `Content Browser > Migrate` 가 한 방에 깨끗이
+통과하도록 패널에 **Migrate utilities** 섹션이 추가돼 있습니다.
+
+### 엔진 전제
+
+- MyTool `S1.uproject` 의 UE 버전과 타겟 프로젝트(예: TslGame)의 UE 버전이 **동일**해야 합니다.
+  사내 커스텀 엔진도 포함.
+- 타겟 프로젝트에 `Water`, `ProceduralMeshComponent` 같은 엔진 플러그인이 enable 돼 있으면
+  좋지만, 도로는 아래 Bake 과정을 거치면 PMC 없이도 동작합니다.
+
+### 0. 맵 생성
+
+평소처럼 `▶ Generate Map` 으로 Landscape/Buildings/Roads/Water 를 월드에 빌드합니다.
+
+### 1. Migrate utilities 섹션에서 맵 이름 입력
+
+예: `SeoulDemo`, `Erangel_v2`. 여기서 입력한 이름이 `/Game/MapData/<이름>/` 루트가 됩니다.
+
+### 2. `1. Bake Roads → StaticMesh`
+
+도로는 `UProceduralMeshComponent` 로 런타임 구성돼 있어서 migrate 후 다른 프로젝트에서
+복원이 불안정합니다. 이 버튼을 누르면:
+
+- 모든 `LevelTool/Roads` 폴더의 PMC 액터를 `UStaticMesh` 에셋으로 구워서
+  `/Game/MapData/<MapName>/Roads/SM_*` 아래 저장합니다.
+- 원본 PMC 액터는 `AStaticMeshActor` 로 교체됩니다 (머티리얼 유지).
+
+### 3. `2. Cleanup for Migrate`
+
+- `LevelTool/Compass` 폴더의 기둥 + 라벨(N/S/E/W/CENTER) 제거
+- `LevelTool/` 하위의 디버그 `ATextRenderActor` 제거
+
+최종 맵에 불필요한 보조 액터가 남지 않도록 한 번 눌러주세요.
+
+### 4. `3. Pack assets under /Game/MapData/<Name>/`
+
+런타임 생성 머티리얼/텍스처 (`/Game/LevelTool/M_LandscapeAuto`,
+`/Game/LevelTool/M_BuildingProcedural`, `/Game/LevelTool/SplatMaps/*`)를
+`/Game/MapData/<MapName>/FromLevelTool/` 아래로 **리네임**합니다. 레벨 안의 참조는
+AssetTools 가 자동으로 고쳐줍니다.
+
+> 결과적으로 이 맵이 쓰는 모든 에셋이 `/Game/MapData/<MapName>/` 한 폴더 밑에 모이므로
+> migrate 타겟 프로젝트가 깔끔하게 정리된 상태로 받아갑니다.
+
+### 5. 레벨 저장 + Migrate
+
+1. `File > Save Current Level As...` → `/Game/MapData/<MapName>/<MapName>.umap`
+2. Content Browser 에서 방금 저장한 `.umap` 우클릭 → **Asset Actions > Migrate...**
+3. Target: 타겟 프로젝트의 `Content/` 폴더 선택 (예: `E:\Work\TslGame\Content\`)
+4. 의존성 트리가 `.umap` + `/Game/MapData/<MapName>/...` 에셋만 보여야 합니다. 만약
+   `/Game/LevelTool/...` 경로가 남아 있다면 4번 단계를 다시 돌리세요.
+
+### 6. 타겟 프로젝트에서 Perforce 반영
+
+- TslGame(또는 대상 프로젝트) 에디터에서 맵을 열어 동작 확인
+- `Source Control > Submit Files` 혹은 P4V 에서 **Reconcile Offline Work** → 새 파일 add →
+  체인지리스트 서밋
+
+### 이 레포 자체를 타겟 프로젝트 Perforce 에 올리지 않으려면
+
+- MyTool 은 타겟 Perforce 워크스페이스 루트 **바깥**에 두는 것을 권장합니다.
+  (예: TslGame 이 `E:\Work\TslGame` 이면 MyTool 은 `E:\Work\MyTool`)
+- 어쩔 수 없이 같은 드라이브 안에 둬야 한다면 Perforce 클라이언트 스펙 View 에서
+  해당 경로를 제외하거나, `p4ignore.txt` 에 `MyTool/` 를 추가하세요.
+
+---
+
 ## UE5 Landscape 임포트 수동 설정값
 
 | 항목 | 값 | 비고 |
